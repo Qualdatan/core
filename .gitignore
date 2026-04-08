@@ -1,7 +1,6 @@
 .env
 .venv/
 output/
-data/
-transcripts/
+input/
 __pycache__/
 *.pyc

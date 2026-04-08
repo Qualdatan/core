@@ -83,21 +83,50 @@ WICHTIG:
 
 
 def extract_json(response_text: str) -> dict:
-    """Extrahiert JSON aus der API-Antwort, auch wenn Markdown-Blöcke drumherum sind."""
-    # Versuche erst direkt
+    """Extrahiert JSON aus der API-Antwort, auch bei abgeschnittenem Output."""
     text = response_text.strip()
+    # Markdown-Codeblöcke entfernen
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
+
+    # JSON-Block extrahieren
+    start = text.find("{")
+    if start < 0:
+        raise ValueError("Kein JSON in der Antwort gefunden")
+    text = text[start:]
+
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        # Suche nach dem ersten { ... letzten }
-        start = text.find("{")
-        end = text.rfind("}") + 1
-        if start >= 0 and end > start:
-            return json.loads(text[start:end])
-        raise
+        # Antwort wurde wahrscheinlich abgeschnitten – reparieren
+        # Offene Strings schließen, dann Arrays/Objects
+        repaired = text
+        # Abgeschnittenen String schließen
+        if repaired.count('"') % 2 == 1:
+            repaired += '"'
+        # Offene Arrays/Objects zählen und schließen
+        open_brackets = repaired.count("[") - repaired.count("]")
+        open_braces = repaired.count("{") - repaired.count("}")
+        # Trailing comma entfernen
+        repaired = re.sub(r",\s*$", "", repaired)
+        repaired += "]" * open_brackets
+        repaired += "}" * open_braces
+        try:
+            return json.loads(repaired)
+        except json.JSONDecodeError:
+            # Letztes unvollständiges Segment entfernen und nochmal versuchen
+            # Finde letztes vollständiges Objekt in segments-Array
+            last_good = repaired.rfind("},")
+            if last_good > 0:
+                # Schneide ab dem letzten guten Objekt ab
+                truncated = repaired[:last_good + 1]
+                open_brackets = truncated.count("[") - truncated.count("]")
+                open_braces = truncated.count("{") - truncated.count("}")
+                truncated += "]" * open_brackets
+                truncated += "}" * open_braces
+                return json.loads(truncated)
+            raise
 
 
 def validate_positions(segments: list[dict], full_text: str, filename: str) -> list[dict]:
@@ -138,6 +167,9 @@ def analyze_transcript(client: Anthropic, text: str, filename: str) -> dict:
         max_tokens=MAX_TOKENS,
         messages=[{"role": "user", "content": prompt}],
     )
+
+    if response.stop_reason == "max_tokens":
+        print(f"  WARNUNG: Antwort wurde abgeschnitten (max_tokens={MAX_TOKENS}). Versuche Reparatur...")
 
     response_text = response.content[0].text
     return extract_json(response_text)

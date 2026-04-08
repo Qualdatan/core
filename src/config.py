@@ -4,7 +4,7 @@ from pathlib import Path
 
 # Pfade
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-TRANSCRIPTS_DIR = PROJECT_ROOT / "transcripts"
+TRANSCRIPTS_DIR = PROJECT_ROOT / "input"
 OUTPUT_DIR = PROJECT_ROOT / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
@@ -31,4 +31,4 @@ HAUPTKATEGORIEN = {
 
 # Claude API
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
-MAX_TOKENS = 8192
+MAX_TOKENS = 16384
