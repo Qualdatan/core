@@ -1,11 +1,9 @@
-"""Tests für step1_analyze (JSON-Parsing, Position-Validierung, Cache)."""
+"""Tests fuer step1_analyze (JSON-Parsing, Position-Validierung)."""
 
 import json
 import pytest
-from src.step1_analyze import (
-    extract_json, validate_positions,
-    cache_get, cache_put, _cache_key, CACHE_DIR,
-)
+from src.step1_analyze import extract_json, validate_positions
+from src.run_context import RunContext
 
 
 class TestExtractJson:
@@ -44,56 +42,78 @@ class TestValidatePositions:
         assert result[0]["char_end"] == 13 + len("Testtext mit Inhalt")
 
     def test_partial_match_via_prefix(self):
-        """Wenn der exakte Text nicht gefunden wird, matcht die 60-Zeichen-Prefix-Suche."""
         full_text = "Einleitung. Hier beginnt der relevante Abschnitt mit viel Text und Kontext. Ende."
-        # Text ist leicht länger als im Original (extra Wörter am Ende)
         segments = [{
             "text": "Hier beginnt der relevante Abschnitt mit viel Text und Kontext. Ende. Plus extra.",
             "char_start": 0, "char_end": 50,
         }]
         result = validate_positions(segments, full_text)
-        # Prefix-Match findet "Hier beginnt..." ab Position 12
         assert result[0]["char_start"] == 12
 
     def test_no_match_keeps_original(self):
         full_text = "Komplett anderer Text."
         segments = [{"text": "Nicht vorhanden xyz abc", "char_start": 42, "char_end": 99}]
         result = validate_positions(segments, full_text)
-        assert result[0]["char_start"] == 42  # Fallback: Original behalten
+        assert result[0]["char_start"] == 42
 
 
-class TestCache:
-    def test_cache_miss_returns_none(self):
-        result = cache_get("test_recipe", "nonexistent.docx", "text", "")
-        assert result is None
-
-    def test_cache_roundtrip(self, tmp_path, monkeypatch):
-        """Cache put + get gibt die gleichen Daten zurück."""
-        monkeypatch.setattr("src.step1_analyze.CACHE_DIR", tmp_path)
+class TestRunContextCache:
+    def test_cache_roundtrip(self, tmp_path):
+        ctx = RunContext(tmp_path)
+        ctx.ensure_dirs()
         data = {"segments": [{"code_id": "A-01"}], "kernergebnisse": []}
 
-        cache_put("mayring", "test.docx", "inhalt", "", data)
-        loaded = cache_get("mayring", "test.docx", "inhalt", "")
+        ctx.cache_parsed("test.docx", data)
+        loaded = ctx.get_cached_parsed("test.docx")
 
         assert loaded is not None
         assert loaded["segments"][0]["code_id"] == "A-01"
 
-    def test_cache_different_recipe_no_hit(self, tmp_path, monkeypatch):
-        """Anderes Recipe → kein Cache-Hit."""
-        monkeypatch.setattr("src.step1_analyze.CACHE_DIR", tmp_path)
-        data = {"segments": [], "kernergebnisse": []}
+    def test_cache_miss(self, tmp_path):
+        ctx = RunContext(tmp_path)
+        ctx.ensure_dirs()
+        assert ctx.get_cached_parsed("nonexistent.docx") is None
 
-        cache_put("mayring", "test.docx", "inhalt", "", data)
-        loaded = cache_get("prisma", "test.docx", "inhalt", "")
+    def test_prompt_and_response_cached(self, tmp_path):
+        ctx = RunContext(tmp_path)
+        ctx.ensure_dirs()
 
-        assert loaded is None
+        ctx.cache_prompt("test.docx", "Der Prompt")
+        ctx.cache_response("test.docx", "Die Antwort")
 
-    def test_cache_different_codebase_no_hit(self, tmp_path, monkeypatch):
-        """Andere Codebasis → kein Cache-Hit."""
-        monkeypatch.setattr("src.step1_analyze.CACHE_DIR", tmp_path)
-        data = {"segments": [], "kernergebnisse": []}
+        assert (ctx.prompts_dir / "test.docx.txt").exists()
+        assert (ctx.responses_dir / "test.docx.txt").exists()
 
-        cache_put("mayring", "test.docx", "inhalt", "", data)
-        loaded = cache_get("mayring", "test.docx", "inhalt", "neue codebasis")
+    def test_state_tracking(self, tmp_path):
+        ctx = RunContext(tmp_path)
+        ctx.ensure_dirs()
+        ctx.init_state("mayring", None, ["a.docx", "b.docx"])
 
-        assert loaded is None
+        assert ctx.get_pending_transcripts() == ["a.docx", "b.docx"]
+
+        ctx.mark_transcript_done("a.docx")
+        assert ctx.get_pending_transcripts() == ["b.docx"]
+
+        ctx.mark_step_done(1)
+        assert ctx.is_step_done(1)
+        assert not ctx.is_step_done(2)
+
+    def test_interrupted_detection(self, tmp_path, monkeypatch):
+        from src import run_context
+        monkeypatch.setattr(run_context, "OUTPUT_ROOT", tmp_path)
+
+        # Erstelle einen "unterbrochenen" run
+        run_dir = tmp_path / "2026-01-01_12-00-00"
+        ctx = RunContext(run_dir)
+        ctx.ensure_dirs()
+        ctx.init_state("mayring", None, ["test.docx"])
+
+        from src.run_context import find_interrupted_runs
+        interrupted = find_interrupted_runs()
+        assert len(interrupted) == 1
+        assert interrupted[0].run_dir == run_dir
+
+        # Nach complete: kein Interrupted mehr
+        ctx.mark_completed()
+        interrupted = find_interrupted_runs()
+        assert len(interrupted) == 0
