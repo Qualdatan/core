@@ -19,8 +19,16 @@ class Recipe:
     prompt_template: str
     codebase_prompt: str = ""
 
-    def build_prompt(self, text: str, filename: str, codebase: str = "") -> str:
-        """Baut den Analyse-Prompt für ein Transkript."""
+    def build_prompt(self, text: str, filename: str, codebase: str = "",
+                     content: str = "") -> str:
+        """Baut den Analyse-Prompt für ein Transkript.
+
+        Args:
+            text: Volltext (Legacy, für {text} im Template)
+            filename: Dateiname
+            codebase: Optionale Codebasis
+            content: Block-basierter Inhalt (für {content} im Template)
+        """
         categories_text = "\n".join(
             f"  {k}: {v}" for k, v in self.categories.items()
         )
@@ -36,6 +44,7 @@ class Recipe:
             codebase_section=codebase_section,
             filename=filename,
             text=text,
+            content=content or text,
         )
 
 

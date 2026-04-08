@@ -1,8 +1,9 @@
-"""Tests fuer step1_analyze (JSON-Parsing, Position-Validierung)."""
+"""Tests fuer step1_analyze (JSON-Parsing, Position-Validierung, Block-ID-Mapping)."""
 
 import json
 import pytest
-from src.step1_analyze import extract_json, validate_positions
+from src.step1_analyze import extract_json, validate_positions, resolve_block_codings
+from src.pdf_extractor import build_fulltext_and_positions
 from src.run_context import RunContext
 
 
@@ -55,6 +56,119 @@ class TestValidatePositions:
         segments = [{"text": "Nicht vorhanden xyz abc", "char_start": 42, "char_end": 99}]
         result = validate_positions(segments, full_text)
         assert result[0]["char_start"] == 42
+
+
+class TestBlockIdMapping:
+    """Tests für den Block-ID → Zeichenposition Ansatz."""
+
+    def _make_extraction(self):
+        """Erzeugt minimale Extraktionsdaten."""
+        return {
+            "pages": [
+                {
+                    "page": 1,
+                    "blocks": [
+                        {"id": "p1_b0", "type": "text", "text": "Erster Block",
+                         "bbox": [0, 0, 100, 20]},
+                        {"id": "p1_b1", "type": "text", "text": "Zweiter Block",
+                         "bbox": [0, 30, 100, 50]},
+                    ],
+                },
+                {
+                    "page": 2,
+                    "blocks": [
+                        {"id": "p2_b0", "type": "text", "text": "Dritter Block",
+                         "bbox": [0, 0, 100, 20]},
+                    ],
+                },
+            ],
+        }
+
+    def test_build_fulltext_and_positions(self):
+        data = self._make_extraction()
+        fulltext, positions = build_fulltext_and_positions(data)
+
+        # Volltext ist Blöcke verbunden mit \n\n
+        assert "Erster Block" in fulltext
+        assert "Zweiter Block" in fulltext
+        assert "Dritter Block" in fulltext
+
+        # Positionen stimmen
+        for block_id, (start, end) in positions.items():
+            block_text = fulltext[start:end]
+            assert block_text.strip()  # Nicht leer
+
+        # p1_b0 startet bei 0
+        assert positions["p1_b0"][0] == 0
+        assert fulltext[positions["p1_b0"][0]:positions["p1_b0"][1]] == "Erster Block"
+
+    def test_resolve_block_codings(self):
+        data = self._make_extraction()
+        _, positions = build_fulltext_and_positions(data)
+        block_index = {}
+        for page in data["pages"]:
+            for block in page["blocks"]:
+                block_index[block["id"]] = block
+
+        codings = [
+            {
+                "block_id": "p1_b0",
+                "code_id": "A-01",
+                "code_name": "Testcode",
+                "hauptkategorie": "A",
+            },
+            {
+                "block_id": "p2_b0",
+                "code_id": "B-01",
+                "code_name": "Anderer Code",
+                "hauptkategorie": "B",
+            },
+        ]
+
+        segments = resolve_block_codings(codings, positions, block_index)
+        assert len(segments) == 2
+
+        # Erstes Segment
+        assert segments[0]["code_id"] == "A-01"
+        assert segments[0]["text"] == "Erster Block"
+        assert segments[0]["char_start"] == 0
+        assert segments[0]["char_end"] == len("Erster Block")
+
+        # Zweites Segment
+        assert segments[1]["code_id"] == "B-01"
+        assert segments[1]["text"] == "Dritter Block"
+
+    def test_resolve_unknown_block_id_skipped(self):
+        data = self._make_extraction()
+        _, positions = build_fulltext_and_positions(data)
+        block_index = {}
+        for page in data["pages"]:
+            for block in page["blocks"]:
+                block_index[block["id"]] = block
+
+        codings = [{"block_id": "p99_b0", "code_id": "X-01",
+                     "code_name": "?", "hauptkategorie": "X"}]
+        segments = resolve_block_codings(codings, positions, block_index)
+        assert len(segments) == 0
+
+    def test_multiple_codes_per_block(self):
+        data = self._make_extraction()
+        _, positions = build_fulltext_and_positions(data)
+        block_index = {}
+        for page in data["pages"]:
+            for block in page["blocks"]:
+                block_index[block["id"]] = block
+
+        # Gleicher Block, zwei Codes
+        codings = [
+            {"block_id": "p1_b0", "code_id": "A-01",
+             "code_name": "Code A", "hauptkategorie": "A"},
+            {"block_id": "p1_b0", "code_id": "B-01",
+             "code_name": "Code B", "hauptkategorie": "B"},
+        ]
+        segments = resolve_block_codings(codings, positions, block_index)
+        assert len(segments) == 2
+        assert segments[0]["char_start"] == segments[1]["char_start"]
 
 
 class TestRunContextCache:

@@ -8,11 +8,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 INPUT_DIR = PROJECT_ROOT / "input"
 TRANSCRIPTS_DIR = INPUT_DIR / "transcripts"
 CODEBASES_DIR = INPUT_DIR / "codebases"
+PROJECTS_DIR = INPUT_DIR / "projects"
 RECIPES_DIR = PROJECT_ROOT / "recipes"
 OUTPUT_ROOT = PROJECT_ROOT / "output"
 
 # Sicherstellen, dass Verzeichnisse existieren
-for d in [INPUT_DIR, TRANSCRIPTS_DIR, CODEBASES_DIR, OUTPUT_ROOT]:
+for d in [INPUT_DIR, TRANSCRIPTS_DIR, CODEBASES_DIR, PROJECTS_DIR, OUTPUT_ROOT]:
     d.mkdir(parents=True, exist_ok=True)
 
 # Defaults (ueberschreibbar via .env)
