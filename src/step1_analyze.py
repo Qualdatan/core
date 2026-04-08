@@ -1,12 +1,13 @@
 """Schritt 1: Transkripte lesen und per Claude API analysieren."""
 
+import hashlib
 import json
 import re
 from pathlib import Path
 from docx import Document
 from anthropic import Anthropic
 
-from .config import TRANSCRIPTS_DIR, ANALYSIS_JSON
+from .config import TRANSCRIPTS_DIR, ANALYSIS_JSON, CACHE_DIR
 from .models import AnalysisResult, CodedSegment
 from .recipe import Recipe
 
@@ -22,15 +23,57 @@ def read_transcripts(folder: Path = TRANSCRIPTS_DIR) -> dict[str, str]:
     return docs
 
 
+# ---------------------------------------------------------------------------
+# Cache: speichert API-Antworten pro (recipe, transkript, codebase)
+# ---------------------------------------------------------------------------
+
+def _cache_key(recipe_id: str, filename: str, text: str, codebase: str) -> str:
+    """Erzeugt einen deterministischen Cache-Key."""
+    h = hashlib.sha256()
+    h.update(recipe_id.encode())
+    h.update(filename.encode())
+    h.update(text.encode())
+    h.update(codebase.encode())
+    return h.hexdigest()[:16]
+
+
+def _cache_path(key: str) -> Path:
+    return CACHE_DIR / f"{key}.json"
+
+
+def cache_get(recipe_id: str, filename: str, text: str, codebase: str) -> dict | None:
+    """Liest gecachtes Ergebnis, falls vorhanden."""
+    key = _cache_key(recipe_id, filename, text, codebase)
+    path = _cache_path(key)
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            print(f"  CACHE HIT: {filename} ({key})")
+            return data
+        except (json.JSONDecodeError, OSError):
+            pass
+    return None
+
+
+def cache_put(recipe_id: str, filename: str, text: str, codebase: str, data: dict):
+    """Speichert Ergebnis im Cache."""
+    key = _cache_key(recipe_id, filename, text, codebase)
+    path = _cache_path(key)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"  CACHED: {filename} ({key})")
+
+
+# ---------------------------------------------------------------------------
+# JSON-Parsing
+# ---------------------------------------------------------------------------
+
 def extract_json(response_text: str) -> dict:
     """Extrahiert JSON aus der API-Antwort, auch bei abgeschnittenem Output."""
     text = response_text.strip()
-    # Markdown-Codeblöcke entfernen
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
 
-    # JSON-Block extrahieren
     start = text.find("{")
     if start < 0:
         raise ValueError("Kein JSON in der Antwort gefunden")
@@ -39,7 +82,6 @@ def extract_json(response_text: str) -> dict:
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        # Antwort wurde wahrscheinlich abgeschnitten – reparieren
         repaired = text
         if repaired.count('"') % 2 == 1:
             repaired += '"'
@@ -61,6 +103,10 @@ def extract_json(response_text: str) -> dict:
                 return json.loads(truncated)
             raise
 
+
+# ---------------------------------------------------------------------------
+# Positionsvalidierung
+# ---------------------------------------------------------------------------
 
 def validate_positions(segments: list[dict], full_text: str) -> list[dict]:
     """Korrigiert Zeichenpositionen durch Textsuche im Originaldokument."""
@@ -87,9 +133,18 @@ def validate_positions(segments: list[dict], full_text: str) -> list[dict]:
     return segments
 
 
+# ---------------------------------------------------------------------------
+# Analyse
+# ---------------------------------------------------------------------------
+
 def analyze_transcript(client: Anthropic, recipe: Recipe, text: str,
                        filename: str, codebase: str = "") -> dict:
-    """Analysiert ein einzelnes Transkript via Claude API."""
+    """Analysiert ein einzelnes Transkript via Claude API (mit Cache)."""
+    # Cache prüfen
+    cached = cache_get(recipe.id, filename, text, codebase)
+    if cached is not None:
+        return cached
+
     prompt = recipe.build_prompt(text, filename, codebase)
     print(f"  Sende an Claude API ({len(text)} Zeichen, Methode: {recipe.id})...")
 
@@ -103,7 +158,12 @@ def analyze_transcript(client: Anthropic, recipe: Recipe, text: str,
         print(f"  WARNUNG: Antwort abgeschnitten (max_tokens={recipe.max_tokens}). Versuche Reparatur...")
 
     response_text = response.content[0].text
-    return extract_json(response_text)
+    data = extract_json(response_text)
+
+    # Ergebnis cachen
+    cache_put(recipe.id, filename, text, codebase, data)
+
+    return data
 
 
 def run_analysis(recipe: Recipe, transcripts_dir: Path = TRANSCRIPTS_DIR,

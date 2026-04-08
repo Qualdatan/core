@@ -1,7 +1,11 @@
-"""Tests für step1_analyze (JSON-Parsing, Position-Validierung)."""
+"""Tests für step1_analyze (JSON-Parsing, Position-Validierung, Cache)."""
 
+import json
 import pytest
-from src.step1_analyze import extract_json, validate_positions
+from src.step1_analyze import (
+    extract_json, validate_positions,
+    cache_get, cache_put, _cache_key, CACHE_DIR,
+)
 
 
 class TestExtractJson:
@@ -56,3 +60,40 @@ class TestValidatePositions:
         segments = [{"text": "Nicht vorhanden xyz abc", "char_start": 42, "char_end": 99}]
         result = validate_positions(segments, full_text)
         assert result[0]["char_start"] == 42  # Fallback: Original behalten
+
+
+class TestCache:
+    def test_cache_miss_returns_none(self):
+        result = cache_get("test_recipe", "nonexistent.docx", "text", "")
+        assert result is None
+
+    def test_cache_roundtrip(self, tmp_path, monkeypatch):
+        """Cache put + get gibt die gleichen Daten zurück."""
+        monkeypatch.setattr("src.step1_analyze.CACHE_DIR", tmp_path)
+        data = {"segments": [{"code_id": "A-01"}], "kernergebnisse": []}
+
+        cache_put("mayring", "test.docx", "inhalt", "", data)
+        loaded = cache_get("mayring", "test.docx", "inhalt", "")
+
+        assert loaded is not None
+        assert loaded["segments"][0]["code_id"] == "A-01"
+
+    def test_cache_different_recipe_no_hit(self, tmp_path, monkeypatch):
+        """Anderes Recipe → kein Cache-Hit."""
+        monkeypatch.setattr("src.step1_analyze.CACHE_DIR", tmp_path)
+        data = {"segments": [], "kernergebnisse": []}
+
+        cache_put("mayring", "test.docx", "inhalt", "", data)
+        loaded = cache_get("prisma", "test.docx", "inhalt", "")
+
+        assert loaded is None
+
+    def test_cache_different_codebase_no_hit(self, tmp_path, monkeypatch):
+        """Andere Codebasis → kein Cache-Hit."""
+        monkeypatch.setattr("src.step1_analyze.CACHE_DIR", tmp_path)
+        data = {"segments": [], "kernergebnisse": []}
+
+        cache_put("mayring", "test.docx", "inhalt", "", data)
+        loaded = cache_get("mayring", "test.docx", "inhalt", "neue codebasis")
+
+        assert loaded is None

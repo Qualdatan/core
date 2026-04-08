@@ -9,9 +9,10 @@ TRANSCRIPTS_DIR = INPUT_DIR / "transcripts"
 CODEBASES_DIR = INPUT_DIR / "codebases"
 RECIPES_DIR = PROJECT_ROOT / "recipes"
 OUTPUT_DIR = PROJECT_ROOT / "output"
+CACHE_DIR = OUTPUT_DIR / ".cache"
 
 # Sicherstellen, dass Verzeichnisse existieren
-for d in [INPUT_DIR, TRANSCRIPTS_DIR, CODEBASES_DIR, OUTPUT_DIR]:
+for d in [INPUT_DIR, TRANSCRIPTS_DIR, CODEBASES_DIR, OUTPUT_DIR, CACHE_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # Output-Dateien
