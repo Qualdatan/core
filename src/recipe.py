@@ -4,7 +4,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 import yaml
 
-from .config import RECIPES_DIR, CODEBASES_DIR
+from .config import RECIPES_DIR, CODEBASES_DIR, ENV_CLAUDE_MODEL, ENV_CLAUDE_MAX_TOKENS
 
 
 @dataclass
@@ -60,12 +60,15 @@ def load_recipe(recipe_id: str) -> Recipe:
         with open(f, encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
         if data["id"] == recipe_id:
+            # .env ueberschreibt Recipe-Defaults
+            model = ENV_CLAUDE_MODEL or data.get("model", "claude-sonnet-4-20250514")
+            max_tokens = int(ENV_CLAUDE_MAX_TOKENS) if ENV_CLAUDE_MAX_TOKENS else data.get("max_tokens", 16384)
             return Recipe(
                 id=data["id"],
                 name=data["name"],
                 description=data.get("description", ""),
-                model=data.get("model", "claude-sonnet-4-20250514"),
-                max_tokens=data.get("max_tokens", 16384),
+                model=model,
+                max_tokens=max_tokens,
                 categories=data["categories"],
                 prompt_template=data["prompt_template"],
                 codebase_prompt=data.get("codebase_prompt", ""),
