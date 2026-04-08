@@ -3,7 +3,7 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-from .config import CODEBOOK_XLSX, HAUPTKATEGORIEN
+from .config import CODEBOOK_XLSX
 from .models import AnalysisResult
 
 
@@ -56,7 +56,7 @@ def generate_codebook(result: AnalysisResult, output_path=None):
 
     for cat_key in sorted(codes_by_cat.keys()):
         # Kategorie-Überschrift
-        cat_name = HAUPTKATEGORIEN.get(cat_key, cat_key)
+        cat_name = result.categories.get(cat_key, cat_key)
         cell = ws.cell(row=row, column=1, value=f"Kategorie {cat_key}")
         cell.font = cat_font
         cell.fill = cat_fill

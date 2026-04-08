@@ -7,7 +7,7 @@ from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
 from xml.dom import minidom
 from datetime import datetime
 
-from .config import QDPX_FILE, HAUPTKATEGORIEN, TRANSCRIPTS_DIR
+from .config import QDPX_FILE, TRANSCRIPTS_DIR
 from .models import AnalysisResult
 
 
@@ -63,7 +63,7 @@ def build_refi_qda_xml(result: AnalysisResult) -> bytes:
     cat_guids = {}      # cat_key -> guid
 
     # Erst Hauptkategorien als übergeordnete Codes
-    for cat_key, cat_name in HAUPTKATEGORIEN.items():
+    for cat_key, cat_name in result.categories.items():
         cat_guid = _uuid()
         cat_guids[cat_key] = cat_guid
         cat_elem = SubElement(codes_elem, "Code")

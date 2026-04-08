@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-from .config import EVALUATION_XLSX, HAUPTKATEGORIEN
+from .config import EVALUATION_XLSX
 from .models import AnalysisResult
 
 
@@ -79,8 +79,9 @@ def generate_evaluation(result: AnalysisResult, output_path=None):
 
     row = 2
     total_segments = len(result.segments)
-    for cat_key in sorted(HAUPTKATEGORIEN.keys()):
-        cat_name = HAUPTKATEGORIEN[cat_key]
+    categories = result.categories
+    for cat_key in sorted(categories.keys()):
+        cat_name = categories[cat_key]
         count = cat_counts.get(cat_key, 0)
         avg = round(count / n_interviews, 1) if n_interviews > 0 else 0
         # Max. mögliche = Codes in der Kategorie * Interviews
