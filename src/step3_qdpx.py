@@ -7,7 +7,7 @@ from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
 from xml.dom import minidom
 from datetime import datetime
 
-from .config import QDPX_FILE, TRANSCRIPTS_DIR
+from .config import TRANSCRIPTS_DIR
 from .models import AnalysisResult
 
 
@@ -164,7 +164,8 @@ def build_refi_qda_xml(result: AnalysisResult) -> bytes:
 
 def generate_qdpx(result: AnalysisResult, output_path=None):
     """Generiert die .qdpx Datei (ZIP mit project.qde + Quelldokumenten)."""
-    output_path = output_path or QDPX_FILE
+    if output_path is None:
+        raise ValueError("output_path muss angegeben werden")
 
     xml_bytes = build_refi_qda_xml(result)
 

@@ -1,15 +1,15 @@
 """Schritt 1: Transkripte lesen und per Claude API analysieren."""
 
-import hashlib
 import json
 import re
 from pathlib import Path
 from docx import Document
 from anthropic import Anthropic
 
-from .config import TRANSCRIPTS_DIR, ANALYSIS_JSON, CACHE_DIR
+from .config import TRANSCRIPTS_DIR
 from .models import AnalysisResult, CodedSegment
 from .recipe import Recipe
+from .run_context import RunContext
 
 
 def read_transcripts(folder: Path = TRANSCRIPTS_DIR) -> dict[str, str]:
@@ -21,46 +21,6 @@ def read_transcripts(folder: Path = TRANSCRIPTS_DIR) -> dict[str, str]:
         docs[f.name] = text
         print(f"  Gelesen: {f.name} ({len(text)} Zeichen)")
     return docs
-
-
-# ---------------------------------------------------------------------------
-# Cache: speichert API-Antworten pro (recipe, transkript, codebase)
-# ---------------------------------------------------------------------------
-
-def _cache_key(recipe_id: str, filename: str, text: str, codebase: str) -> str:
-    """Erzeugt einen deterministischen Cache-Key."""
-    h = hashlib.sha256()
-    h.update(recipe_id.encode())
-    h.update(filename.encode())
-    h.update(text.encode())
-    h.update(codebase.encode())
-    return h.hexdigest()[:16]
-
-
-def _cache_path(key: str) -> Path:
-    return CACHE_DIR / f"{key}.json"
-
-
-def cache_get(recipe_id: str, filename: str, text: str, codebase: str) -> dict | None:
-    """Liest gecachtes Ergebnis, falls vorhanden."""
-    key = _cache_key(recipe_id, filename, text, codebase)
-    path = _cache_path(key)
-    if path.exists():
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            print(f"  CACHE HIT: {filename} ({key})")
-            return data
-        except (json.JSONDecodeError, OSError):
-            pass
-    return None
-
-
-def cache_put(recipe_id: str, filename: str, text: str, codebase: str, data: dict):
-    """Speichert Ergebnis im Cache."""
-    key = _cache_key(recipe_id, filename, text, codebase)
-    path = _cache_path(key)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"  CACHED: {filename} ({key})")
 
 
 # ---------------------------------------------------------------------------
@@ -138,14 +98,22 @@ def validate_positions(segments: list[dict], full_text: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def analyze_transcript(client: Anthropic, recipe: Recipe, text: str,
-                       filename: str, codebase: str = "") -> dict:
+                       filename: str, codebase: str = "",
+                       ctx: RunContext | None = None) -> dict:
     """Analysiert ein einzelnes Transkript via Claude API (mit Cache)."""
-    # Cache prüfen
-    cached = cache_get(recipe.id, filename, text, codebase)
-    if cached is not None:
-        return cached
+    # Cache pruefen (parsed JSON aus vorherigem Run)
+    if ctx:
+        cached = ctx.get_cached_parsed(filename)
+        if cached is not None:
+            print(f"  CACHE HIT: {filename}")
+            return cached
 
     prompt = recipe.build_prompt(text, filename, codebase)
+
+    # Prompt cachen
+    if ctx:
+        ctx.cache_prompt(filename, prompt)
+
     print(f"  Sende an Claude API ({len(text)} Zeichen, Methode: {recipe.id})...")
 
     response = client.messages.create(
@@ -158,17 +126,24 @@ def analyze_transcript(client: Anthropic, recipe: Recipe, text: str,
         print(f"  WARNUNG: Antwort abgeschnitten (max_tokens={recipe.max_tokens}). Versuche Reparatur...")
 
     response_text = response.content[0].text
+
+    # Rohe Antwort cachen
+    if ctx:
+        ctx.cache_response(filename, response_text)
+
     data = extract_json(response_text)
 
-    # Ergebnis cachen
-    cache_put(recipe.id, filename, text, codebase, data)
+    # Parsed JSON cachen
+    if ctx:
+        ctx.cache_parsed(filename, data)
 
     return data
 
 
-def run_analysis(recipe: Recipe, transcripts_dir: Path = TRANSCRIPTS_DIR,
+def run_analysis(recipe: Recipe, ctx: RunContext,
+                 transcripts_dir: Path = TRANSCRIPTS_DIR,
                  codebase: str = "") -> AnalysisResult:
-    """Führt die komplette Analyse aller Transkripte durch."""
+    """Fuehrt die komplette Analyse aller Transkripte durch."""
     client = Anthropic()
     result = AnalysisResult()
     result.recipe_id = recipe.id
@@ -180,12 +155,18 @@ def run_analysis(recipe: Recipe, transcripts_dir: Path = TRANSCRIPTS_DIR,
     if not result.documents:
         raise FileNotFoundError(f"Keine .docx-Dateien in {transcripts_dir} gefunden.")
 
+    # Nur noch nicht analysierte Transkripte verarbeiten
+    pending = ctx.get_pending_transcripts()
+    already_done = [f for f in result.documents if f not in pending]
+    if already_done:
+        print(f"\n  {len(already_done)} Transkript(e) bereits analysiert (aus Cache)")
+
     all_kernergebnisse = []
     code_registry = {}
 
     for filename, text in result.documents.items():
         print(f"\n=== Analysiere: {filename} ===")
-        data = analyze_transcript(client, recipe, text, filename, codebase)
+        data = analyze_transcript(client, recipe, text, filename, codebase, ctx)
 
         segments = validate_positions(data.get("segments", []), text)
 
@@ -219,11 +200,15 @@ def run_analysis(recipe: Recipe, transcripts_dir: Path = TRANSCRIPTS_DIR,
         for ke in data.get("kernergebnisse", []):
             all_kernergebnisse.append(ke)
 
+        # Transkript als fertig markieren
+        ctx.mark_transcript_done(filename)
+
     result.codes = code_registry
     result.kernergebnisse = all_kernergebnisse
 
-    result.save(ANALYSIS_JSON)
-    print(f"\n=== Analyse gespeichert: {ANALYSIS_JSON} ===")
+    result.save(ctx.analysis_json)
+    ctx.mark_step_done(1)
+    print(f"\n=== Analyse gespeichert: {ctx.analysis_json} ===")
     print(f"    {len(result.segments)} kodierte Segmente")
     print(f"    {len(result.codes)} verschiedene Codes")
     print(f"    {len(result.kernergebnisse)} Kernergebnisse")

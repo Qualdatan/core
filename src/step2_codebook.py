@@ -3,13 +3,13 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-from .config import CODEBOOK_XLSX
 from .models import AnalysisResult
 
 
 def generate_codebook(result: AnalysisResult, output_path=None):
     """Generiert codebook.xlsx mit Code-ID, Name, Kategorie, Definition, Ankerbeispiel, Abgrenzung."""
-    output_path = output_path or CODEBOOK_XLSX
+    if output_path is None:
+        raise ValueError("output_path muss angegeben werden")
     wb = Workbook()
     ws = wb.active
     ws.title = "Codebook"

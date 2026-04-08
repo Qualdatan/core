@@ -4,7 +4,6 @@ from collections import Counter, defaultdict
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-from .config import EVALUATION_XLSX
 from .models import AnalysisResult
 
 
@@ -35,7 +34,8 @@ def _apply_data_border(ws, row, max_col):
 
 def generate_evaluation(result: AnalysisResult, output_path=None):
     """Generiert auswertung.xlsx mit 3 Sheets."""
-    output_path = output_path or EVALUATION_XLSX
+    if output_path is None:
+        raise ValueError("output_path muss angegeben werden")
     wb = Workbook()
 
     # Dokument-IDs erstellen (I-01, I-02, ...)
