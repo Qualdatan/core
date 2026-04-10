@@ -1,7 +1,15 @@
-"""Stufe 1: Lokale PDF-Extraktion mit pymupdf.
+"""Stufe 1: Lokale Dokument-Extraktion.
 
-Extrahiert Text, Tabellen und Bild-Referenzen mit exakten
-PDF-Koordinaten. Kein LLM-Call nötig.
+Extrahiert Text, Tabellen und Bild-Referenzen aus PDFs (via pymupdf,
+mit exakten Koordinaten) und aus .docx-Dateien (via python-docx,
+mit logischen Absaetzen). Kein LLM-Call noetig.
+
+Wichtig: ``extract_pdf`` arbeitet mit gerenderten Layout-Bloecken — fuer
+.docx ergibt das **eine Zeile pro Block**, weil pymupdf die Datei zuerst
+zu Seiten rendert. Fuer Transkripte ist das die falsche Granularitaet
+(siehe Issue Interview-Absaetze): Sprecher-Turns werden in Zeilen-Stuecke
+zerhackt. Daher gibt es ``extract_docx`` (paragraphen-basiert) und
+``extract_document`` als Dispatcher.
 """
 
 import json
@@ -139,6 +147,78 @@ def extract_pdf(pdf_path: str | Path) -> dict:
         "pages": pages,
         "metadata": metadata,
     }
+
+
+def extract_docx(docx_path: str | Path) -> dict:
+    """Extrahiert Text aus einer .docx via python-docx (logische Absaetze).
+
+    Im Gegensatz zu :func:`extract_pdf` (das via pymupdf rendered-line-Bloecke
+    liefert) werden hier die *logischen* Absaetze direkt aus dem Word-XML
+    genommen. Damit bleibt 1 Sprecher-Turn = 1 Block, was fuer
+    Interview-Transkripte die korrekte Granularitaet ist.
+
+    Returns:
+        Dict mit derselben Shape wie :func:`extract_pdf`:
+            ``{"file": ..., "pages": [...], "metadata": ...}``
+        Da .docx kein Seiten-/Koordinatenkonzept hat, gibt es genau eine
+        synthetische Seite und alle ``bbox``-Werte sind ``[0, 0, 0, 0]``.
+    """
+    from docx import Document  # lokal importieren — optionale Abhaengigkeit
+
+    docx_path = Path(docx_path)
+    doc = Document(str(docx_path))
+
+    blocks = []
+    block_idx = 0
+    for para in doc.paragraphs:
+        text = para.text
+        if not text.strip():
+            continue
+        blocks.append({
+            "id": f"p1_b{block_idx}",
+            "type": "text",
+            "bbox": [0.0, 0.0, 0.0, 0.0],
+            "text": text,
+            "font": "",
+            "size": 0.0,
+        })
+        block_idx += 1
+
+    page_data = {
+        "page": 1,
+        "width": 0.0,
+        "height": 0.0,
+        "blocks": blocks,
+    }
+
+    cp = doc.core_properties
+    metadata = {
+        "title": (cp.title or "") if cp else "",
+        "author": (cp.author or "") if cp else "",
+        "page_count": 1,
+        "file_size_kb": docx_path.stat().st_size // 1024,
+    }
+
+    return {
+        "file": docx_path.name,
+        "pages": [page_data],
+        "metadata": metadata,
+    }
+
+
+def extract_document(path: str | Path) -> dict:
+    """Dispatcher: ``extract_docx`` fuer .docx, ``extract_pdf`` fuer den Rest.
+
+    .docx-Dateien werden ueber python-docx gelesen (logische Absaetze).
+    Alles andere (.pdf) geht durch pymupdf. Beide Pfade liefern dasselbe
+    Dict-Schema, sodass nachgelagerte Funktionen wie
+    :func:`build_fulltext_and_positions` und ``extraction_to_text_summary``
+    transparent damit arbeiten koennen.
+    """
+    p = Path(path)
+    if p.suffix.lower() == ".docx":
+        return extract_docx(p)
+    return extract_pdf(p)
 
 
 def build_fulltext_and_positions(data: dict) -> tuple[str, dict[str, tuple[int, int]]]:

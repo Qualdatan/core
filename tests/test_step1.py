@@ -3,7 +3,9 @@
 import json
 import pytest
 from src.step1_analyze import extract_json, validate_positions, resolve_block_codings
-from src.pdf_extractor import build_fulltext_and_positions
+from src.pdf_extractor import (
+    build_fulltext_and_positions, extract_docx, extract_document,
+)
 from src.run_context import RunContext
 
 
@@ -32,6 +34,26 @@ class TestExtractJson:
     def test_no_json_raises(self):
         with pytest.raises(ValueError, match="Kein JSON"):
             extract_json("Keine JSON-Daten hier.")
+
+    def test_top_level_array(self):
+        # Vision-Classifier gibt Array zurueck
+        text = '[{"page": 1, "page_type": "plan"}, {"page": 2, "page_type": "text"}]'
+        result = extract_json(text)
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert result[0]["page_type"] == "plan"
+
+    def test_top_level_array_in_markdown(self):
+        text = '```json\n[{"page": 1, "page_type": "plan"}]\n```'
+        result = extract_json(text)
+        assert isinstance(result, list)
+        assert result[0]["page"] == 1
+
+    def test_top_level_array_with_preamble(self):
+        text = 'Hier die Klassifikation:\n[{"page": 1, "page_type": "plan"}]'
+        result = extract_json(text)
+        assert isinstance(result, list)
+        assert len(result) == 1
 
 
 class TestValidatePositions:
@@ -169,6 +191,84 @@ class TestBlockIdMapping:
         segments = resolve_block_codings(codings, positions, block_index)
         assert len(segments) == 2
         assert segments[0]["char_start"] == segments[1]["char_start"]
+
+
+class TestExtractDocx:
+    """Regressionstest: .docx muss als logische Absaetze rauskommen, nicht als
+    gerenderte Zeilen (pymupdf). Siehe Interview-Absatz-Regression."""
+
+    def test_docx_paragraphs_not_lines(self, tmp_path):
+        """Ein .docx mit 3 Absaetzen muss genau 3 Bloecke ergeben."""
+        from docx import Document
+
+        doc = Document()
+        doc.add_paragraph("S1: Erster Sprecher-Turn mit langem Text, "
+                          "der ueber mehrere Zeilen umgebrochen wird "
+                          "wenn man ihn rendered. [0:00:04.3]")
+        doc.add_paragraph("S2: Zweiter Turn. [0:00:10.5]")
+        doc.add_paragraph("S1: Dritter Turn. [0:00:15.0]")
+        docx_path = tmp_path / "test_interview.docx"
+        doc.save(str(docx_path))
+
+        data = extract_docx(docx_path)
+
+        blocks = data["pages"][0]["blocks"]
+        assert len(blocks) == 3, (
+            f"Erwartet 3 Bloecke (1 pro Absatz), bekam {len(blocks)}. "
+            "Regression: .docx wird in Zeilen statt Absaetze zerlegt."
+        )
+        assert blocks[0]["text"].startswith("S1: Erster")
+        assert blocks[1]["text"].startswith("S2: Zweiter")
+        assert blocks[2]["text"].startswith("S1: Dritter")
+
+    def test_extract_document_dispatches_docx(self, tmp_path):
+        """extract_document waehlt extract_docx fuer .docx."""
+        from docx import Document
+
+        doc = Document()
+        doc.add_paragraph("Hallo Welt")
+        docx_path = tmp_path / "dispatch_test.docx"
+        doc.save(str(docx_path))
+
+        data = extract_document(docx_path)
+        # Nur 1 synthetische Seite (kein pymupdf-Rendering)
+        assert len(data["pages"]) == 1
+        assert data["pages"][0]["page"] == 1
+
+    def test_fulltext_positions_from_docx(self, tmp_path):
+        """build_fulltext_and_positions funktioniert mit extract_docx-Output."""
+        from docx import Document
+
+        doc = Document()
+        doc.add_paragraph("Absatz Eins")
+        doc.add_paragraph("Absatz Zwei")
+        docx_path = tmp_path / "pos_test.docx"
+        doc.save(str(docx_path))
+
+        data = extract_docx(docx_path)
+        fulltext, positions = build_fulltext_and_positions(data)
+
+        assert "Absatz Eins" in fulltext
+        assert "Absatz Zwei" in fulltext
+        assert len(positions) == 2
+        for block_id, (start, end) in positions.items():
+            assert fulltext[start:end].startswith("Absatz")
+
+    def test_empty_paragraphs_skipped(self, tmp_path):
+        """Leere Absaetze im .docx werden uebersprungen."""
+        from docx import Document
+
+        doc = Document()
+        doc.add_paragraph("Inhalt")
+        doc.add_paragraph("")  # leer
+        doc.add_paragraph("   ")  # nur Whitespace
+        doc.add_paragraph("Mehr Inhalt")
+        docx_path = tmp_path / "empty_test.docx"
+        doc.save(str(docx_path))
+
+        data = extract_docx(docx_path)
+        blocks = data["pages"][0]["blocks"]
+        assert len(blocks) == 2
 
 
 class TestRunContextCache:

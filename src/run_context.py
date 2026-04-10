@@ -1,4 +1,8 @@
-"""RunContext: Verwaltet Run-Verzeichnisse, Zustand und Resume-Logik."""
+"""RunContext: Verwaltet Run-Verzeichnisse, Zustand und Resume-Logik.
+
+Nutzt pipeline.db (SQLite) fuer State-Tracking.
+Prompts und Responses bleiben als Textdateien (Debugging).
+"""
 
 import json
 from datetime import datetime
@@ -6,6 +10,7 @@ from enum import Enum
 from pathlib import Path
 
 from .config import OUTPUT_ROOT
+from .db import PipelineDB
 
 
 class RunStatus(str, Enum):
@@ -19,25 +24,23 @@ class RunContext:
 
     Erstellt pro Run ein eigenes Verzeichnis:
         output/2026-04-08_14-30-15/
-        ├── .cache/
-        │   ├── prompts/        ← gesendete Prompts
-        │   ├── responses/      ← rohe API-Antworten
-        │   └── parsed/         ← extrahiertes JSON
+        ├── pipeline.db          ← SQLite (Status, Cache, Ergebnisse)
+        ├── prompts/             ← Textdateien (Debugging)
+        ├── responses/           ← Textdateien (Debugging)
         ├── evaluation/
         │   ├── codebook.xlsx
         │   └── auswertung.xlsx
         ├── qda/
         │   └── project.qdpx
-        ├── analysis_results.json
-        └── run_state.json
+        └── analysis_results.json
     """
 
     def __init__(self, run_dir: Path):
         self.run_dir = run_dir
-        self.cache_dir = run_dir / ".cache"
-        self.prompts_dir = self.cache_dir / "prompts"
-        self.responses_dir = self.cache_dir / "responses"
-        self.parsed_dir = self.cache_dir / "parsed"
+        self.cache_dir = run_dir / ".cache"  # Legacy-Kompatibilitaet
+        self.prompts_dir = run_dir / "prompts"
+        self.responses_dir = run_dir / "responses"
+        self.parsed_dir = self.cache_dir / "parsed"  # Legacy
         self.evaluation_dir = run_dir / "evaluation"
         self.qda_dir = run_dir / "qda"
 
@@ -46,7 +49,70 @@ class RunContext:
         self.codebook_xlsx = self.evaluation_dir / "codebook.xlsx"
         self.evaluation_xlsx = self.evaluation_dir / "auswertung.xlsx"
         self.qdpx_file = self.qda_dir / "project.qdpx"
-        self.state_file = run_dir / "run_state.json"
+
+        # Datenbank
+        self.db = PipelineDB(run_dir / "pipeline.db")
+
+    # ------------------------------------------------------------------
+    # Annotator-Pfade (Phase 5)
+    # ------------------------------------------------------------------
+
+    @property
+    def annotated_dir(self) -> Path:
+        """Verzeichnis fuer annotierte PDFs: <run>/annotated/."""
+        return self.run_dir / "annotated"
+
+    @property
+    def mapping_dir(self) -> Path:
+        """Verzeichnis fuer Code-Farb-Mapping: <run>/mapping/."""
+        return self.run_dir / "mapping"
+
+    def annotated_path_for(self, project: str, relative_path: str) -> Path:
+        """Liefert den Zielpfad fuer ein annotiertes PDF und legt Parent an.
+
+        Der ``relative_path`` ist relativ zum Projekt-Ordner
+        (wie er in ``pdf_documents.relative_path`` steht); bereits
+        vorangestellte ``project``-Segmente werden toleriert und nicht
+        doppelt eingefuegt.
+        """
+        rel = Path(relative_path)
+        # Wenn relative_path bereits mit dem Projekt startet, nicht doppeln
+        if project and rel.parts and rel.parts[0] == project:
+            target = self.annotated_dir / rel
+        elif project:
+            target = self.annotated_dir / project / rel
+        else:
+            target = self.annotated_dir / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        return target
+
+    # ------------------------------------------------------------------
+    # Company-aware Pfade (Phase 3)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _safe_segment(name: str) -> str:
+        """Macht einen Company-/Projekt-Namen pfadtauglich."""
+        return (name or "").replace("/", "_").replace("\\", "_").strip()
+
+    def company_dir(self, company_name: str) -> Path:
+        """Liefert ``<run>/<company>`` und legt das Verzeichnis an."""
+        d = self.run_dir / self._safe_segment(company_name)
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def company_qdpx_path(self, company_name: str,
+                          name: str = "interviews.qdpx") -> Path:
+        """Liefert ``<run>/<company>/qda/<name>`` und legt den Parent an."""
+        target = self.company_dir(company_name) / "qda" / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        return target
+
+    def company_annotated_dir(self, company_name: str) -> Path:
+        """Liefert ``<run>/<company>/annotated`` und legt das Verzeichnis an."""
+        d = self.company_dir(company_name) / "annotated"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
 
     def ensure_dirs(self):
         """Erstellt alle Unterverzeichnisse."""
@@ -57,74 +123,76 @@ class RunContext:
             d.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------
-    # Run State
+    # Run State (via DB)
     # ------------------------------------------------------------------
 
-    def _load_state(self) -> dict:
-        if self.state_file.exists():
-            return json.loads(self.state_file.read_text(encoding="utf-8"))
-        return {}
+    def init_state(self, recipe_id: str | None = None,
+                   codebase_name: str | None = None,
+                   transcripts: list[str] | None = None,
+                   mode: str | None = None,
+                   companies: list[str] | None = None,
+                   **extra):
+        """Initialisiert den Run-State beim Start.
 
-    def _save_state(self, state: dict):
-        self.state_file.write_text(
-            json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
-
-    def init_state(self, recipe_id: str, codebase_name: str | None,
-                   transcripts: list[str]):
-        """Initialisiert den Run-State beim Start."""
-        state = {
-            "status": RunStatus.RUNNING,
-            "recipe_id": recipe_id,
-            "codebase_name": codebase_name,
-            "transcripts": transcripts,
-            "completed_transcripts": [],
-            "steps_completed": [],
-            "started_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat(),
-        }
-        self._save_state(state)
+        Alle Parameter sind optional, damit die Funktion sowohl vom
+        klassischen Interview-/Dokument-Flow als auch vom neuen
+        Company-Orchestrator in Phase 3 genutzt werden kann. ``extra``
+        schluesselt zusaetzliche State-Felder direkt in die DB durch.
+        """
+        self.db.set_state("status", RunStatus.RUNNING)
+        if recipe_id is not None:
+            self.db.set_state("recipe_id", recipe_id)
+        if codebase_name is not None:
+            self.db.set_state("codebase_name", codebase_name)
+        self.db.set_state("transcripts", transcripts or [])
+        if mode is not None:
+            self.db.set_state("mode", mode)
+        if companies is not None:
+            self.db.set_state("companies", companies)
+        for key, value in extra.items():
+            self.db.set_state(key, value)
+        self.db.set_state("completed_transcripts", [])
+        self.db.set_state("steps_completed", [])
+        self.db.set_state("started_at", datetime.now().isoformat())
+        self.db.set_state("updated_at", datetime.now().isoformat())
 
     def mark_transcript_done(self, filename: str):
         """Markiert ein Transkript als fertig analysiert."""
-        state = self._load_state()
-        if filename not in state.get("completed_transcripts", []):
-            state.setdefault("completed_transcripts", []).append(filename)
-        state["updated_at"] = datetime.now().isoformat()
-        self._save_state(state)
+        done = self.db.get_state("completed_transcripts", [])
+        if filename not in done:
+            done.append(filename)
+        self.db.set_state("completed_transcripts", done)
+        self.db.set_state("updated_at", datetime.now().isoformat())
 
     def mark_step_done(self, step: int):
         """Markiert einen Pipeline-Schritt als abgeschlossen."""
-        state = self._load_state()
-        if step not in state.get("steps_completed", []):
-            state.setdefault("steps_completed", []).append(step)
-        state["updated_at"] = datetime.now().isoformat()
-        self._save_state(state)
+        steps = self.db.get_state("steps_completed", [])
+        if step not in steps:
+            steps.append(step)
+        self.db.set_state("steps_completed", steps)
+        self.db.set_state("updated_at", datetime.now().isoformat())
 
     def mark_completed(self):
         """Markiert den gesamten Run als abgeschlossen."""
-        state = self._load_state()
-        state["status"] = RunStatus.COMPLETED
-        state["finished_at"] = datetime.now().isoformat()
-        state["updated_at"] = datetime.now().isoformat()
-        self._save_state(state)
+        self.db.set_state("status", RunStatus.COMPLETED)
+        self.db.set_state("finished_at", datetime.now().isoformat())
+        self.db.set_state("updated_at", datetime.now().isoformat())
 
     def get_state(self) -> dict:
-        return self._load_state()
+        return self.db.get_all_state()
 
     def get_pending_transcripts(self) -> list[str]:
         """Gibt Transkripte zurueck, die noch nicht analysiert wurden."""
-        state = self._load_state()
-        all_t = state.get("transcripts", [])
-        done_t = state.get("completed_transcripts", [])
+        all_t = self.db.get_state("transcripts", [])
+        done_t = self.db.get_state("completed_transcripts", [])
         return [t for t in all_t if t not in done_t]
 
     def is_step_done(self, step: int) -> bool:
-        state = self._load_state()
-        return step in state.get("steps_completed", [])
+        steps = self.db.get_state("steps_completed", [])
+        return step in steps
 
     # ------------------------------------------------------------------
-    # Cache: Prompts, Responses, Parsed JSON
+    # Cache: Prompts, Responses (bleiben Textdateien)
     # ------------------------------------------------------------------
 
     def _safe_filename(self, name: str) -> str:
@@ -144,8 +212,9 @@ class RunContext:
         path.write_text(response_text, encoding="utf-8")
 
     def cache_parsed(self, filename: str, data: dict):
-        """Speichert das extrahierte JSON."""
+        """Speichert das extrahierte JSON (Legacy + DB)."""
         safe = self._safe_filename(filename)
+        # Weiterhin als Datei fuer Debugging
         path = self.parsed_dir / f"{safe}.json"
         path.write_text(
             json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -195,8 +264,18 @@ def find_interrupted_runs() -> list[RunContext]:
     for d in sorted(OUTPUT_ROOT.iterdir(), reverse=True):
         if not d.is_dir() or d.name in ("latest", ".cache"):
             continue
-        state_file = d / "run_state.json"
-        if state_file.exists():
+        db_path = d / "pipeline.db"
+        state_file = d / "run_state.json"  # Legacy
+        if db_path.exists():
+            try:
+                ctx = RunContext(d)
+                status = ctx.db.get_state("status")
+                if status != RunStatus.COMPLETED:
+                    interrupted.append(ctx)
+            except Exception:
+                continue
+        elif state_file.exists():
+            # Legacy: JSON-basierter State
             try:
                 state = json.loads(state_file.read_text(encoding="utf-8"))
                 if state.get("status") != RunStatus.COMPLETED:
@@ -210,8 +289,6 @@ def resume_run(run_dir: Path) -> RunContext:
     """Setzt einen unterbrochenen Run fort."""
     ctx = RunContext(run_dir)
     ctx.ensure_dirs()
-    state = ctx._load_state()
-    state["status"] = RunStatus.RUNNING
-    state["updated_at"] = datetime.now().isoformat()
-    ctx._save_state(state)
+    ctx.db.set_state("status", RunStatus.RUNNING)
+    ctx.db.set_state("updated_at", datetime.now().isoformat())
     return ctx

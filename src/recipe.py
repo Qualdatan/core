@@ -1,15 +1,101 @@
-"""Recipe-Loader: Liest Analyse-Methoden aus YAML-Dateien."""
+"""Recipe-Loader: Liest Analyse-Methoden aus YAML-Dateien.
+
+Methoden liegen unter METHODS_DIR (Default: methods/) und sind in
+Subdirectories nach Anwendungsfall organisiert, z.B.:
+
+    methods/
+      interviewanalysis/
+        mayring.yaml
+        prisma.yaml
+      documentanalysis/
+        pdf_analyse.yaml
+        visual_analyse.yaml
+
+Der Loader sucht rekursiv. Die Subdir-Struktur ist organisatorisch und
+wird in `Recipe.category` exponiert (= Name des direkten Eltern-Ordners).
+"""
 
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import yaml
 
-from .config import RECIPES_DIR, CODEBASES_DIR, ENV_CLAUDE_MODEL, ENV_CLAUDE_MAX_TOKENS
+from .config import METHODS_DIR, CODEBASES_DIR, ENV_CLAUDE_MODEL, ENV_CLAUDE_MAX_TOKENS
+
+
+# Erlaubte Coding-Strategien fuer Recipe + CLI
+CODING_STRATEGIES = ("strict", "hybrid", "inductive")
+
+
+class _SafeFormatDict(dict):
+    """Dict, das bei fehlenden Keys den Platzhalter leer laesst statt zu crashen."""
+    def __missing__(self, key):
+        return ""
+
+
+def _strategy_instruction(strategy: str, has_codebase: bool) -> str:
+    """Liefert den Instruktions-Block fuer eine Coding-Strategie.
+
+    Der zurueckgegebene Text wird in den ``codebase_section`` des Prompts
+    injiziert und steuert, ob die LLM neue Codes induktiv erfinden darf
+    oder nicht.
+
+    - ``strict``: **ausschliesslich** Codes aus der Codebase.
+    - ``hybrid``: primaer Codes aus der Codebase, neue als Fallback erlaubt.
+    - ``inductive``: keine Vorgabe, alles induktiv.
+
+    Wenn keine Codebase vorhanden ist, macht ``strict`` streng genommen
+    keinen Sinn — wir geben trotzdem eine Warnung aus, damit der LLM
+    wenigstens versucht, mit den Hauptkategorien allein zu arbeiten.
+    """
+    if strategy == "strict":
+        if has_codebase:
+            return (
+                "## Coding-Strategie: STRICT\n"
+                "Du DARFST AUSSCHLIESSLICH Codes aus der oben angegebenen "
+                "Codebase verwenden. Erfinde KEINE neuen Codes. Wenn kein "
+                "Code passt, lasse das Segment unkodiert. Das Feld "
+                "'neue_codes' MUSS im JSON-Output leer bleiben (`[]`)."
+            )
+        return (
+            "## Coding-Strategie: STRICT (ohne Codebase)\n"
+            "Es wurde keine Codebase mitgegeben — arbeite streng mit den "
+            "oben definierten Hauptkategorien. Erfinde KEINE neuen Codes. "
+            "Das Feld 'neue_codes' MUSS im JSON-Output leer bleiben (`[]`)."
+        )
+    if strategy == "hybrid":
+        if has_codebase:
+            return (
+                "## Coding-Strategie: HYBRID\n"
+                "Verwende primaer Codes aus der oben angegebenen Codebase. "
+                "Schlage neue Codes nur dann vor, wenn wirklich kein "
+                "bestehender passt."
+            )
+        return (
+            "## Coding-Strategie: HYBRID (ohne Codebase)\n"
+            "Es wurde keine Codebase mitgegeben — entwickle Codes primaer "
+            "induktiv und halte dich an die oben definierten Hauptkategorien."
+        )
+    if strategy == "inductive":
+        return (
+            "## Coding-Strategie: INDUCTIVE\n"
+            "Es gibt keine Vorgaben. Entwickle Codes induktiv aus dem "
+            "Material. Nutze die Hauptkategorien als grobe Orientierung, "
+            "aber sei offen fuer neue Codes."
+        )
+    # Unbekannte Strategie: keine Extra-Instruktion (Fallback auf alt)
+    return ""
 
 
 @dataclass
 class Recipe:
-    """Eine Analyse-Methode (z.B. Mayring, PRISMA)."""
+    """Eine Analyse-Methode (z.B. Mayring, PRISMA).
+
+    Felder:
+        coding_strategy: 'strict' | 'hybrid' | 'inductive' — steuert ob die
+            LLM neue Codes erfinden darf. Wird per CLI ueberschrieben.
+        category: 'interviewanalysis' | 'documentanalysis' | ... — abgeleitet
+            aus dem Subdirectory unter METHODS_DIR. Nur informativ.
+    """
     id: str
     name: str
     description: str
@@ -18,46 +104,88 @@ class Recipe:
     categories: dict[str, str]
     prompt_template: str
     codebase_prompt: str = ""
+    coding_strategy: str = "hybrid"
+    category: str = ""
 
     def build_prompt(self, text: str, filename: str, codebase: str = "",
-                     content: str = "") -> str:
-        """Baut den Analyse-Prompt für ein Transkript.
+                     content: str = "", **extra) -> str:
+        """Baut den Analyse-Prompt für ein Transkript oder Dokument.
 
         Args:
             text: Volltext (Legacy, für {text} im Template)
             filename: Dateiname
             codebase: Optionale Codebasis
             content: Block-basierter Inhalt (für {content} im Template)
+            **extra: Zusätzliche Platzhalter (z.B. goal, company, project)
         """
-        categories_text = "\n".join(
-            f"  {k}: {v}" for k, v in self.categories.items()
-        )
+        lines = []
+        for k, v in self.categories.items():
+            if isinstance(v, dict):
+                name = v.get("name", k)
+                desc = v.get("description", "")
+                lines.append(f"  {k}: {name} — {desc}" if desc else f"  {k}: {name}")
+            else:
+                lines.append(f"  {k}: {v}")
+        categories_text = "\n".join(lines)
         category_keys = ", ".join(self.categories.keys())
 
-        codebase_section = ""
-        if codebase and self.codebase_prompt:
-            codebase_section = self.codebase_prompt.format(codebase=codebase)
+        has_codebase = bool(codebase)
+        codebase_section_parts: list[str] = []
+        if has_codebase and self.codebase_prompt:
+            codebase_section_parts.append(
+                self.codebase_prompt.format(codebase=codebase)
+            )
 
-        return self.prompt_template.format(
+        strategy_block = _strategy_instruction(
+            self.coding_strategy, has_codebase
+        )
+        if strategy_block:
+            codebase_section_parts.append(strategy_block)
+
+        codebase_section = "\n\n".join(codebase_section_parts).strip()
+
+        fmt = dict(
             categories=categories_text,
             category_keys=category_keys,
             codebase_section=codebase_section,
             filename=filename,
             text=text,
             content=content or text,
+            **extra,
+        )
+        return self.prompt_template.format_map(
+            _SafeFormatDict(fmt)
         )
 
 
+def _iter_recipe_files() -> list[Path]:
+    """Sucht alle *.yaml-Dateien rekursiv unter METHODS_DIR."""
+    if not METHODS_DIR.exists():
+        return []
+    return sorted(METHODS_DIR.rglob("*.yaml"))
+
+
+def _category_for(path: Path) -> str:
+    """Gibt den Subdir-Namen unter METHODS_DIR zurueck (oder '' wenn flach)."""
+    try:
+        rel = path.relative_to(METHODS_DIR)
+    except ValueError:
+        return ""
+    parts = rel.parts
+    return parts[0] if len(parts) > 1 else ""
+
+
 def list_recipes() -> list[dict]:
-    """Listet alle verfügbaren Recipes mit id und name."""
+    """Listet alle verfügbaren Recipes mit id, name und category."""
     recipes = []
-    for f in sorted(RECIPES_DIR.glob("*.yaml")):
+    for f in _iter_recipe_files():
         with open(f, encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
         recipes.append({
             "id": data["id"],
             "name": data["name"],
             "description": data.get("description", ""),
+            "category": _category_for(f),
             "path": f,
         })
     return recipes
@@ -65,22 +193,30 @@ def list_recipes() -> list[dict]:
 
 def load_recipe(recipe_id: str) -> Recipe:
     """Lädt ein Recipe anhand seiner ID."""
-    for f in RECIPES_DIR.glob("*.yaml"):
+    for f in _iter_recipe_files():
         with open(f, encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
         if data["id"] == recipe_id:
             # .env ueberschreibt Recipe-Defaults
             model = ENV_CLAUDE_MODEL or data.get("model", "claude-sonnet-4-20250514")
             max_tokens = int(ENV_CLAUDE_MAX_TOKENS) if ENV_CLAUDE_MAX_TOKENS else data.get("max_tokens", 16384)
+            coding_strategy = data.get("coding_strategy", "hybrid")
+            if coding_strategy not in CODING_STRATEGIES:
+                raise ValueError(
+                    f"Recipe '{recipe_id}': coding_strategy='{coding_strategy}' "
+                    f"ungueltig. Erlaubt: {CODING_STRATEGIES}"
+                )
             return Recipe(
                 id=data["id"],
                 name=data["name"],
                 description=data.get("description", ""),
                 model=model,
                 max_tokens=max_tokens,
-                categories=data["categories"],
-                prompt_template=data["prompt_template"],
+                categories=data.get("categories", {}),
+                prompt_template=data.get("prompt_template", ""),
                 codebase_prompt=data.get("codebase_prompt", ""),
+                coding_strategy=coding_strategy,
+                category=_category_for(f),
             )
     available = [r["id"] for r in list_recipes()]
     raise FileNotFoundError(
@@ -90,7 +226,7 @@ def load_recipe(recipe_id: str) -> Recipe:
 
 def load_codebase(name: str) -> str:
     """Lädt eine Codebasis aus input/codebases/{name}.txt oder .yaml."""
-    for ext in [".txt", ".yaml", ".csv"]:
+    for ext in [".txt", ".yaml", ".yml", ".csv"]:
         path = CODEBASES_DIR / f"{name}{ext}"
         if path.exists():
             return path.read_text(encoding="utf-8")

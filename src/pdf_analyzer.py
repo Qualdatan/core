@@ -13,7 +13,7 @@ from anthropic import Anthropic
 
 from .step1_analyze import extract_json
 from .pdf_extractor import extraction_to_text_summary
-from .recipe import Recipe
+from .recipe import Recipe, _strategy_instruction
 
 
 # ---------------------------------------------------------------------------
@@ -44,11 +44,18 @@ def build_coding_prompt(extraction_data: dict, recipe: Recipe,
         prompt = prompt.replace("{filename}", filename)
         prompt = prompt.replace("{content}", text_summary)
 
-        if codesystem:
-            prompt = prompt.replace("{codebase_section}",
-                                   f"## Bestehendes Codesystem:\n{codesystem}")
-        else:
-            prompt = prompt.replace("{codebase_section}", "")
+        # codebase_section: optionales Codesystem + Strategy-Instruction
+        has_cs = bool(codesystem)
+        section_parts: list[str] = []
+        if has_cs:
+            section_parts.append(f"## Bestehendes Codesystem:\n{codesystem}")
+        strategy = getattr(recipe, "coding_strategy", "hybrid")
+        strat_block = _strategy_instruction(strategy, has_cs)
+        if strat_block:
+            section_parts.append(strat_block)
+        prompt = prompt.replace(
+            "{codebase_section}", "\n\n".join(section_parts).strip()
+        )
         return prompt
 
     # Fallback: Default-Prompt

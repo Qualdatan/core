@@ -1,8 +1,9 @@
 """Schritt 1: Transkripte lesen und per Claude API analysieren.
 
-Nutzt pymupdf für die lokale Extraktion (Block-IDs + Koordinaten),
-sendet nur die Block-Zusammenfassung an das LLM (Token-Ersparnis),
-und mappt die Ergebnisse zurück auf exakte Zeichenpositionen.
+Nutzt python-docx fuer .docx-Transkripte (logische Absaetze, 1 Sprecher-Turn
+= 1 Block) und pymupdf fuer .pdf, sendet nur die Block-Zusammenfassung an
+das LLM (Token-Ersparnis), und mappt die Ergebnisse zurueck auf exakte
+Zeichenpositionen.
 """
 
 import json
@@ -16,15 +17,20 @@ from .models import AnalysisResult, CodedSegment
 from .recipe import Recipe
 from .run_context import RunContext
 from .pdf_extractor import (
-    extract_pdf, extraction_to_text_summary, build_fulltext_and_positions,
+    extract_document, extraction_to_text_summary, build_fulltext_and_positions,
 )
 
 
 def read_transcripts(folder: Path = TRANSCRIPTS_DIR) -> dict[str, str]:
-    """Liest alle .docx-Transkripte via pymupdf und gibt {Dateiname: Volltext} zurück."""
+    """Liest alle .docx-Transkripte und gibt ``{Dateiname: Volltext}`` zurueck.
+
+    Verwendet python-docx fuer logische Absaetze (siehe ``extract_docx``)
+    statt pymupdf-Layout-Bloecke, damit Sprecher-Turns nicht in
+    Zeilen-Stuecke zerhackt werden.
+    """
     docs = {}
     for f in sorted(folder.glob("*.docx")):
-        data = extract_pdf(f)
+        data = extract_document(f)
         fulltext, _ = build_fulltext_and_positions(data)
         docs[f.name] = fulltext
         print(f"  Gelesen: {f.name} ({len(fulltext)} Zeichen)")
@@ -32,7 +38,7 @@ def read_transcripts(folder: Path = TRANSCRIPTS_DIR) -> dict[str, str]:
 
 
 def extract_transcripts(folder: Path = TRANSCRIPTS_DIR) -> dict[str, dict]:
-    """Extrahiert alle .docx-Transkripte und gibt strukturierte Daten zurück.
+    """Extrahiert alle .docx-Transkripte und gibt strukturierte Daten zurueck.
 
     Returns:
         {filename: {"extraction": data, "fulltext": str,
@@ -41,7 +47,7 @@ def extract_transcripts(folder: Path = TRANSCRIPTS_DIR) -> dict[str, dict]:
     """
     results = {}
     for f in sorted(folder.glob("*.docx")):
-        data = extract_pdf(f)
+        data = extract_document(f)
         fulltext, positions = build_fulltext_and_positions(data)
 
         # Block-Index für schnellen Lookup
@@ -67,16 +73,23 @@ def extract_transcripts(folder: Path = TRANSCRIPTS_DIR) -> dict[str, dict]:
 # JSON-Parsing
 # ---------------------------------------------------------------------------
 
-def extract_json(response_text: str) -> dict:
-    """Extrahiert JSON aus der API-Antwort, auch bei abgeschnittenem Output."""
+def extract_json(response_text: str) -> dict | list:
+    """Extrahiert JSON aus der API-Antwort, auch bei abgeschnittenem Output.
+
+    Erkennt sowohl Objekte ({...}) als auch Arrays ([...]) als Top-Level.
+    """
     text = response_text.strip()
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
 
-    start = text.find("{")
-    if start < 0:
+    # Erstes JSON-Token finden: '{' oder '[', je nachdem was zuerst kommt
+    obj_start = text.find("{")
+    arr_start = text.find("[")
+    candidates = [p for p in (obj_start, arr_start) if p >= 0]
+    if not candidates:
         raise ValueError("Kein JSON in der Antwort gefunden")
+    start = min(candidates)
     text = text[start:]
 
     try:
@@ -182,6 +195,35 @@ def resolve_block_codings(codings: list[dict],
 # Analyse
 # ---------------------------------------------------------------------------
 
+def enforce_strict_strategy(data: dict, recipe: Recipe,
+                            filename: str = "") -> dict:
+    """Filtert ``neue_codes`` bei ``coding_strategy == 'strict'`` raus.
+
+    Gibt das gleiche Dict zurueck (mutiert in-place). Wenn der LLM trotz
+    strikter Instruktion neue Codes ausgibt, loggt die Funktion eine
+    Warnung und entfernt die Eintraege aus ``data['neue_codes']``. Gilt
+    sowohl fuer Transkript- als auch fuer PDF-Ergebnisse — beide halten
+    neue Codes unter demselben Key.
+
+    Die Funktion laesst andere Felder unveraendert und greift nur dann
+    ein, wenn wirklich eine strict-Strategy gesetzt ist.
+    """
+    if not isinstance(data, dict):
+        return data
+    strategy = getattr(recipe, "coding_strategy", "hybrid")
+    if strategy != "strict":
+        return data
+    neue = data.get("neue_codes") or []
+    if neue:
+        tag = f" in {filename}" if filename else ""
+        print(
+            f"  WARN: strict-Strategie, LLM lieferte {len(neue)} neue Code(s){tag} "
+            f"— werden verworfen."
+        )
+        data["neue_codes"] = []
+    return data
+
+
 def analyze_transcript(client: Anthropic, recipe: Recipe, content: str,
                        filename: str, codebase: str = "",
                        ctx: RunContext | None = None) -> dict:
@@ -200,7 +242,7 @@ def analyze_transcript(client: Anthropic, recipe: Recipe, content: str,
         cached = ctx.get_cached_parsed(filename)
         if cached is not None:
             print(f"  CACHE HIT: {filename}")
-            return cached
+            return enforce_strict_strategy(cached, recipe, filename)
 
     prompt = recipe.build_prompt("", filename, codebase, content=content)
 
@@ -230,6 +272,9 @@ def analyze_transcript(client: Anthropic, recipe: Recipe, content: str,
         ctx.cache_response(filename, response_text)
 
     data = extract_json(response_text)
+
+    # Strict-Strategie durchsetzen: neue_codes filtern wenn noetig
+    data = enforce_strict_strategy(data, recipe, filename)
 
     # Parsed JSON cachen
     if ctx:
@@ -300,7 +345,7 @@ def run_analysis(recipe: Recipe, ctx: RunContext,
     result.recipe_id = recipe.id
     result.categories = recipe.categories
 
-    print("=== Schritt 1: Transkripte extrahieren (pymupdf) ===")
+    print("=== Schritt 1: Transkripte extrahieren (python-docx / pymupdf) ===")
     transcript_data = extract_transcripts(transcripts_dir)
 
     if not transcript_data:

@@ -123,6 +123,7 @@ CATEGORY_COLORS = {
     "G": "#98D8C8", "H": "#F7DC6F", "I": "#BB8FCE",
     "J": "#85C1E9", "K": "#F0B27A", "L": "#E8DAEF",
     "M": "#A3E4D7", "N": "#F5CBA7", "O": "#AED6F1",
+    "P": "#D5DBDB", "Q": "#F9E79F",
 }
 
 
@@ -171,7 +172,8 @@ def _find_or_create_code(codes_elem, cat_key: str, cat_name: str,
 
 
 def add_pdf_sources(project: Element, pdf_results: list[dict],
-                    existing_codes: dict = None) -> dict[str, str]:
+                    existing_codes: dict = None,
+                    recipe_categories: dict = None) -> dict[str, str]:
     """Fügt PDF-Quellen mit Kodierungen zum Projekt hinzu.
 
     Args:
@@ -180,6 +182,8 @@ def add_pdf_sources(project: Element, pdf_results: list[dict],
             [{"file": "...", "project": "...", "extraction": {...},
               "codings": [...], "neue_codes": [...]}]
         existing_codes: Bereits vorhandene Codes {code_id: {guid, ...}}
+        recipe_categories: {kat_key: kat_name} aus dem Recipe (z.B. {"A": "Projektakquise..."})
+            Wird verwendet um Kategorie-Namen fuer auto-erstellte Codes zu setzen.
 
     Returns:
         Mapping von neuen code_ids zu GUIDs
@@ -214,7 +218,7 @@ def add_pdf_sources(project: Element, pdf_results: list[dict],
         for code_id, info in existing_codes.items():
             code_guids[code_id] = info["guid"]
 
-    # Neue Codes aus allen PDFs hinzufügen
+    # 1) Explizit als "neue Codes" deklarierte erst (mit Definition + Name)
     new_categories = {}
     for pdf_result in pdf_results:
         for new_code in pdf_result.get("neue_codes", []):
@@ -232,6 +236,26 @@ def add_pdf_sources(project: Element, pdf_results: list[dict],
                 existing_codes, ns,
             )
             code_guids[code_id] = guid
+
+    # 2) ALLE in codings referenzierten Codes nachziehen
+    # (LLM erfindet oft Codes wie "A-01" aus Kategorie A, ohne sie als neue_codes
+    # zu deklarieren — der Code muss trotzdem im Codebook stehen)
+    recipe_categories = recipe_categories or {}
+    for pdf_result in pdf_results:
+        for coding in pdf_result.get("codings", []):
+            for code_id in coding.get("codes", []):
+                if code_id in code_guids:
+                    continue
+                # Kategorie-Praefix extrahieren: "A-01" -> "A", "B-02" -> "B"
+                cat_key = code_id.split("-")[0] if "-" in code_id else "Z"
+                cat_name = recipe_categories.get(cat_key, f"Kategorie {cat_key}")
+                guid = _find_or_create_code(
+                    codes_elem, cat_key, cat_name,
+                    code_id, code_id,  # Kein expliziter Name -> code_id als Name
+                    "",  # Keine Definition
+                    existing_codes, ns,
+                )
+                code_guids[code_id] = guid
 
     # Sources finden oder erstellen
     sources = project.find(f"{ns}Sources")
@@ -260,7 +284,8 @@ def add_pdf_sources(project: Element, pdf_results: list[dict],
         source = SubElement(sources, "PDFSource")
         source.set("guid", doc_guid)
         source.set("name", f"{Path(filename).stem} - {project_name}")
-        source.set("pdfPath", f"internal://{internal_path}")
+        # REFI-QDA: Attribut heisst "path", nicht "pdfPath"
+        source.set("path", f"internal://{internal_path}")
         source.set("creatingUser", user_guid)
         source.set("creationDateTime", now)
         source.set("modifiedDateTime", now)
@@ -288,12 +313,174 @@ def add_pdf_sources(project: Element, pdf_results: list[dict],
                 sel = SubElement(source, "PDFSelection")
                 sel.set("guid", sel_guid)
                 sel.set("name", f"{code_id}")
-                sel.set("page", str(page_num))
-                # PDF-Koordinaten aus pymupdf
-                sel.set("startX", str(round(bbox[0], 1)))
-                sel.set("startY", str(round(bbox[1], 1)))
-                sel.set("endX", str(round(bbox[2], 1)))
-                sel.set("endY", str(round(bbox[3], 1)))
+                # REFI-QDA: Seitenzahl ist 0-basiert
+                sel.set("page", str(page_num - 1))
+                # REFI-QDA: Attribute heissen first/second, nicht start/end
+                sel.set("firstX", str(round(bbox[0], 1)))
+                sel.set("firstY", str(round(bbox[1], 1)))
+                sel.set("secondX", str(round(bbox[2], 1)))
+                sel.set("secondY", str(round(bbox[3], 1)))
+
+                coding_elem = SubElement(sel, "Coding")
+                coding_elem.set("guid", _uuid())
+                coding_elem.set("creatingUser", user_guid)
+                coding_elem.set("creationDateTime", now)
+                code_ref = SubElement(coding_elem, "CodeRef")
+                code_ref.set("targetGUID", code_guid)
+
+    return code_guids
+
+
+def add_visual_sources(project: Element, visual_results: list[dict],
+                       existing_codes: dict = None) -> dict[str, str]:
+    """Fuegt visuelle Kodierungen (Plaene/Fotos) als PDFSource hinzu.
+
+    Visuelle Kodierungen unterscheiden sich von Text-Kodierungen:
+    - BBox deckt die ganze Seite ab (kein Textblock)
+    - Jede PDFSelection hat ein Description-Element mit AI-Begruendung
+    - Block-IDs sind synthetisch: p{n}_v{i}
+
+    Args:
+        project: XML-Root-Element
+        visual_results: Liste von visuellen Analyse-Ergebnissen:
+            [{"file": ..., "project": ..., "page_dimensions": {page: (w, h)},
+              "visual_codings": [...]}]
+        existing_codes: Bereits vorhandene Codes {code_id: {guid, ...}}
+
+    Returns:
+        Mapping von code_ids zu GUIDs
+    """
+    ns = project.tag.split("}")[0] + "}" if "}" in project.tag else ""
+    now = datetime.now().isoformat()
+
+    # User-GUID finden oder erstellen
+    users = project.find(f"{ns}Users")
+    if users is None:
+        users = SubElement(project, "Users")
+    user_elems = users.findall(f"{ns}User")
+    if user_elems:
+        user_guid = user_elems[0].get("guid")
+    else:
+        user_guid = _uuid()
+        user = SubElement(users, "User")
+        user.set("guid", user_guid)
+        user.set("name", "Vision-Analyst")
+
+    # CodeBook finden oder erstellen
+    codebook = project.find(f"{ns}CodeBook")
+    if codebook is None:
+        codebook = SubElement(project, "CodeBook")
+    codes_elem = codebook.find(f"{ns}Codes")
+    if codes_elem is None:
+        codes_elem = SubElement(codebook, "Codes")
+
+    # Code-GUIDs sammeln
+    code_guids = {}
+    if existing_codes:
+        for code_id, info in existing_codes.items():
+            code_guids[code_id] = info["guid"]
+
+    # Neue visuelle Codes anlegen (O/P/Q)
+    _VISUAL_CATEGORIES = {
+        "O": "Bauelemente und Konstruktion",
+        "P": "Plandarstellung und Dokumentationstyp",
+        "Q": "LOD/LOG-Evidenz visuell",
+    }
+    _VISUAL_CODES = {
+        "O-01": ("Tragende Bauteile", "Waende, Stuetzen, Decken, Fundamente"),
+        "O-02": ("Nichttragende Bauteile", "Trennwaende, Bruestungen"),
+        "O-03": ("Oeffnungen", "Tueren, Fenster, Tore"),
+        "O-04": ("Treppen und Rampen", "Vertikale Erschliessung"),
+        "O-05": ("Dachkonstruktion", "Dach, Sparren, Pfetten"),
+        "O-06": ("Fassade und Aussenhuelle", "Fassade, WDVS, Daemmung"),
+        "O-07": ("TGA", "Heizung, Lueftung, Sanitaer, Elektro"),
+        "O-08": ("Aussenanlagen und Gelaende", "Gelaende, Pflasterung"),
+        "P-01": ("Grundriss", "Geschossspezifischer Grundriss"),
+        "P-02": ("Schnitt", "Vertikaler Gebaeudeeschnitt"),
+        "P-03": ("Ansicht", "Fassadenansicht"),
+        "P-04": ("Detailzeichnung", "Konstruktionsdetail, Anschluss"),
+        "P-05": ("Lageplan", "Lageplan, Umgebungsplan"),
+        "P-06": ("Massstab und Bemassung", "Massstab, Bemassungselemente"),
+        "P-07": ("Legende und Symbole", "Legende, Symbole, Abkuerzungen"),
+        "P-08": ("Schriftfeld", "Plankopf-Metadaten"),
+        "Q-01": ("LOG-Stufe", "Geometriedetailgrad aus Plandarstellung"),
+        "Q-02": ("LOI-Evidenz", "Sichtbare Attribute und Beschriftungen"),
+        "Q-03": ("Detaillierungsgrad-Abweichung", "Erwartet vs. tatsaechlich"),
+    }
+
+    for code_id, (code_name, definition) in _VISUAL_CODES.items():
+        if code_id in code_guids:
+            continue
+        cat_key = code_id.split("-")[0]
+        cat_name = _VISUAL_CATEGORIES.get(cat_key, cat_key)
+        guid = _find_or_create_code(
+            codes_elem, cat_key, cat_name,
+            code_id, code_name, definition,
+            existing_codes, ns,
+        )
+        code_guids[code_id] = guid
+
+    # Sources
+    sources = project.find(f"{ns}Sources")
+    if sources is None:
+        sources = SubElement(project, "Sources")
+
+    for vis_result in visual_results:
+        filename = vis_result.get("file", "")
+        project_name = vis_result.get("project", "")
+        page_dims = vis_result.get("page_dimensions", {})
+        visual_codings = vis_result.get("visual_codings", [])
+        doc_description = vis_result.get("description", "")
+
+        if not visual_codings:
+            continue
+
+        internal_path = f"{project_name}/{filename}" if project_name else filename
+        doc_guid = _uuid()
+
+        source = SubElement(sources, "PDFSource")
+        source.set("guid", doc_guid)
+        source.set("name", f"{Path(filename).stem} - {project_name}")
+        # REFI-QDA: Attribut heisst "path", nicht "pdfPath"
+        source.set("path", f"internal://{internal_path}")
+        source.set("creatingUser", user_guid)
+        source.set("creationDateTime", now)
+        source.set("modifiedDateTime", now)
+
+        desc = SubElement(source, "Description")
+        desc.text = doc_description or f"Visuelle Analyse: {filename}"
+
+        for coding in visual_codings:
+            page_num = coding.get("page", 1)
+            coding_desc = coding.get("description", "")
+            codes = coding.get("codes", [])
+            block_id = coding.get("block_id", "")
+
+            # Seitendimensionen: ganze Seite als BBox
+            dims = page_dims.get(page_num, page_dims.get(str(page_num), (595, 842)))
+            page_w, page_h = dims
+
+            for code_id in codes:
+                code_guid = code_guids.get(code_id)
+                if not code_guid:
+                    continue
+
+                sel_guid = _uuid()
+                sel = SubElement(source, "PDFSelection")
+                sel.set("guid", sel_guid)
+                sel.set("name", f"{code_id}: {block_id}")
+                # REFI-QDA: Seitenzahl ist 0-basiert
+                sel.set("page", str(page_num - 1))
+                # REFI-QDA: first/second statt start/end
+                sel.set("firstX", "0")
+                sel.set("firstY", "0")
+                sel.set("secondX", str(round(page_w, 1)))
+                sel.set("secondY", str(round(page_h, 1)))
+
+                # Description-Element mit AI-Begruendung
+                if coding_desc:
+                    sel_desc = SubElement(sel, "Description")
+                    sel_desc.text = coding_desc
 
                 coding_elem = SubElement(sel, "Coding")
                 coding_elem.set("guid", _uuid())
@@ -331,11 +518,11 @@ def write_qdpx(project: Element, output_path: Path,
             for name, data in existing_sources.items():
                 zf.writestr(name, data)
 
-        # Neue PDFs einbetten
+        # Neue PDFs einbetten (REFI-QDA: sources/ in Kleinschreibung)
         if pdf_files:
             for internal_path, local_path in pdf_files.items():
                 if local_path.exists():
-                    zf.write(local_path, f"Sources/{internal_path}")
+                    zf.write(local_path, f"sources/{internal_path}")
 
     print(f"  QDPX gespeichert: {output_path}")
 
