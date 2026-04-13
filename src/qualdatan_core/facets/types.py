@@ -294,12 +294,18 @@ class FreeCodingFacet:
 def builtin_facet_types() -> dict[str, Callable[..., Facet]]:
     """Map ``type``-Strings aus YAML auf die zugehoerigen Built-in-Klassen."""
 
+    # Lokal importieren, um Zirkularitaet (coding.visual_facet -> ..facets.types)
+    # zu vermeiden.
+    from ..coding.visual_facet import VisualEvidenceFacet, VisualTaxonomyFacet
+
     return {
-        "taxonomy": TaxonomyFacet.from_yaml,
-        "evidence": EvidenceFacet.from_yaml,
-        "actor_role": ActorRoleFacet.from_yaml,
-        "process_step": ProcessStepFacet.from_yaml,
-        "free_coding": FreeCodingFacet.from_yaml,
+        "taxonomy":        TaxonomyFacet.from_yaml,
+        "evidence":        EvidenceFacet.from_yaml,
+        "actor_role":      ActorRoleFacet.from_yaml,
+        "process_step":    ProcessStepFacet.from_yaml,
+        "free_coding":     FreeCodingFacet.from_yaml,
+        "visual_taxonomy": VisualTaxonomyFacet.from_yaml,
+        "visual_evidence": VisualEvidenceFacet.from_yaml,
     }
 
 
