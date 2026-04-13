@@ -3,24 +3,24 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "simple-bim"
+name = "qualdatan-core"
 version = "0.1.0"
-description = "Qualitative Analyse-Pipeline fuer Experteninterviews und Projektdokumente mit Claude API und MAXQDA-Export"
+description = "Qualdatan core library: qualitative data analysis primitives (PDF, QDPX, LLM coding, run state) without any UI or domain-specific logic."
 readme = "README.md"
-requires-python = ">=3.10"
-license = { text = "Proprietary" }
+requires-python = ">=3.11"
+license = "AGPL-3.0-only"
 authors = [
     { name = "Friedrich Schroedter" },
 ]
-keywords = ["bim", "qualitative-analysis", "maxqda", "claude", "refi-qda"]
+keywords = ["qualitative-analysis", "maxqda", "refi-qda", "claude", "coding"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
     "Topic :: Text Processing :: Linguistic",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
 ]
 
 dependencies = [
@@ -30,7 +30,6 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0",
     "pymupdf>=1.27.0",
-    "rich>=13.0",
 ]
 
 [project.optional-dependencies]
@@ -40,24 +39,19 @@ dev = [
     "ruff>=0.4",
 ]
 
-[project.scripts]
-simple-bim = "main:main"
-
 [project.urls]
-Repository = "https://github.com/friedrichschroedter/simple-bim"
+Homepage = "https://github.com/GeneralPawz/Qualdatan"
+Repository = "https://github.com/Qualdatan/core"
+Issues = "https://github.com/Qualdatan/core/issues"
 
 # ---------------------------------------------------------------------------
 # Packaging
 # ---------------------------------------------------------------------------
-# The project has two import roots:
-#   - `src` (the business-logic package; kept as-is to avoid a big rename)
-#   - `main` (top-level module, the CLI entry point)
-[tool.setuptools]
-py-modules = ["main"]
-
+# Kept at `src/` during Phase 1; Phase A renames to `src/qualdatan_core/` and
+# introduces proper subpackages (pdf/, qdpx/, steps/, llm/, coding/, facets/).
 [tool.setuptools.packages.find]
 include = ["src*"]
-exclude = ["tests*", "output*", "input*", ".obsidian*", "docs*", "scripts*"]
+exclude = ["tests*"]
 
 # ---------------------------------------------------------------------------
 # Pytest
@@ -75,32 +69,15 @@ markers = [
 ]
 
 # ---------------------------------------------------------------------------
-# Ruff (linter + formatter)
+# Ruff
 # ---------------------------------------------------------------------------
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
-extend-exclude = [
-    "output",
-    "input",
-    ".venv",
-    "improvement",
-]
 
 [tool.ruff.lint]
-select = [
-    "E",   # pycodestyle errors
-    "F",   # pyflakes
-    "W",   # pycodestyle warnings
-    "I",   # isort
-    "UP",  # pyupgrade
-    "B",   # flake8-bugbear
-]
-ignore = [
-    "E501",  # line-length handled by formatter, don't fail the lint
-    "B008",  # function calls in default args (common pattern here)
-]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501", "B008"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["B", "F401"]     # tests often import fixtures, use asserts with side effects
-"scripts/*" = ["B", "F401"]
+"tests/*" = ["B", "F401"]
