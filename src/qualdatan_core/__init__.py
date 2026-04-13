@@ -9,4 +9,8 @@ nicht hier sondern in Bundles (siehe ``qualdatan-plugins`` und das
 Umbrella-Repo).
 """
 
+from .plugins import PluginSource
+
 __version__ = "0.1.0"
+
+__all__ = ["PluginSource", "__version__"]
