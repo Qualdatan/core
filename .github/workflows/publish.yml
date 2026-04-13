@@ -1,0 +1,45 @@
+# TestPyPI dry-run only — real PyPI gated by 'if: false'.
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-test-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Build distributions
+        run: uv build
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verify-metadata: true
+
+  publish-pypi-real:
+    if: false  # TODO: enable manually after first TestPyPI verification
+    needs: build-and-test-publish
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Build distributions
+        run: uv build
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verify-metadata: true

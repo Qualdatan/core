@@ -303,6 +303,13 @@ from .caches import (
     pdf_cache_put,
     prompt_hash,
 )
+from .codebook import (
+    CodebookEntry,
+    get_codebook_entry,
+    list_codebook_entries,
+    reset_codebook_entry,
+    upsert_codebook_entry,
+)
 from .codings import (
     CodeFrequency,
     CodingRecord,
@@ -363,6 +370,10 @@ __all__ = [
     "add_coding", "add_coded_segment", "add_codings_bulk",
     "get_coding", "list_codings", "count_codings", "delete_codings_for_run",
     "code_frequencies", "codings_by_document", "unique_codes_for_project",
+    # codebook overrides
+    "CodebookEntry",
+    "upsert_codebook_entry", "get_codebook_entry",
+    "list_codebook_entries", "reset_codebook_entry",
     # migrate
     "MigrationReport", "migrate_legacy_output",
 ]

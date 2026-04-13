@@ -42,7 +42,6 @@ PROJECTS_DIR    = _path("PROJECTS_DIR",    PROJECT_ROOT / "input" / "projects")
 
 # === Output ===
 OUTPUT_ROOT     = _path("OUTPUT_DIR",      PROJECT_ROOT / "output")
-TRIANGULATION_DB = _path("TRIANGULATION_DB", OUTPUT_ROOT / "_triangulation.db")
 
 # Backward-Compat alias (alter Name fuer den Methods-Ordner)
 RECIPES_DIR = METHODS_DIR
