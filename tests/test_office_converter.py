@@ -150,7 +150,7 @@ class TestConvertToPdfErrorHandling:
 
     def test_no_backend_raises(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "src.office_converter.detect_backend", lambda: None
+            "qualdatan_core.office_converter.detect_backend", lambda: None
         )
         src = tmp_path / "x.docx"
         src.write_bytes(b"placeholder")
