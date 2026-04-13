@@ -17,6 +17,7 @@ wird in `Recipe.category` exponiert (= Name des direkten Eltern-Ordners).
 
 from pathlib import Path
 from dataclasses import dataclass
+from functools import lru_cache
 import yaml
 
 from .config import METHODS_DIR, CODEBASES_DIR, ENV_CLAUDE_MODEL, ENV_CLAUDE_MAX_TOKENS
@@ -175,6 +176,7 @@ def _category_for(path: Path) -> str:
     return parts[0] if len(parts) > 1 else ""
 
 
+@lru_cache(maxsize=1)
 def list_recipes() -> list[dict]:
     """Listet alle verfügbaren Recipes mit id, name und category."""
     recipes = []
@@ -191,6 +193,7 @@ def list_recipes() -> list[dict]:
     return recipes
 
 
+@lru_cache(maxsize=32)
 def load_recipe(recipe_id: str) -> Recipe:
     """Lädt ein Recipe anhand seiner ID."""
     for f in _iter_recipe_files():
@@ -240,6 +243,7 @@ def load_codebase(name: str) -> str:
     )
 
 
+@lru_cache(maxsize=16)
 def parse_codebase_yaml(name: str) -> dict[str, dict]:
     """Laedt eine Codebase aus input/codebases/ und liefert eine flache Dict-Struktur.
 
