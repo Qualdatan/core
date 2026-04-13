@@ -1,0 +1,46 @@
+name: Visuelle Plan-Analyse
+id: visual_analyse
+description: >
+  Analyse von Bauplaenen und Fotos mittels Claude Vision API.
+  Zwei-Pass-Strategie: Triage (Haiku) + Detail (Sonnet).
+  Erkennt Bauelemente, LOD/LOG-Stufen, Plantypen.
+
+triage_model: claude-haiku-4-5-20251001
+detail_model: claude-sonnet-4-20250514
+max_visual_tokens: 500000
+
+# Triage-Einstellungen
+triage_dpi: 72
+triage_batch_size: 15
+
+# Detail-Einstellungen
+detail_dpi: 150
+detail_max_tokens_per_call: 2048
+
+# Kategorien fuer visuelle Kodierung
+categories:
+  O: Bauelemente und Konstruktion
+  P: Plandarstellung und Dokumentationstyp
+  Q: LOD/LOG-Evidenz visuell
+
+# Subcodes Referenz (fuer Prompt-Kontext)
+codes:
+  O-01: "Tragende Bauteile (Waende, Stuetzen, Decken, Fundamente)"
+  O-02: "Nichttragende Bauteile (Trennwaende, Bruestungen)"
+  O-03: "Oeffnungen (Tueren, Fenster, Tore)"
+  O-04: "Treppen und Rampen"
+  O-05: "Dachkonstruktion"
+  O-06: "Fassade und Aussenhuelle"
+  O-07: "TGA (sichtbar in Plaenen)"
+  O-08: "Aussenanlagen und Gelaende"
+  P-01: "Grundriss (geschossspezifisch)"
+  P-02: "Schnitt"
+  P-03: "Ansicht"
+  P-04: "Detailzeichnung"
+  P-05: "Lageplan / Umgebungsplan"
+  P-06: "Massstab und Bemassung"
+  P-07: "Legende und Symbole"
+  P-08: "Schriftfeld / Plankopf-Metadaten"
+  Q-01: "LOG-Stufe aus Plandarstellung abgeleitet"
+  Q-02: "LOI-Evidenz (sichtbare Attribute/Beschriftungen)"
+  Q-03: "Detaillierungsgrad-Abweichung (erwartet vs. tatsaechlich)"

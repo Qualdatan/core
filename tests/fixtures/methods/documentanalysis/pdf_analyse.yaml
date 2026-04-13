@@ -1,0 +1,70 @@
+name: Projektunterlagen-Analyse
+id: pdf_analyse
+description: >
+  Analyse von Projektunterlagen (PDFs) aus Bauprojekten.
+  Wendet bestehende Codes deduktiv an und schlägt neue Codes
+  induktiv vor. Erkennt Dokumenttyp automatisch.
+
+model: claude-sonnet-4-20250514
+max_tokens: 16384
+
+categories:
+  A: Projektakquise und Auftragsvergabe
+  B: Planungsprozess und Projektablauf
+  C: Digitale Werkzeuge und BIM
+  D: Kommunikation und Zusammenarbeit
+  E: Normen, Vorschriften und Regularien
+  F: Kosten und Wirtschaftlichkeit
+  G: Nachhaltigkeit und Energieeffizienz
+  H: Herausforderungen und Problemfelder
+  I: Innovation und Zukunftsperspektiven
+  J: Qualitätssicherung und Kontrolle
+  K: Erfahrungswissen und Best Practices
+
+prompt_template: |
+  Du analysierst extrahierte Inhalte aus einer Projektunterlage.
+  Projekt: {project_name}
+  Datei: {filename}
+
+  {codebase_section}
+
+  ## Hauptkategorien:
+  {categories}
+
+  ## Extrahierte Inhalte (Block-IDs in eckigen Klammern):
+  {content}
+
+  ## Aufgabe:
+  1. Erkenne den Dokumenttyp (z.B. Flächenberechnung, Aufgabenstellung, Terminplan, Plan, Foto).
+  2. Weise jedem relevanten Block einen oder mehrere Codes aus dem Codesystem zu.
+     - Nutze bestehende Codes wenn passend (deduktiv).
+     - Schlage neue Codes vor wenn kein bestehender passt (induktiv).
+     - Neue Codes bekommen eine noch nicht vergebene Hauptkategorie oder passen unter eine bestehende.
+  3. Setze ganzer_block=true wenn der gesamte Blockinhalt zum Code passt.
+     Setze ganzer_block=false wenn nur ein Teil relevant ist (Stufe 3 verfeinert dann).
+  4. Bilder (Typ "Bild") koennen kodiert werden wenn aus dem Kontext erkennbar ist, was sie zeigen.
+
+  Antworte ausschliesslich als JSON:
+  {{
+    "document_type": "Typ des Dokuments",
+    "codings": [
+      {{
+        "block_id": "p1_b0",
+        "codes": ["A-01"],
+        "ganzer_block": true,
+        "begruendung": "Kurze Begruendung warum dieser Code passt"
+      }}
+    ],
+    "neue_codes": [
+      {{
+        "code_id": "L-01",
+        "code_name": "Name des neuen Codes",
+        "hauptkategorie": "L",
+        "kodierdefinition": "Wann wird dieser Code vergeben?"
+      }}
+    ]
+  }}
+
+codebase_prompt: |
+  ## Bestehendes Codesystem (deduktiv anzuwenden):
+  {codebase}

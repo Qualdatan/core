@@ -29,6 +29,10 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0",
     "pymupdf>=1.27.0",
+    # Used for progress output in the orchestrator. TUI/Desktop can still
+    # wrap via qualdatan_core.events for structured consumption, but the
+    # orchestrator prints human-readable status inline by default.
+    "rich>=13.0",
 ]
 
 [project.optional-dependencies]
