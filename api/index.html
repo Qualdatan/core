@@ -1,0 +1,2618 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Qualdatan core library — qualitative data analysis primitives.">
+      
+      
+      
+        <link rel="canonical" href="https://qualdatan.github.io/core/api/">
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="../changelog/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>API Reference - qualdatan-core</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="qualdatan-core" class="md-header__button md-logo" aria-label="qualdatan-core" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            qualdatan-core
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Qualdatan/core" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Qualdatan/core
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="qualdatan-core" class="md-nav__button md-logo" aria-label="qualdatan-core" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    qualdatan-core
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Qualdatan/core" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Qualdatan/core
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#qualdatan_corefacets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        qualdatan_core.facets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="qualdatan_core.facets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        registry
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="registry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.register_facet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        register_facet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.unregister_facet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        unregister_facet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.get_facet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_facet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.list_facets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list_facets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.clear_registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clear_registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.discovered_facet_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        discovered_facet_types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.register_facets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        register_facets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#base" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        base
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="base">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.Material" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Material
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.CodeContribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CodeContribution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.FacetContext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FacetContext
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.Facet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Facet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Facet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.Facet.build_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_prompt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.Facet.parse_response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parse_response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        types
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.TaxonomyFacet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TaxonomyFacet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.EvidenceFacet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EvidenceFacet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.ActorRoleFacet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ActorRoleFacet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.ProcessStepFacet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ProcessStepFacet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.FreeCodingFacet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FreeCodingFacet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.builtin_facet_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        builtin_facet_types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loader
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        loader
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="loader">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader.FacetLoadError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FacetLoadError
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader.load_facet_from_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_facet_from_dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader.load_facet_from_yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_facet_from_yaml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader.load_facets_from_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_facets_from_dir
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader.load_facets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_facets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#qualdatan_corefacets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        qualdatan_core.facets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="qualdatan_core.facets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        registry
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="registry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.register_facet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        register_facet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.unregister_facet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        unregister_facet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.get_facet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_facet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.list_facets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list_facets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.clear_registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clear_registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.discovered_facet_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        discovered_facet_types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.registry.register_facets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        register_facets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#base" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        base
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="base">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.Material" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Material
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.CodeContribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CodeContribution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.FacetContext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FacetContext
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.Facet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Facet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Facet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.Facet.build_prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_prompt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.base.Facet.parse_response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parse_response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        types
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.TaxonomyFacet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TaxonomyFacet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.EvidenceFacet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EvidenceFacet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.ActorRoleFacet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ActorRoleFacet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.ProcessStepFacet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ProcessStepFacet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.FreeCodingFacet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FreeCodingFacet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.types.builtin_facet_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        builtin_facet_types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loader
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        loader
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="loader">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader.FacetLoadError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FacetLoadError
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader.load_facet_from_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_facet_from_dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader.load_facet_from_yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_facet_from_yaml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader.load_facets_from_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_facets_from_dir
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualdatan_core.facets.loader.load_facets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_facets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
+<p>Automatisch aus den Docstrings generiert. Neue Module bitte hier als <code>:::</code>-Direktive eintragen.</p>
+<h2 id="qualdatan_corefacets"><code>qualdatan_core.facets</code><a class="headerlink" href="#qualdatan_corefacets" title="Permanent link">&para;</a></h2>
+<h3 id="registry">Registry<a class="headerlink" href="#registry" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="qualdatan_core.facets.registry" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">qualdatan_core.facets.registry</span>
+
+
+<a href="#qualdatan_core.facets.registry" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+        <p>Facet registry and discovery.</p>
+<p>Drei Quellen werden unterstuetzt:</p>
+<ol>
+<li><strong>In-Process-Registrierung</strong> ueber :func:<code>register_facet</code> — fuer Tests
+   und fuer Code, der Facets direkt instanziiert.</li>
+<li><strong>Python-Entry-Points</strong> unter Gruppe <code>qualdatan.facet_types</code>
+   (registriert man via <code>[project.entry-points."qualdatan.facet_types"]</code>
+   in <code>pyproject.toml</code>) — fuer Plugin-Pakete, die neue <em>Typen</em> von Facets
+   einbringen (z.B. einen <code>GraphFacet</code>).</li>
+<li><strong>Bundle-YAMLs</strong> ueber :class:<code>qualdatan_core.facets.loader.YamlFacetLoader</code>
+   — fuer deklarative Facets, die sich auf vorhandene Typen stuetzen
+   (siehe <code>types.py</code>: TaxonomyFacet, EvidenceFacet, ...). Bundles bringen
+   keine eigenen Typen mit, sondern liefern <em>Konfigurationen</em> der mitgelieferten
+   Typen plus eigener Codes/Prompts.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.registry.register_facet" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">register_facet</span>
+
+
+<a href="#qualdatan_core.facets.registry.register_facet" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">register_facet</span><span class="p">(</span><span class="n">facet</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Registriert einen Facet im Process-globalen Index.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/registry.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-33">33</a></span>
+<span class="normal"><a href="#__codelineno-0-34">34</a></span>
+<span class="normal"><a href="#__codelineno-0-35">35</a></span>
+<span class="normal"><a href="#__codelineno-0-36">36</a></span>
+<span class="normal"><a href="#__codelineno-0-37">37</a></span>
+<span class="normal"><a href="#__codelineno-0-38">38</a></span>
+<span class="normal"><a href="#__codelineno-0-39">39</a></span>
+<span class="normal"><a href="#__codelineno-0-40">40</a></span>
+<span class="normal"><a href="#__codelineno-0-41">41</a></span>
+<span class="normal"><a href="#__codelineno-0-42">42</a></span>
+<span class="normal"><a href="#__codelineno-0-43">43</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="k">def</span><span class="w"> </span><span class="nf">register_facet</span><span class="p">(</span><span class="n">facet</span><span class="p">:</span> <span class="n">Facet</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Registriert einen Facet im Process-globalen Index.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">facet</span><span class="p">,</span> <span class="n">Facet</span><span class="p">):</span>  <span class="c1"># type: ignore[misc]</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a>            <span class="sa">f</span><span class="s2">&quot;register_facet expects an object that satisfies the Facet &quot;</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a>            <span class="sa">f</span><span class="s2">&quot;protocol; got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">facet</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="p">)</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="k">if</span> <span class="n">facet</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">_FACETS</span><span class="p">:</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Facet &#39;</span><span class="si">{</span><span class="n">facet</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39; is already registered&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a>    <span class="n">_FACETS</span><span class="p">[</span><span class="n">facet</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">facet</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.registry.unregister_facet" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">unregister_facet</span>
+
+
+<a href="#qualdatan_core.facets.registry.unregister_facet" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unregister_facet</span><span class="p">(</span><span class="n">facet_id</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Entfernt einen registrierten Facet (idempotent).</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/registry.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-46">46</a></span>
+<span class="normal"><a href="#__codelineno-0-47">47</a></span>
+<span class="normal"><a href="#__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#__codelineno-0-49">49</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="k">def</span><span class="w"> </span><span class="nf">unregister_facet</span><span class="p">(</span><span class="n">facet_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Entfernt einen registrierten Facet (idempotent).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a>    <span class="n">_FACETS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">facet_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.registry.get_facet" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_facet</span>
+
+
+<a href="#qualdatan_core.facets.registry.get_facet" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_facet</span><span class="p">(</span><span class="n">facet_id</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Liefert eine registrierte Facet-Instanz oder wirft KeyError.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/registry.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-52">52</a></span>
+<span class="normal"><a href="#__codelineno-0-53">53</a></span>
+<span class="normal"><a href="#__codelineno-0-54">54</a></span>
+<span class="normal"><a href="#__codelineno-0-55">55</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_facet</span><span class="p">(</span><span class="n">facet_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Facet</span><span class="p">:</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Liefert eine registrierte Facet-Instanz oder wirft KeyError.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a>    <span class="k">return</span> <span class="n">_FACETS</span><span class="p">[</span><span class="n">facet_id</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.registry.list_facets" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">list_facets</span>
+
+
+<a href="#qualdatan_core.facets.registry.list_facets" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_facets</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Alle aktuell registrierten Facet-Instanzen (stabile Reihenfolge).</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/registry.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-58">58</a></span>
+<span class="normal"><a href="#__codelineno-0-59">59</a></span>
+<span class="normal"><a href="#__codelineno-0-60">60</a></span>
+<span class="normal"><a href="#__codelineno-0-61">61</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_facets</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Facet</span><span class="p">]:</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Alle aktuell registrierten Facet-Instanzen (stabile Reihenfolge).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">_FACETS</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">_FACETS</span><span class="p">)]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.registry.clear_registry" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">clear_registry</span>
+
+
+<a href="#qualdatan_core.facets.registry.clear_registry" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear_registry</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Loescht die In-Process-Registry — vor allem fuer Tests.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/registry.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#__codelineno-0-65">65</a></span>
+<span class="normal"><a href="#__codelineno-0-66">66</a></span>
+<span class="normal"><a href="#__codelineno-0-67">67</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="k">def</span><span class="w"> </span><span class="nf">clear_registry</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Loescht die In-Process-Registry — vor allem fuer Tests.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="n">_FACETS</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.registry.discovered_facet_types" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">discovered_facet_types</span>
+
+
+<a href="#qualdatan_core.facets.registry.discovered_facet_types" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">discovered_facet_types</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Sammelt registrierte Facet-Typen aus Entry-Points + Built-ins.</p>
+<p>Built-ins (TaxonomyFacet, ...) werden durch <code>types.builtin_facet_types</code>
+geliefert; Drittpakete koennen weitere Typen via Entry-Point hinzufuegen.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/registry.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-86"> 86</a></span>
+<span class="normal"><a href="#__codelineno-0-87"> 87</a></span>
+<span class="normal"><a href="#__codelineno-0-88"> 88</a></span>
+<span class="normal"><a href="#__codelineno-0-89"> 89</a></span>
+<span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
+<span class="normal"><a href="#__codelineno-0-91"> 91</a></span>
+<span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
+<span class="normal"><a href="#__codelineno-0-93"> 93</a></span>
+<span class="normal"><a href="#__codelineno-0-94"> 94</a></span>
+<span class="normal"><a href="#__codelineno-0-95"> 95</a></span>
+<span class="normal"><a href="#__codelineno-0-96"> 96</a></span>
+<span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
+<span class="normal"><a href="#__codelineno-0-98"> 98</a></span>
+<span class="normal"><a href="#__codelineno-0-99"> 99</a></span>
+<span class="normal"><a href="#__codelineno-0-100">100</a></span>
+<span class="normal"><a href="#__codelineno-0-101">101</a></span>
+<span class="normal"><a href="#__codelineno-0-102">102</a></span>
+<span class="normal"><a href="#__codelineno-0-103">103</a></span>
+<span class="normal"><a href="#__codelineno-0-104">104</a></span>
+<span class="normal"><a href="#__codelineno-0-105">105</a></span>
+<span class="normal"><a href="#__codelineno-0-106">106</a></span>
+<span class="normal"><a href="#__codelineno-0-107">107</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="k">def</span><span class="w"> </span><span class="nf">discovered_facet_types</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Facet</span><span class="p">]]:</span>
+<a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Sammelt registrierte Facet-Typen aus Entry-Points + Built-ins.</span>
+<a id="__codelineno-0-88" name="__codelineno-0-88"></a>
+<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">    Built-ins (TaxonomyFacet, ...) werden durch ``types.builtin_facet_types``</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">    geliefert; Drittpakete koennen weitere Typen via Entry-Point hinzufuegen.</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-92" name="__codelineno-0-92"></a>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">builtin_facet_types</span>
+<a id="__codelineno-0-94" name="__codelineno-0-94"></a>
+<a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="n">types</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Facet</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">builtin_facet_types</span><span class="p">())</span>
+<a id="__codelineno-0-96" name="__codelineno-0-96"></a>    <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="n">entry_points</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="n">EntryPointGroup</span><span class="p">):</span>
+<a id="__codelineno-0-97" name="__codelineno-0-97"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-98" name="__codelineno-0-98"></a>            <span class="n">types</span><span class="p">[</span><span class="n">ep</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ep</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<a id="__codelineno-0-99" name="__codelineno-0-99"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover - defensive</span>
+<a id="__codelineno-0-100" name="__codelineno-0-100"></a>            <span class="c1"># Wir wollen den Process nicht killen wenn ein einzelnes Plugin</span>
+<a id="__codelineno-0-101" name="__codelineno-0-101"></a>            <span class="c1"># bricht; loggen ohne logger-Setup waere zu invasiv hier — die</span>
+<a id="__codelineno-0-102" name="__codelineno-0-102"></a>            <span class="c1"># GUI/TUI kann diese Funktion in einen try/except wickeln.</span>
+<a id="__codelineno-0-103" name="__codelineno-0-103"></a>            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+<a id="__codelineno-0-104" name="__codelineno-0-104"></a>                <span class="sa">f</span><span class="s2">&quot;Konnte Facet-Typ &#39;</span><span class="si">{</span><span class="n">ep</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; aus Entry-Point &#39;</span><span class="si">{</span><span class="n">ep</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a>                <span class="sa">f</span><span class="s2">&quot;nicht laden: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-106" name="__codelineno-0-106"></a>            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+<a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="k">return</span> <span class="n">types</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.registry.register_facets" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">register_facets</span>
+
+
+<a href="#qualdatan_core.facets.registry.register_facets" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">register_facets</span><span class="p">(</span><span class="n">facets</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convenience: mehrere Facets auf einmal registrieren.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/registry.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-110">110</a></span>
+<span class="normal"><a href="#__codelineno-0-111">111</a></span>
+<span class="normal"><a href="#__codelineno-0-112">112</a></span>
+<span class="normal"><a href="#__codelineno-0-113">113</a></span>
+<span class="normal"><a href="#__codelineno-0-114">114</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="k">def</span><span class="w"> </span><span class="nf">register_facets</span><span class="p">(</span><span class="n">facets</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Facet</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convenience: mehrere Facets auf einmal registrieren.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-112" name="__codelineno-0-112"></a>
+<a id="__codelineno-0-113" name="__codelineno-0-113"></a>    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">facets</span><span class="p">:</span>
+<a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="n">register_facet</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="base">Base<a class="headerlink" href="#base" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="qualdatan_core.facets.base" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">qualdatan_core.facets.base</span>
+
+
+<a href="#qualdatan_core.facets.base" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+        <p>Facet protocol — domain-agnostic building block for qualdatan analyses.</p>
+<p>Ein Facet ist ein konfigurierbarer Analyse-Baustein: es bekommt Material
+(Text / PDF-Text / PDF-Visual / Image), produziert ein Prompt fuer einen
+LLM und parsed die Antwort zu einer Liste von Kodierungen.</p>
+<p>Facets sind selbst inhaltsfrei — die konkrete Taxonomie / Evidenz-Skala /
+Codeliste kommt aus dem Bundle, das den Facet instanziiert. So funktioniert
+derselbe Facet-Code fuer "IFC-Bauelemente" wie fuer "ICD-10-Diagnosen"
+oder "BPMN-Akteursrollen".</p>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="qualdatan_core.facets.base.Material" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">Material</span>
+
+
+<a href="#qualdatan_core.facets.base.Material" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="str">str</span></code>, <code><span title="enum.Enum">Enum</span></code></p>
+
+
+
+        <p>Materialart, die ein Facet konsumieren kann.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="qualdatan_core.facets.base.CodeContribution" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">CodeContribution</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#qualdatan_core.facets.base.CodeContribution" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CodeContribution</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">color_hint</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Ein Code, den ein Facet ins Codebook einbringt.</p>
+<p><code>id</code> ist die ID innerhalb des Bundle-Namespaces (z.B. <code>IFC-WALL</code>).
+Die Bundle-ID + Facet-ID praefixiert das Code-Owner-System bei Bedarf.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="qualdatan_core.facets.base.FacetContext" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">FacetContext</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#qualdatan_core.facets.base.FacetContext" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">FacetContext</span><span class="p">(</span><span class="n">material</span><span class="p">,</span> <span class="n">material_kind</span><span class="p">,</span> <span class="n">source_label</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Kontext, den der Orchestrator beim Aufruf eines Facets liefert.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="qualdatan_core.facets.base.Facet" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">Facet</span>
+
+
+<a href="#qualdatan_core.facets.base.Facet" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
+
+
+
+        <p>Statisches Protocol fuer Facet-Implementierungen.</p>
+<p>Concrete Facets koennen Python-Klassen (z.B. plugins) oder
+deklarativ aus YAML geladene Objekte sein (siehe <code>types.py</code>).</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="qualdatan_core.facets.base.Facet.build_prompt" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">build_prompt</span>
+
+
+<a href="#qualdatan_core.facets.base.Facet.build_prompt" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">build_prompt</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Erzeugt den LLM-Prompt fuer das uebergebene Material.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-72">72</a></span>
+<span class="normal"><a href="#__codelineno-0-73">73</a></span>
+<span class="normal"><a href="#__codelineno-0-74">74</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">FacetContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Erzeugt den LLM-Prompt fuer das uebergebene Material.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="qualdatan_core.facets.base.Facet.parse_response" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">parse_response</span>
+
+
+<a href="#qualdatan_core.facets.base.Facet.parse_response" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">parse_response</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Wandelt die LLM-Antwort in CodedSegments um.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-76">76</a></span>
+<span class="normal"><a href="#__codelineno-0-77">77</a></span>
+<span class="normal"><a href="#__codelineno-0-78">78</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="k">def</span><span class="w"> </span><span class="nf">parse_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">FacetContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">CodedSegment</span><span class="p">]:</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Wandelt die LLM-Antwort in CodedSegments um.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="qualdatan_core.facets.types" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">qualdatan_core.facets.types</span>
+
+
+<a href="#qualdatan_core.facets.types" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+        <p>Built-in Facet types (declarative, configured via YAML).</p>
+<p>Diese Klassen sind das, was Bundles benutzen, um eigene Domaenen zu
+beschreiben — z.B. <code>IFC-Bauelemente</code> als <code>TaxonomyFacet</code> mit der
+IFC-Klassen-Liste als Choices, <code>LOG-Evidenz</code> als <code>EvidenceFacet</code> mit
+einer 5-stufigen Skala.</p>
+<p>Alle Typen erfuellen das :class:<code>Facet</code>-Protocol aus <code>base.py</code>. Sie sind
+mit Absicht <em>spezifisch genug</em>, um wirklich nuetzlich zu sein, aber
+<em>generisch genug</em>, um in beliebigen Domaenen zu funktionieren.</p>
+<p>Der Code hier liefert nur die generischen Schemata und einen sehr einfachen,
+heuristischen Default fuer <code>build_prompt</code> / <code>parse_response</code>. Bundles
+koennen Prompt-Templates ueberschreiben (Feld <code>prompt_template</code> im YAML),
+und Phase-D wird die Rohbausteine durch eine richtige LLM-Wrapper-Schicht
+in <code>qualdatan_core/llm</code> ergaenzen.</p>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="qualdatan_core.facets.types.TaxonomyFacet" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">TaxonomyFacet</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#qualdatan_core.facets.types.TaxonomyFacet" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">TaxonomyFacet</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">input_kinds</span><span class="p">,</span> <span class="n">codebook_contribution</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">prompt_template</span><span class="o">=</span><span class="s1">&#39;Klassifiziere folgendes Material gegen die Taxonomie </span><span class="se">\&#39;</span><span class="si">{label}</span><span class="se">\&#39;</span><span class="s1">.</span><span class="se">\n</span><span class="s1">Erlaubte Codes: </span><span class="si">{codes_csv}</span><span class="se">\n\n</span><span class="s1">Material:</span><span class="se">\n</span><span class="si">{material}</span><span class="se">\n\n</span><span class="s1">Antworte als JSON-Liste von Objekten {{&quot;code_id&quot;: &quot;…&quot;, &quot;text&quot;: &quot;…&quot;, &quot;char_start&quot;: int, &quot;char_end&quot;: int}}.&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Wandelt Material in Kodierungen anhand einer Taxonomie.</p>
+<p>Beispiel: IFC-Klassen, ICD-10-Diagnosen, BPMN-Aktivitaetstypen.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="qualdatan_core.facets.types.EvidenceFacet" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">EvidenceFacet</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#qualdatan_core.facets.types.EvidenceFacet" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">EvidenceFacet</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">input_kinds</span><span class="p">,</span> <span class="n">codebook_contribution</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">prompt_template</span><span class="o">=</span><span class="s1">&#39;Bewerte Material auf der Skala </span><span class="se">\&#39;</span><span class="si">{label}</span><span class="se">\&#39;</span><span class="s1">.</span><span class="se">\n</span><span class="s1">Stufen (von niedrig nach hoch): </span><span class="si">{codes_list}</span><span class="se">\n\n</span><span class="s1">Material:</span><span class="se">\n</span><span class="si">{material}</span><span class="se">\n\n</span><span class="s1">Antworte als JSON: {{&quot;code_id&quot;: &quot;…&quot;, &quot;justification&quot;: &quot;…&quot;}}.&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Stuft Material auf einer ordinalen Skala ein (z.B. LOG-01..05).</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="qualdatan_core.facets.types.ActorRoleFacet" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">ActorRoleFacet</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#qualdatan_core.facets.types.ActorRoleFacet" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ActorRoleFacet</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">input_kinds</span><span class="p">,</span> <span class="n">codebook_contribution</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">prompt_template</span><span class="o">=</span><span class="s1">&#39;Identifiziere Akteure und ordne jedem eine Rolle aus </span><span class="se">\&#39;</span><span class="si">{label}</span><span class="se">\&#39;</span><span class="s1"> zu.</span><span class="se">\n</span><span class="s1">Verfuegbare Rollen: </span><span class="si">{codes_csv}</span><span class="se">\n\n</span><span class="s1">Material:</span><span class="se">\n</span><span class="si">{material}</span><span class="se">\n\n</span><span class="s1">Antworte als JSON-Liste {{&quot;code_id&quot;: &quot;&lt;rolle&gt;&quot;, &quot;text&quot;: &quot;&lt;akteur&gt;&quot;, &quot;char_start&quot;: int, &quot;char_end&quot;: int}}.&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Findet Akteure im Material und ordnet sie Rollen zu.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="qualdatan_core.facets.types.ProcessStepFacet" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">ProcessStepFacet</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#qualdatan_core.facets.types.ProcessStepFacet" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ProcessStepFacet</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">input_kinds</span><span class="p">,</span> <span class="n">codebook_contribution</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">prompt_template</span><span class="o">=</span><span class="s1">&#39;Identifiziere Prozessschritte aus </span><span class="se">\&#39;</span><span class="si">{label}</span><span class="se">\&#39;</span><span class="s1"> im Material und gib sie in der Reihenfolge ihres Auftretens zurueck.</span><span class="se">\n</span><span class="s1">Erlaubte Schritte: </span><span class="si">{codes_csv}</span><span class="se">\n\n</span><span class="s1">Material:</span><span class="se">\n</span><span class="si">{material}</span><span class="se">\n\n</span><span class="s1">Antworte als JSON-Liste {{&quot;code_id&quot;: &quot;…&quot;, &quot;text&quot;: &quot;&lt;auszug&gt;&quot;, &quot;char_start&quot;: int, &quot;char_end&quot;: int, &quot;sequence&quot;: int}}.&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Zerlegt Material in eine Sequenz definierter Prozessschritte.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="qualdatan_core.facets.types.FreeCodingFacet" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">FreeCodingFacet</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#qualdatan_core.facets.types.FreeCodingFacet" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">FreeCodingFacet</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">input_kinds</span><span class="p">,</span> <span class="n">codebook_contribution</span><span class="o">=</span><span class="p">(),</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">prompt_template</span><span class="o">=</span><span class="s1">&#39;Fuehre offene Kodierung am Material durch (Methode </span><span class="se">\&#39;</span><span class="si">{label}</span><span class="se">\&#39;</span><span class="s1">).</span><span class="se">\n</span><span class="s1">Bekannte Seed-Codes (optional, du darfst neue erfinden): </span><span class="si">{codes_csv}</span><span class="se">\n\n</span><span class="s1">Material:</span><span class="se">\n</span><span class="si">{material}</span><span class="se">\n\n</span><span class="s1">Antworte als JSON-Liste {{&quot;code_id&quot;: &quot;…&quot;, &quot;code_label&quot;: &quot;…&quot;, &quot;text&quot;: &quot;…&quot;, &quot;char_start&quot;: int, &quot;char_end&quot;: int}}.&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Offene Kodierung — Modell darf eigene Codes vergeben.</p>
+<p>Optional kann ein Set an <em>Seed-Codes</em> mitgegeben werden, an dem das
+Modell sich orientieren soll.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.types.builtin_facet_types" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">builtin_facet_types</span>
+
+
+<a href="#qualdatan_core.facets.types.builtin_facet_types" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">builtin_facet_types</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Map <code>type</code>-Strings aus YAML auf die zugehoerigen Built-in-Klassen.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/types.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-294">294</a></span>
+<span class="normal"><a href="#__codelineno-0-295">295</a></span>
+<span class="normal"><a href="#__codelineno-0-296">296</a></span>
+<span class="normal"><a href="#__codelineno-0-297">297</a></span>
+<span class="normal"><a href="#__codelineno-0-298">298</a></span>
+<span class="normal"><a href="#__codelineno-0-299">299</a></span>
+<span class="normal"><a href="#__codelineno-0-300">300</a></span>
+<span class="normal"><a href="#__codelineno-0-301">301</a></span>
+<span class="normal"><a href="#__codelineno-0-302">302</a></span>
+<span class="normal"><a href="#__codelineno-0-303">303</a></span>
+<span class="normal"><a href="#__codelineno-0-304">304</a></span>
+<span class="normal"><a href="#__codelineno-0-305">305</a></span>
+<span class="normal"><a href="#__codelineno-0-306">306</a></span>
+<span class="normal"><a href="#__codelineno-0-307">307</a></span>
+<span class="normal"><a href="#__codelineno-0-308">308</a></span>
+<span class="normal"><a href="#__codelineno-0-309">309</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-294" name="__codelineno-0-294"></a><span class="k">def</span><span class="w"> </span><span class="nf">builtin_facet_types</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Facet</span><span class="p">]]:</span>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Map ``type``-Strings aus YAML auf die zugehoerigen Built-in-Klassen.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a>    <span class="c1"># Lokal importieren, um Zirkularitaet (coding.visual_facet -&gt; ..facets.types)</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="c1"># zu vermeiden.</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">..coding.visual_facet</span><span class="w"> </span><span class="kn">import</span> <span class="n">VisualEvidenceFacet</span><span class="p">,</span> <span class="n">VisualTaxonomyFacet</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>        <span class="s2">&quot;taxonomy&quot;</span><span class="p">:</span>        <span class="n">TaxonomyFacet</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">,</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>        <span class="s2">&quot;evidence&quot;</span><span class="p">:</span>        <span class="n">EvidenceFacet</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">,</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a>        <span class="s2">&quot;actor_role&quot;</span><span class="p">:</span>      <span class="n">ActorRoleFacet</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">,</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a>        <span class="s2">&quot;process_step&quot;</span><span class="p">:</span>    <span class="n">ProcessStepFacet</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">,</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a>        <span class="s2">&quot;free_coding&quot;</span><span class="p">:</span>     <span class="n">FreeCodingFacet</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">,</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a>        <span class="s2">&quot;visual_taxonomy&quot;</span><span class="p">:</span> <span class="n">VisualTaxonomyFacet</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">,</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a>        <span class="s2">&quot;visual_evidence&quot;</span><span class="p">:</span> <span class="n">VisualEvidenceFacet</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">,</span>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>    <span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="loader">Loader<a class="headerlink" href="#loader" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="qualdatan_core.facets.loader" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">qualdatan_core.facets.loader</span>
+
+
+<a href="#qualdatan_core.facets.loader" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+        <p>Load Facet instances from YAML files (bundle data).</p>
+<p>YAML-Schema (Beispiel <code>bim-basic/facets/ifc-elements.yaml</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ifc-elements</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">taxonomy</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;IFC-Bauelemente&quot;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Klassifikation</span><span class="nv"> </span><span class="s">visuell</span><span class="nv"> </span><span class="s">erkennbarer</span><span class="nv"> </span><span class="s">Bauteile</span><span class="nv"> </span><span class="s">nach</span><span class="nv"> </span><span class="s">IfcClass.&quot;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">input_kinds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pdf_visual</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nt">codes</span><span class="p">:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> id</span><span class="p">:</span><span class="w"> </span><span class="nv">IFC-WALL</span><span class="p p-Indicator">,</span><span class="nt">  label</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Wand&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> id</span><span class="p">:</span><span class="w"> </span><span class="nv">IFC-SLAB</span><span class="p p-Indicator">,</span><span class="nt">  label</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Decke&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nt">prompt_template</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="no">...optional, sonst Default aus types.py...</span>
+</code></pre></div>
+<p>Der Loader weiss, welche Typen es gibt, indem er :func:<code>discovered_facet_types</code>
+fragt — das schliesst Built-ins und ueber Entry-Points registrierte Plugin-
+Typen ein.</p>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="qualdatan_core.facets.loader.FacetLoadError" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">FacetLoadError</span>
+
+
+<a href="#qualdatan_core.facets.loader.FacetLoadError" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="ValueError">ValueError</span></code></p>
+
+
+
+        <p>Fehler beim Laden eines Facet-YAML.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.loader.load_facet_from_dict" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">load_facet_from_dict</span>
+
+
+<a href="#qualdatan_core.facets.loader.load_facet_from_dict" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">load_facet_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Instanziiert einen Facet aus einer geparsten YAML-Mapping-Struktur.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/loader.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-40">40</a></span>
+<span class="normal"><a href="#__codelineno-0-41">41</a></span>
+<span class="normal"><a href="#__codelineno-0-42">42</a></span>
+<span class="normal"><a href="#__codelineno-0-43">43</a></span>
+<span class="normal"><a href="#__codelineno-0-44">44</a></span>
+<span class="normal"><a href="#__codelineno-0-45">45</a></span>
+<span class="normal"><a href="#__codelineno-0-46">46</a></span>
+<span class="normal"><a href="#__codelineno-0-47">47</a></span>
+<span class="normal"><a href="#__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#__codelineno-0-49">49</a></span>
+<span class="normal"><a href="#__codelineno-0-50">50</a></span>
+<span class="normal"><a href="#__codelineno-0-51">51</a></span>
+<span class="normal"><a href="#__codelineno-0-52">52</a></span>
+<span class="normal"><a href="#__codelineno-0-53">53</a></span>
+<span class="normal"><a href="#__codelineno-0-54">54</a></span>
+<span class="normal"><a href="#__codelineno-0-55">55</a></span>
+<span class="normal"><a href="#__codelineno-0-56">56</a></span>
+<span class="normal"><a href="#__codelineno-0-57">57</a></span>
+<span class="normal"><a href="#__codelineno-0-58">58</a></span>
+<span class="normal"><a href="#__codelineno-0-59">59</a></span>
+<span class="normal"><a href="#__codelineno-0-60">60</a></span>
+<span class="normal"><a href="#__codelineno-0-61">61</a></span>
+<span class="normal"><a href="#__codelineno-0-62">62</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_facet_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Facet</span><span class="p">:</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Instanziiert einen Facet aus einer geparsten YAML-Mapping-Struktur.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a>    <span class="k">if</span> <span class="s2">&quot;type&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a>        <span class="k">raise</span> <span class="n">FacetLoadError</span><span class="p">(</span><span class="s2">&quot;Facet-YAML fehlt &#39;type&#39; (z.B. &#39;taxonomy&#39;, &#39;evidence&#39;, ...)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="k">if</span> <span class="s2">&quot;id&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a>        <span class="k">raise</span> <span class="n">FacetLoadError</span><span class="p">(</span><span class="s2">&quot;Facet-YAML fehlt &#39;id&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>    <span class="n">type_name</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a>    <span class="n">types</span> <span class="o">=</span> <span class="n">discovered_facet_types</span><span class="p">()</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="k">if</span> <span class="n">type_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">types</span><span class="p">:</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a>        <span class="k">raise</span> <span class="n">FacetLoadError</span><span class="p">(</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a>            <span class="sa">f</span><span class="s2">&quot;Unbekannter Facet-Typ &#39;</span><span class="si">{</span><span class="n">type_name</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a>            <span class="sa">f</span><span class="s2">&quot;Verfuegbar: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">types</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>        <span class="p">)</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a>    <span class="n">factory</span> <span class="o">=</span> <span class="n">types</span><span class="p">[</span><span class="n">type_name</span><span class="p">]</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a>        <span class="k">return</span> <span class="n">factory</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a>        <span class="k">raise</span> <span class="n">FacetLoadError</span><span class="p">(</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>            <span class="sa">f</span><span class="s2">&quot;Konnte Facet &#39;</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39; (type=&#39;</span><span class="si">{</span><span class="n">type_name</span><span class="si">}</span><span class="s2">&#39;) nicht &quot;</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a>            <span class="sa">f</span><span class="s2">&quot;instanziieren: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a>        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.loader.load_facet_from_yaml" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">load_facet_from_yaml</span>
+
+
+<a href="#qualdatan_core.facets.loader.load_facet_from_yaml" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">load_facet_from_yaml</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Liest ein einzelnes Facet-YAML und instanziiert den Facet.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/loader.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-65">65</a></span>
+<span class="normal"><a href="#__codelineno-0-66">66</a></span>
+<span class="normal"><a href="#__codelineno-0-67">67</a></span>
+<span class="normal"><a href="#__codelineno-0-68">68</a></span>
+<span class="normal"><a href="#__codelineno-0-69">69</a></span>
+<span class="normal"><a href="#__codelineno-0-70">70</a></span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_facet_from_yaml</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Facet</span><span class="p">:</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Liest ein einzelnes Facet-YAML und instanziiert den Facet.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="k">with</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>        <span class="n">data</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>        <span class="k">raise</span> <span class="n">FacetLoadError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">: Top-Level muss ein YAML-Mapping sein&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="k">return</span> <span class="n">load_facet_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.loader.load_facets_from_dir" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">load_facets_from_dir</span>
+
+
+<a href="#qualdatan_core.facets.loader.load_facets_from_dir" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">load_facets_from_dir</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Laedt alle <code>*.yaml</code> / <code>*.yml</code> aus einem Verzeichnis (rekursiv).</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/loader.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-75">75</a></span>
+<span class="normal"><a href="#__codelineno-0-76">76</a></span>
+<span class="normal"><a href="#__codelineno-0-77">77</a></span>
+<span class="normal"><a href="#__codelineno-0-78">78</a></span>
+<span class="normal"><a href="#__codelineno-0-79">79</a></span>
+<span class="normal"><a href="#__codelineno-0-80">80</a></span>
+<span class="normal"><a href="#__codelineno-0-81">81</a></span>
+<span class="normal"><a href="#__codelineno-0-82">82</a></span>
+<span class="normal"><a href="#__codelineno-0-83">83</a></span>
+<span class="normal"><a href="#__codelineno-0-84">84</a></span>
+<span class="normal"><a href="#__codelineno-0-85">85</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_facets_from_dir</span><span class="p">(</span><span class="n">directory</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Facet</span><span class="p">]:</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Laedt alle ``*.yaml`` / ``*.yml`` aus einem Verzeichnis (rekursiv).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="n">directory</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">directory</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a>        <span class="k">return</span> <span class="p">[]</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81"></a>    <span class="n">found</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Facet</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a>    <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;*.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;*.yml&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a>        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">directory</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="n">ext</span><span class="p">)):</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a>            <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">load_facet_from_yaml</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a>    <span class="k">return</span> <span class="n">found</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="qualdatan_core.facets.loader.load_facets" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">load_facets</span>
+
+
+<a href="#qualdatan_core.facets.loader.load_facets" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">load_facets</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Laedt Facets aus einer Mischung von Dateien und Verzeichnissen.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/qualdatan_core/facets/loader.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-88">88</a></span>
+<span class="normal"><a href="#__codelineno-0-89">89</a></span>
+<span class="normal"><a href="#__codelineno-0-90">90</a></span>
+<span class="normal"><a href="#__codelineno-0-91">91</a></span>
+<span class="normal"><a href="#__codelineno-0-92">92</a></span>
+<span class="normal"><a href="#__codelineno-0-93">93</a></span>
+<span class="normal"><a href="#__codelineno-0-94">94</a></span>
+<span class="normal"><a href="#__codelineno-0-95">95</a></span>
+<span class="normal"><a href="#__codelineno-0-96">96</a></span>
+<span class="normal"><a href="#__codelineno-0-97">97</a></span>
+<span class="normal"><a href="#__codelineno-0-98">98</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_facets</span><span class="p">(</span><span class="n">paths</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Facet</span><span class="p">]:</span>
+<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Laedt Facets aus einer Mischung von Dateien und Verzeichnissen.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a>    <span class="n">out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Facet</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-92" name="__codelineno-0-92"></a>    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a>        <span class="n">p</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<a id="__codelineno-0-94" name="__codelineno-0-94"></a>        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+<a id="__codelineno-0-95" name="__codelineno-0-95"></a>            <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">load_facets_from_dir</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+<a id="__codelineno-0-96" name="__codelineno-0-96"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-97" name="__codelineno-0-97"></a>            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">load_facet_from_yaml</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+<a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="k">return</span> <span class="n">out</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
