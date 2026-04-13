@@ -1,0 +1,64 @@
+Metadata-Version: 2.4
+Name: qualdatan-core
+Version: 0.1.0
+Summary: Qualdatan core library: qualitative data analysis primitives (PDF, QDPX, LLM coding, run state) without any UI or domain-specific logic.
+Author: Friedrich Schroedter
+License-Expression: AGPL-3.0-only
+Project-URL: Homepage, https://github.com/GeneralPawz/Qualdatan
+Project-URL: Repository, https://github.com/Qualdatan/core
+Project-URL: Issues, https://github.com/Qualdatan/core/issues
+Keywords: qualitative-analysis,maxqda,refi-qda,claude,coding
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Text Processing :: Linguistic
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: anthropic>=0.40.0
+Requires-Dist: python-docx>=1.0.0
+Requires-Dist: openpyxl>=3.1.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: pymupdf>=1.27.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Requires-Dist: ruff>=0.4; extra == "dev"
+Dynamic: license-file
+
+# qualdatan-core
+
+UI-freie Kern-Library der [Qualdatan](https://github.com/GeneralPawz/Qualdatan)-
+Pipeline: PDF-Extraktion, QDPX-Schreiben/Lesen, LLM-Kodierung, Run-State,
+Recipe-Loader, Code-Farben. Keine CLI, keine GUI, keine domain-spezifische
+Logik (die lebt in Bundles, siehe Umbrella-Repo).
+
+**Status**: frueh. Phase 1 hat die Library aus dem Umbrella-Repo extrahiert,
+Phase A baut die Subpakete auf, Phase B abstrahiert Facets.
+
+## Install
+
+```bash
+pip install qualdatan-core        # wenn 0.1.0 auf PyPI ist
+# oder lokal aus dem Umbrella-Workspace:
+uv sync
+```
+
+## Lizenz
+
+AGPL-3.0-only — siehe [LICENSE](LICENSE). SPDX-Header-Vorlage:
+[Umbrella docs/agpl-header.txt](https://github.com/GeneralPawz/Qualdatan/blob/main/docs/agpl-header.txt).
+
+## Kontext
+
+- Architektur-Ueberblick im Umbrella:
+  https://github.com/GeneralPawz/Qualdatan
+- Phasen-Plan:
+  https://github.com/GeneralPawz/Qualdatan/blob/main/.plans/core-split-and-desktop-app.md
+- Schwester-Repos:
+  [plugins](https://github.com/Qualdatan/plugins),
+  [tui](https://github.com/Qualdatan/tui),
+  [desktop](https://github.com/Qualdatan/desktop)
