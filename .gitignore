@@ -5,6 +5,6 @@ input/
 __pycache__/
 *.pyc
 .pytest_cache/
-simple_bim.egg-info/
+*.egg-info/
 .obsidian/
 improvement/
