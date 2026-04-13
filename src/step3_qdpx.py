@@ -9,6 +9,7 @@ from datetime import datetime
 
 from .config import TRANSCRIPTS_DIR
 from .models import AnalysisResult
+from .code_colors import CodeColorMap
 
 
 def _uuid() -> str:
@@ -22,7 +23,11 @@ def _pretty_xml(elem: Element) -> bytes:
     return parsed.toprettyxml(indent="  ", encoding="utf-8")
 
 
-def build_refi_qda_xml(result: AnalysisResult) -> bytes:
+def build_refi_qda_xml(
+    result: AnalysisResult,
+    codebase_codes: dict[str, dict] | None = None,
+    codebase_name: str | None = None,
+) -> bytes:
     """Baut das REFI-QDA 1.5 project.qde XML."""
 
     now = datetime.now().isoformat()
@@ -50,62 +55,135 @@ def build_refi_qda_xml(result: AnalysisResult) -> bytes:
     codebook = SubElement(project, "CodeBook")
     codes_elem = SubElement(codebook, "Codes")
 
-    # Farben für Kategorien
-    category_colors = {
-        "A": "#FF6B6B", "B": "#4ECDC4", "C": "#45B7D1",
-        "D": "#96CEB4", "E": "#FFEAA7", "F": "#DDA0DD",
-        "G": "#98D8C8", "H": "#F7DC6F", "I": "#BB8FCE",
-        "J": "#85C1E9", "K": "#F0B27A",
-    }
+    # ---- Code-Universum bestimmen ----
+    # Wenn ein Codebook mitgegeben wurde: dessen volle Code-Liste verwenden,
+    # damit die QDPX immer das gesamte Kodiersystem enthaelt - auch wenn die
+    # LLM keine Codings geliefert hat. Andernfalls Fallback auf das alte
+    # Verhalten (nur result.codes + result.categories).
+    use_full_codebook = bool(codebase_codes)
+
+    if use_full_codebook:
+        all_code_ids = list(codebase_codes.keys())
+        # Plus Hauptkategorien aus result.categories, falls sie nicht im
+        # Codebook als eigene Eintraege vorkommen.
+        for cat_key in result.categories.keys():
+            if cat_key not in codebase_codes:
+                all_code_ids.append(cat_key)
+        # Plus evtl. zusaetzlich von der LLM induktiv vergebene Codes.
+        for code_id in result.codes.keys():
+            if code_id not in codebase_codes:
+                all_code_ids.append(code_id)
+    else:
+        all_code_ids = list(result.categories.keys()) + list(result.codes.keys())
+
+    color_map = CodeColorMap(codes=all_code_ids)
 
     # GUIDs für Codes und Kategorien
-    code_guids = {}     # code_id -> guid
-    cat_guids = {}      # cat_key -> guid
+    code_guids: dict[str, str] = {}  # code_id -> guid
+    cat_guids: dict[str, str] = {}   # cat_key -> guid (Hauptkategorien)
 
-    # Erst Hauptkategorien als übergeordnete Codes
-    for cat_key, cat_name in result.categories.items():
-        cat_guid = _uuid()
-        cat_guids[cat_key] = cat_guid
-        cat_elem = SubElement(codes_elem, "Code")
-        cat_elem.set("guid", cat_guid)
-        cat_elem.set("name", f"{cat_key}: {cat_name}")
-        cat_elem.set("isCodable", "true")
-        color = category_colors.get(cat_key, "#CCCCCC")
-        cat_elem.set("color", color)
+    def _mk_code_elem(parent, code_id: str, name: str, description: str) -> Element:
+        guid = _uuid()
+        code_guids[code_id] = guid
+        elem = SubElement(parent, "Code")
+        elem.set("guid", guid)
+        elem.set("name", f"{code_id}: {name}" if name else code_id)
+        elem.set("isCodable", "true")
+        elem.set("color", color_map.get_hex(code_id))
+        if description:
+            desc = SubElement(elem, "Description")
+            desc.text = description
+        return elem
 
-        # Beschreibung
-        desc = SubElement(cat_elem, "Description")
-        desc.text = f"Hauptkategorie {cat_key}: {cat_name}"
+    if use_full_codebook:
+        # Gruppiere Codes nach category (Hauptkategorie). parse_codebase_yaml
+        # liefert fuer jede Zeile bereits category / subcategory.
+        cat_order: list[str] = []
+        cat_info: dict[str, dict] = {}
+        children_by_cat: dict[str, list[tuple[str, dict]]] = {}
 
-    # Dann einzelne Codes als Kinder der Kategorien
-    codes_by_cat = {}
-    for code_id, info in result.codes.items():
-        cat = info["hauptkategorie"]
-        codes_by_cat.setdefault(cat, []).append((code_id, info))
+        for code_id, info in codebase_codes.items():
+            cat_key = info.get("category") or code_id
+            if code_id == cat_key:
+                # Hauptkategorie
+                if cat_key not in cat_info:
+                    cat_order.append(cat_key)
+                cat_info[cat_key] = info
+            else:
+                if cat_key not in children_by_cat:
+                    # Falls Kategorie als eigener Eintrag fehlt, spaeter dummy anlegen
+                    if cat_key not in cat_info and cat_key not in cat_order:
+                        cat_order.append(cat_key)
+                children_by_cat.setdefault(cat_key, []).append((code_id, info))
 
-    for cat_key in sorted(codes_by_cat.keys()):
-        # Finde das Kategorie-Element
-        cat_elem = None
-        for elem in codes_elem:
-            if elem.get("guid") == cat_guids.get(cat_key):
-                cat_elem = elem
-                break
+        # Zusaetzliche Kategorien aus result.categories (z.B. wenn sie im
+        # Codebook unter anderem Schluessel stehen)
+        for cat_key, cat_name in result.categories.items():
+            if cat_key not in cat_info and cat_key not in cat_order:
+                cat_order.append(cat_key)
 
-        if cat_elem is None:
-            continue
+        # XML aufbauen
+        for cat_key in cat_order:
+            info = cat_info.get(cat_key, {})
+            cat_name = info.get("name") or result.categories.get(cat_key, cat_key)
+            description = info.get("description", "") or f"Hauptkategorie {cat_key}: {cat_name}"
+            cat_elem = _mk_code_elem(codes_elem, cat_key, cat_name, description)
+            cat_guids[cat_key] = code_guids[cat_key]
 
-        for code_id, info in sorted(codes_by_cat[cat_key]):
-            code_guid = _uuid()
-            code_guids[code_id] = code_guid
-            code_elem = SubElement(cat_elem, "Code")
-            code_elem.set("guid", code_guid)
-            code_elem.set("name", f"{code_id}: {info['name']}")
-            code_elem.set("isCodable", "true")
-            color = category_colors.get(cat_key, "#CCCCCC")
-            code_elem.set("color", color)
+            kids = children_by_cat.get(cat_key, [])
+            # Sortierstabil
+            kids.sort(key=lambda t: t[0])
+            for code_id, cinfo in kids:
+                _mk_code_elem(
+                    cat_elem, code_id,
+                    cinfo.get("name", code_id),
+                    cinfo.get("description", ""),
+                )
 
-            desc = SubElement(code_elem, "Description")
-            desc.text = info.get("kodierdefinition", "")
+        # Induktive Codes der LLM, die nicht im Codebook stehen: unter ihre
+        # Hauptkategorie (oder als Top-Level) einhaengen.
+        for code_id, rinfo in result.codes.items():
+            if code_id in code_guids:
+                continue
+            cat_key = rinfo.get("hauptkategorie") or ""
+            parent = codes_elem
+            if cat_key and cat_key in cat_guids:
+                for elem in codes_elem.iter("Code"):
+                    if elem.get("guid") == cat_guids[cat_key]:
+                        parent = elem
+                        break
+            _mk_code_elem(
+                parent, code_id,
+                rinfo.get("name", code_id),
+                rinfo.get("kodierdefinition", ""),
+            )
+    else:
+        # --- Legacy-Verhalten: nur result.categories + result.codes ---
+        for cat_key, cat_name in result.categories.items():
+            cat_elem = _mk_code_elem(
+                codes_elem, cat_key, cat_name,
+                f"Hauptkategorie {cat_key}: {cat_name}",
+            )
+            cat_guids[cat_key] = code_guids[cat_key]
+
+        codes_by_cat: dict[str, list[tuple[str, dict]]] = {}
+        for code_id, info in result.codes.items():
+            cat = info.get("hauptkategorie", "")
+            codes_by_cat.setdefault(cat, []).append((code_id, info))
+
+        for cat_key in sorted(codes_by_cat.keys()):
+            parent = codes_elem
+            if cat_key in cat_guids:
+                for elem in codes_elem.iter("Code"):
+                    if elem.get("guid") == cat_guids[cat_key]:
+                        parent = elem
+                        break
+            for code_id, info in sorted(codes_by_cat[cat_key]):
+                _mk_code_elem(
+                    parent, code_id,
+                    info.get("name", code_id),
+                    info.get("kodierdefinition", ""),
+                )
 
     # === Sources (Dokumente) ===
     sources = SubElement(project, "Sources")
@@ -162,12 +240,37 @@ def build_refi_qda_xml(result: AnalysisResult) -> bytes:
     return _pretty_xml(project)
 
 
-def generate_qdpx(result: AnalysisResult, output_path=None):
-    """Generiert die .qdpx Datei (ZIP mit project.qde + Quelldokumenten)."""
+def generate_qdpx(
+    result: AnalysisResult,
+    output_path=None,
+    codebase_codes: dict[str, dict] | None = None,
+    codebase_name: str | None = None,
+):
+    """Generiert die .qdpx Datei (ZIP mit project.qde + Quelldokumenten).
+
+    Args:
+        result: Analyseergebnis.
+        output_path: Zielpfad der .qdpx-Datei.
+        codebase_codes: Optional das geparste Codebook (siehe
+            :func:`src.recipe.parse_codebase_yaml`). Wenn gesetzt, enthaelt
+            das erzeugte Codesystem immer das VOLLE Codebook -- unabhaengig
+            davon, wie viele Codes tatsaechlich von der LLM vergeben wurden.
+        codebase_name: Optional der Name der Codebase (nur fuer Logging).
+    """
     if output_path is None:
         raise ValueError("output_path muss angegeben werden")
 
-    xml_bytes = build_refi_qda_xml(result)
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+
+    if codebase_codes and codebase_name:
+        print(f"  QDPX: nutze Codebook '{codebase_name}' mit "
+              f"{len(codebase_codes)} Codes")
+    elif codebase_codes:
+        print(f"  QDPX: nutze vollstaendiges Codebook ({len(codebase_codes)} Codes)")
+
+    xml_bytes = build_refi_qda_xml(
+        result, codebase_codes=codebase_codes, codebase_name=codebase_name,
+    )
 
     with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
         # project.qde (die XML-Datei)

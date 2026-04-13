@@ -240,6 +240,169 @@ def load_codebase(name: str) -> str:
     )
 
 
+def parse_codebase_yaml(name: str) -> dict[str, dict]:
+    """Laedt eine Codebase aus input/codebases/ und liefert eine flache Dict-Struktur.
+
+    Das Ergebnis ist ein Mapping ``code_id -> {name, description, category,
+    subcategory, ankerbeispiel, abgrenzungsregel}``. Sowohl Hauptkategorien,
+    Zwischen-Codes als auch Subcodes sind enthalten.
+
+    Unterstuetzt wird die im Projekt uebliche YAML-Struktur::
+
+        kategorien:
+          - id: PROC
+            name: Prozesse
+            definition: ...
+            codes:
+              - id: PROC-ACQ
+                name: ...
+                definition / description / kodierdefinition: ...
+                subcodes:
+                  - id: PROC-ACQ-01
+                    name: ...
+                    ankerbeispiel: ...
+
+    Alternativ wird auch die flache Form ``codes: {A-01: {name, ...}}`` oder
+    ``categories: {...}`` unterstuetzt. Bei nicht-YAML-Dateien oder fehlenden
+    Daten wird ein leeres Dict zurueckgegeben.
+    """
+    flat: dict[str, dict] = {}
+
+    # Versuche zuerst, die YAML-Datei direkt zu lesen (robust ggue. .yml/.yaml)
+    data = None
+    for ext in [".yml", ".yaml"]:
+        path = CODEBASES_DIR / f"{name}{ext}"
+        if path.exists():
+            try:
+                with path.open("r", encoding="utf-8") as fh:
+                    data = yaml.safe_load(fh)
+            except yaml.YAMLError:
+                return {}
+            break
+    if data is None:
+        # Fallback: load_codebase kann noch anderen Content liefern (txt/csv).
+        try:
+            text = load_codebase(name)
+        except FileNotFoundError:
+            return {}
+        try:
+            data = yaml.safe_load(text)
+        except yaml.YAMLError:
+            return {}
+
+    if not isinstance(data, dict):
+        return {}
+
+    def _desc(d: dict) -> str:
+        for k in ("kodierdefinition", "definition", "description", "beschreibung"):
+            v = d.get(k)
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+        return ""
+
+    def _add(code_id, info):
+        if not isinstance(code_id, str) or not code_id.strip():
+            return
+        flat[code_id.strip()] = info
+
+    # --- Variante 1: kategorien: [ {id, codes: [ {id, subcodes: [...]}]} ] ---
+    kats = data.get("kategorien")
+    if isinstance(kats, list):
+        for kat in kats:
+            if not isinstance(kat, dict):
+                continue
+            kat_id = kat.get("id")
+            kat_name = kat.get("name", kat_id or "")
+            _add(kat_id, {
+                "name": kat_name,
+                "description": _desc(kat),
+                "category": kat_id,
+                "subcategory": "",
+                "ankerbeispiel": kat.get("ankerbeispiel", ""),
+                "abgrenzungsregel": kat.get("abgrenzungsregel", ""),
+            })
+            for code in kat.get("codes", []) or []:
+                if not isinstance(code, dict):
+                    continue
+                code_id = code.get("id")
+                _add(code_id, {
+                    "name": code.get("name", code_id or ""),
+                    "description": _desc(code),
+                    "category": kat_id,
+                    "subcategory": code_id,
+                    "ankerbeispiel": code.get("ankerbeispiel", ""),
+                    "abgrenzungsregel": code.get("abgrenzungsregel", ""),
+                })
+                for sub in code.get("subcodes", []) or []:
+                    if not isinstance(sub, dict):
+                        continue
+                    sub_id = sub.get("id")
+                    _add(sub_id, {
+                        "name": sub.get("name", sub_id or ""),
+                        "description": _desc(sub),
+                        "category": kat_id,
+                        "subcategory": code_id,
+                        "ankerbeispiel": sub.get("ankerbeispiel", ""),
+                        "abgrenzungsregel": sub.get("abgrenzungsregel", ""),
+                    })
+        if flat:
+            return flat
+
+    # --- Variante 2: flache codes: {id: {name, ...}} ---
+    codes = data.get("codes")
+    if isinstance(codes, dict):
+        for code_id, info in codes.items():
+            if not isinstance(info, dict):
+                continue
+            _add(code_id, {
+                "name": info.get("name", code_id),
+                "description": _desc(info),
+                "category": info.get("hauptkategorie") or info.get("category", ""),
+                "subcategory": info.get("subcategory", ""),
+                "ankerbeispiel": info.get("ankerbeispiel", ""),
+                "abgrenzungsregel": info.get("abgrenzungsregel", ""),
+            })
+    elif isinstance(codes, list):
+        for info in codes:
+            if not isinstance(info, dict):
+                continue
+            _add(info.get("id"), {
+                "name": info.get("name", info.get("id", "")),
+                "description": _desc(info),
+                "category": info.get("hauptkategorie") or info.get("category", ""),
+                "subcategory": info.get("subcategory", ""),
+                "ankerbeispiel": info.get("ankerbeispiel", ""),
+                "abgrenzungsregel": info.get("abgrenzungsregel", ""),
+            })
+
+    # Hauptkategorien aus `categories:` ergaenzen (nicht ueberschreiben)
+    cats = data.get("categories")
+    if isinstance(cats, dict):
+        for cat_id, cat_info in cats.items():
+            if cat_id in flat:
+                continue
+            if isinstance(cat_info, dict):
+                _add(cat_id, {
+                    "name": cat_info.get("name", cat_id),
+                    "description": _desc(cat_info),
+                    "category": cat_id,
+                    "subcategory": "",
+                    "ankerbeispiel": cat_info.get("ankerbeispiel", ""),
+                    "abgrenzungsregel": cat_info.get("abgrenzungsregel", ""),
+                })
+            elif isinstance(cat_info, str):
+                _add(cat_id, {
+                    "name": cat_info,
+                    "description": "",
+                    "category": cat_id,
+                    "subcategory": "",
+                    "ankerbeispiel": "",
+                    "abgrenzungsregel": "",
+                })
+
+    return flat
+
+
 def list_codebases() -> list[str]:
     """Listet alle verfügbaren Codebasen."""
     if not CODEBASES_DIR.exists():

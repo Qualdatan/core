@@ -1,5 +1,7 @@
 """Schritt 2: Codebook als Excel generieren."""
 
+from pathlib import Path
+
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
@@ -10,6 +12,7 @@ def generate_codebook(result: AnalysisResult, output_path=None):
     """Generiert codebook.xlsx mit Code-ID, Name, Kategorie, Definition, Ankerbeispiel, Abgrenzung."""
     if output_path is None:
         raise ValueError("output_path muss angegeben werden")
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     wb = Workbook()
     ws = wb.active
     ws.title = "Codebook"

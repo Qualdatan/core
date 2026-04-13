@@ -226,7 +226,9 @@ def enforce_strict_strategy(data: dict, recipe: Recipe,
 
 def analyze_transcript(client: Anthropic, recipe: Recipe, content: str,
                        filename: str, codebase: str = "",
-                       ctx: RunContext | None = None) -> dict:
+                       ctx: RunContext | None = None,
+                       prompts_dir_override: Path | None = None,
+                       responses_dir_override: Path | None = None) -> dict:
     """Analysiert ein einzelnes Transkript via Claude API (mit Cache).
 
     Args:
@@ -248,7 +250,7 @@ def analyze_transcript(client: Anthropic, recipe: Recipe, content: str,
 
     # Prompt cachen
     if ctx:
-        ctx.cache_prompt(filename, prompt)
+        ctx.cache_prompt(filename, prompt, prompts_dir=prompts_dir_override)
 
     # Dynamische max_tokens: kürzere Transkripte brauchen weniger Output
     # ~1 Coding pro 500 Zeichen Input, ~150 Token pro Coding
@@ -269,7 +271,8 @@ def analyze_transcript(client: Anthropic, recipe: Recipe, content: str,
 
     # Rohe Antwort cachen
     if ctx:
-        ctx.cache_response(filename, response_text)
+        ctx.cache_response(filename, response_text,
+                           responses_dir=responses_dir_override)
 
     data = extract_json(response_text)
 
@@ -334,11 +337,20 @@ def _process_single_result(filename: str, data: dict,
 def run_analysis(recipe: Recipe, ctx: RunContext,
                  transcripts_dir: Path = TRANSCRIPTS_DIR,
                  codebase: str = "",
-                 max_workers: int = 4) -> AnalysisResult:
+                 max_workers: int = 4,
+                 analysis_json_override: Path | None = None,
+                 prompts_dir_override: Path | None = None,
+                 responses_dir_override: Path | None = None) -> AnalysisResult:
     """Fuehrt die komplette Analyse aller Transkripte durch (parallel).
 
     Args:
         max_workers: Max parallele API-Calls (default: 4)
+        analysis_json_override: Optionaler Zielpfad fuer das
+            ``analysis_results.json``. Default: ``ctx.analysis_json``.
+        prompts_dir_override: Optionaler Zielordner fuer gecachte
+            Prompts. Default: ``ctx.prompts_dir``.
+        responses_dir_override: Optionaler Zielordner fuer gecachte
+            API-Antworten. Default: ``ctx.responses_dir``.
     """
     client = Anthropic()
     result = AnalysisResult()
@@ -376,6 +388,7 @@ def run_analysis(recipe: Recipe, ctx: RunContext,
             future = pool.submit(
                 analyze_transcript, client, recipe, content,
                 filename, codebase, ctx,
+                prompts_dir_override, responses_dir_override,
             )
             futures[future] = filename
 
@@ -423,9 +436,11 @@ def run_analysis(recipe: Recipe, ctx: RunContext,
     result.codes = code_registry
     result.kernergebnisse = all_kernergebnisse
 
-    result.save(ctx.analysis_json)
+    analysis_json = analysis_json_override or ctx.analysis_json
+    analysis_json.parent.mkdir(parents=True, exist_ok=True)
+    result.save(analysis_json)
     ctx.mark_step_done(1)
-    print(f"\n=== Analyse gespeichert: {ctx.analysis_json} ===")
+    print(f"\n=== Analyse gespeichert: {analysis_json} ===")
     print(f"    {len(result.segments)} kodierte Segmente")
     print(f"    {len(result.codes)} verschiedene Codes")
     print(f"    {len(result.kernergebnisse)} Kernergebnisse")

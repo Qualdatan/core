@@ -114,12 +114,44 @@ class RunContext:
         d.mkdir(parents=True, exist_ok=True)
         return d
 
+    # ------------------------------------------------------------------
+    # Company-scoped Interview-Pfade (Phase 4: saubere Output-Struktur)
+    # ------------------------------------------------------------------
+
+    def company_analysis_json(self, company_name: str) -> Path:
+        """Liefert ``<run>/<company>/analysis_results.json`` (Parent angelegt)."""
+        target = self.company_dir(company_name) / "analysis_results.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        return target
+
+    def company_prompts_dir(self, company_name: str) -> Path:
+        """Liefert ``<run>/<company>/prompts/`` und legt das Verzeichnis an."""
+        d = self.company_dir(company_name) / "prompts"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def company_responses_dir(self, company_name: str) -> Path:
+        """Liefert ``<run>/<company>/responses/`` und legt das Verzeichnis an."""
+        d = self.company_dir(company_name) / "responses"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def company_interview_sample_dir(self, company_name: str) -> Path:
+        """Liefert ``<run>/<company>/_interview_sample/`` und legt es an."""
+        d = self.company_dir(company_name) / "_interview_sample"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
     def ensure_dirs(self):
-        """Erstellt alle Unterverzeichnisse."""
-        for d in [
-            self.cache_dir, self.prompts_dir, self.responses_dir,
-            self.parsed_dir, self.evaluation_dir, self.qda_dir,
-        ]:
+        """Erstellt nur die wirklich notwendigen Unterverzeichnisse.
+
+        Die Consumer (step1, step3, step4, ...) sind selbst dafuer
+        verantwortlich, ihre Ausgabe-Verzeichnisse via ``mkdir(parents=True,
+        exist_ok=True)`` anzulegen, bevor sie schreiben. Dadurch vermeiden
+        wir leere ``evaluation/``- und ``qda/``-Ordner in Runs, die sie
+        gar nicht benutzen.
+        """
+        for d in [self.cache_dir, self.parsed_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------
@@ -199,16 +231,30 @@ class RunContext:
         """Macht Dateinamen sicher."""
         return name.replace("/", "_").replace("\\", "_").replace(" ", "_")
 
-    def cache_prompt(self, filename: str, prompt: str):
-        """Speichert den gesendeten Prompt."""
+    def cache_prompt(self, filename: str, prompt: str,
+                     prompts_dir: Path | None = None):
+        """Speichert den gesendeten Prompt.
+
+        ``prompts_dir`` erlaubt es, einen alternativen Ablageort zu
+        verwenden (z.B. company-scoped ``<run>/<company>/prompts``).
+        """
         safe = self._safe_filename(filename)
-        path = self.prompts_dir / f"{safe}.txt"
+        target_dir = prompts_dir or self.prompts_dir
+        target_dir.mkdir(parents=True, exist_ok=True)
+        path = target_dir / f"{safe}.txt"
         path.write_text(prompt, encoding="utf-8")
 
-    def cache_response(self, filename: str, response_text: str):
-        """Speichert die rohe API-Antwort."""
+    def cache_response(self, filename: str, response_text: str,
+                       responses_dir: Path | None = None):
+        """Speichert die rohe API-Antwort.
+
+        ``responses_dir`` erlaubt es, einen alternativen Ablageort zu
+        verwenden (z.B. company-scoped ``<run>/<company>/responses``).
+        """
         safe = self._safe_filename(filename)
-        path = self.responses_dir / f"{safe}.txt"
+        target_dir = responses_dir or self.responses_dir
+        target_dir.mkdir(parents=True, exist_ok=True)
+        path = target_dir / f"{safe}.txt"
         path.write_text(response_text, encoding="utf-8")
 
     def cache_parsed(self, filename: str, data: dict):

@@ -1,6 +1,7 @@
 """Schritt 4: Auswertungs-Excel mit 3 Sheets generieren."""
 
 from collections import Counter, defaultdict
+from pathlib import Path
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
@@ -36,6 +37,7 @@ def generate_evaluation(result: AnalysisResult, output_path=None):
     """Generiert auswertung.xlsx mit 3 Sheets."""
     if output_path is None:
         raise ValueError("output_path muss angegeben werden")
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     wb = Workbook()
 
     # Dokument-IDs erstellen (I-01, I-02, ...)
