@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from qualdatan_core.pdf_scanner import (
+from qualdatan_core.pdf.scanner import (
     filter_pdfs,
     scan_projects,
     DEFAULT_PLAN_PATTERNS,

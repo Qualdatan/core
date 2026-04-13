@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from qualdatan_core.office_converter import (
+from qualdatan_core.office.converter import (
     SUPPORTED_EXTENSIONS,
     OfficeConverterUnavailable,
     convert_to_pdf,
@@ -150,7 +150,7 @@ class TestConvertToPdfErrorHandling:
 
     def test_no_backend_raises(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "qualdatan_core.office_converter.detect_backend", lambda: None
+            "qualdatan_core.office.converter.detect_backend", lambda: None
         )
         src = tmp_path / "x.docx"
         src.write_bytes(b"placeholder")

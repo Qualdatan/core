@@ -3,7 +3,7 @@
 import fitz
 import pytest
 
-from qualdatan_core.pdf_classifier import (
+from qualdatan_core.coding.classifier import (
     _compute_page_metrics,
     _classify_page_local,
     _detect_title_block,

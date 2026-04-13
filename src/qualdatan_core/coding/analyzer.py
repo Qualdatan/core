@@ -11,9 +11,9 @@ from pathlib import Path
 
 from anthropic import Anthropic
 
-from .step1_analyze import extract_json
-from .pdf_extractor import extraction_to_text_summary
-from .recipe import Recipe, _strategy_instruction
+from ..steps.step1_analyze import extract_json
+from ..pdf.extractor import extraction_to_text_summary
+from ..recipe import Recipe, _strategy_instruction
 
 
 # ---------------------------------------------------------------------------

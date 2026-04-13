@@ -7,9 +7,9 @@ from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
 from xml.dom import minidom
 from datetime import datetime
 
-from .config import TRANSCRIPTS_DIR
-from .models import AnalysisResult
-from .code_colors import CodeColorMap
+from ..config import TRANSCRIPTS_DIR
+from ..models import AnalysisResult
+from ..coding.colors import CodeColorMap
 
 
 def _uuid() -> str:

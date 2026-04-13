@@ -8,7 +8,7 @@ import json
 import re
 from pathlib import Path
 
-from .config import PROJECTS_DIR
+from ..config import PROJECTS_DIR
 
 
 # Regex-Patterns die per Default erkennen, ob eine PDF ein Plan ist.

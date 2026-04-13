@@ -5,7 +5,7 @@ from pathlib import Path
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-from .models import AnalysisResult
+from ..models import AnalysisResult
 
 
 def _apply_header_style(ws, row, max_col):
