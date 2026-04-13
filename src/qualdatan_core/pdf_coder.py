@@ -60,6 +60,34 @@ def _cache_key(project: str, filename: str) -> str:
     return safe.replace("/", "_").replace("\\", "_").replace(" ", "_")
 
 
+def _mirror_pdfs(pdfs: list[dict], ctx: RunContext) -> int:
+    """Spiegelt PDF-Materials in die App-DB (no-op ohne Attach).
+
+    Nutzt pro PDF :meth:`RunContext.register_material` mit
+    ``material_kind="pdf_text"``, ``path`` = absoluter Pfad,
+    ``relative_path`` = projektrelativer Pfad und ``source_label`` =
+    Projekt-/Ordnername. Ohne App-DB-Anbindung no-op.
+
+    Args:
+        pdfs: Liste der PDF-Eintraege (wie von ``scan_projects`` geliefert).
+        ctx: Aktueller RunContext.
+
+    Returns:
+        Anzahl erfolgreich registrierter Materials.
+    """
+    count = 0
+    for pdf in pdfs:
+        mid = ctx.register_material(
+            "pdf_text",
+            pdf.get("path", ""),
+            relative_path=pdf.get("relative_path", ""),
+            source_label=pdf.get("project", ""),
+        )
+        if mid is not None:
+            count += 1
+    return count
+
+
 def _register_pdfs(pdfs: list[dict], ctx: RunContext) -> dict[str, int]:
     """Registriert alle PDFs in der Datenbank.
 
@@ -81,6 +109,8 @@ def _register_pdfs(pdfs: list[dict], ctx: RunContext) -> dict[str, int]:
             file_size_kb=file_size,
         )
         pdf_ids[pdf["relative_path"]] = pdf_id
+    # D.3: Materials in App-DB spiegeln (no-op wenn nicht attached)
+    _mirror_pdfs(pdfs, ctx)
     return pdf_ids
 
 

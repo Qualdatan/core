@@ -415,6 +415,33 @@ class CurationStats:
 # ---------------------------------------------------------------------------
 
 
+def _mirror_samples(ctx: RunContext, sample_files: list[Path]) -> int:
+    """Spiegelt Curation-Sample-Materials in die App-DB (no-op ohne Attach).
+
+    Jedes Sample-File wird als ``material_kind="transcript_sample"`` mit
+    absolutem Pfad registriert. Der Dateiname wird als ``source_label``
+    uebergeben.
+
+    Args:
+        ctx: Aktueller RunContext.
+        sample_files: Liste der Sample-Pfade, die fuer das Curation-
+            Bootstrapping herangezogen werden.
+
+    Returns:
+        Anzahl erfolgreich registrierter Materials.
+    """
+    count = 0
+    for p in sample_files:
+        mid = ctx.register_material(
+            "transcript_sample",
+            str(p),
+            source_label=p.name,
+        )
+        if mid is not None:
+            count += 1
+    return count
+
+
 def bootstrap_codebook(
     ctx: RunContext,
     recipe: Recipe,
@@ -446,6 +473,9 @@ def bootstrap_codebook(
         Tuple ``(Path, CurationStats)``. Der Path zeigt auf
         ``<run>/draft_codebook.yml``.
     """
+    # D.3: Sample-Materials in App-DB spiegeln (no-op wenn nicht attached)
+    _mirror_samples(ctx, sample_files)
+
     agg = _Aggregate()
     category_names: dict[str, str] = {}
 

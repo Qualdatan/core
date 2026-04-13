@@ -21,6 +21,30 @@ from ..pdf.extractor import (
 )
 
 
+def _mirror_transcripts(ctx: RunContext) -> int:
+    """Spiegelt Transkript-Materials in die App-DB (no-op ohne Attach).
+
+    Liest die Transkript-Dateinamen aus ``ctx.db.get_state("transcripts", [])``
+    und ruft fuer jeden Eintrag :meth:`RunContext.register_material` mit
+    ``material_kind="transcript"``. Wenn der Context nicht an eine App-DB
+    angebunden ist, liefert ``register_material`` ``None`` — in diesem Fall
+    hat die Funktion keinen Effekt.
+
+    Args:
+        ctx: Aktueller RunContext (optional an App-DB angebunden).
+
+    Returns:
+        Anzahl erfolgreich registrierter Materials (0 wenn nicht attached
+        oder kein Transkript-State vorhanden).
+    """
+    count = 0
+    for t in ctx.db.get_state("transcripts", []):
+        mid = ctx.register_material("transcript", t)
+        if mid is not None:
+            count += 1
+    return count
+
+
 def read_transcripts(folder: Path = TRANSCRIPTS_DIR) -> dict[str, str]:
     """Liest alle .docx-Transkripte und gibt ``{Dateiname: Volltext}`` zurueck.
 
@@ -367,6 +391,9 @@ def run_analysis(recipe: Recipe, ctx: RunContext,
     result.documents = {
         fname: tdata["fulltext"] for fname, tdata in transcript_data.items()
     }
+
+    # D.3: Materials in App-DB spiegeln (no-op wenn nicht attached)
+    _mirror_transcripts(ctx)
 
     # Nur noch nicht analysierte Transkripte verarbeiten
     pending = ctx.get_pending_transcripts()
