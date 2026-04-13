@@ -8,8 +8,11 @@ projects, transcripts) auch ausserhalb der Codebase ablegen.
 import os
 from pathlib import Path
 
-# Projekt-Wurzel (Speicherort dieses Files: src/config.py)
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# Projekt-Wurzel (Speicherort dieses Files: src/qualdatan_core/config.py).
+# In Dev/Test zeigt das auf die Repo-Wurzel (damit `input/…`-Defaults greifen);
+# Prod-Installationen sollten stattdessen per Env-Var (METHODS_DIR,
+# CODEBASES_DIR, …) auf einen expliziten Pfad zeigen.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def _path(env_var: str, default: Path) -> Path:

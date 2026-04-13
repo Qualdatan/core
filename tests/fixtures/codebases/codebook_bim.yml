@@ -1,0 +1,1256 @@
+# =============================================================================
+# MAXQDA Codebook – BIM-Studie (Universell)
+# Bauhaus-Universität Weimar, Professur Baubetrieb und Bauverfahren
+# Erstellt: 2026-04-10
+#
+# Zusammenführung aus:
+#   - codebook_origianal.yml  (Interview-basierte BIM-Themen A–Q)
+#   - codebook_triangulation.yml  (Triangulationsdimensionen P, R, IS, SN, …)
+#
+# Struktur:
+#   Teil I   – Triangulationsdimensionen (PROC, R, IS, SN, AWF, ILZ, IAR)
+#   Teil II  – Projektkontext-Attribute (PK)
+#   Teil III – BIM-Themen aus Interviews (A–L)
+#   Teil IV  – LOIN / LOG / LOI (M)
+#   Teil V   – Visuelle Analyse (O, PD, Q)
+#
+# Hinweis: Alle Annotationen verwenden eine einzige Farbe. Der Code (z.B.
+# "PROC-EXEC") steht als Präfix im Annotation-Comment. In MAXQDA nach
+# Comment sortieren und per Bulk-Operation den echten Code zuweisen.
+# =============================================================================
+
+metadata:
+  name: "Universelles BIM-Codebook"
+  version: "1.0"
+  bezug:
+    - "DIN EN 17412-1 (LOIN)"
+    - "ISO 19650-1/2"
+    - "Masterplan BIM Bundesbau (AWF)"
+    - "HOAI (Leistungsphasen)"
+
+kategorien:
+
+  # ===================================================================
+  # TEIL I – TRIANGULATIONSDIMENSIONEN
+  # ===================================================================
+
+  # -------------------------------------------------------------------
+  # PROC – PROZESSE
+  # Alles, was einen zeitlichen/logischen Ablauf mit definiertem
+  # Start, Ende, Input und Output beschreibt.
+  # -------------------------------------------------------------------
+  - id: PROC
+    name: Prozesse
+    definition: >
+      Definierte Abfolgen von Tätigkeiten mit Start, Ende, Input und Output,
+      die im Rahmen der Planung, Ausführung oder Übergabe eines Bauprojekts
+      durchlaufen werden. Abgegrenzt von einzelnen Tätigkeiten durch die
+      Existenz wiederholbarer Struktur.
+    codes:
+
+      - id: PROC-ACQ
+        name: Akquise- und Angebotsprozess
+        definition: >
+          Alle Tätigkeiten von der Ausschreibungssichtung bis zum Vertragsabschluss.
+        subcodes:
+          - id: PROC-ACQ-01
+            name: Ausschreibungssichtung und Eignungsprüfung
+            ankerbeispiel: "Wir prüfen zuerst, ob wir die geforderten Referenzen haben."
+          - id: PROC-ACQ-02
+            name: Angebotserstellung und Kalkulation
+            ankerbeispiel: "Der Angebotsprozess dauert bei uns meist 2-3 Wochen."
+          - id: PROC-ACQ-03
+            name: Verhandlung und Vertragsabschluss
+            ankerbeispiel: "Nach Zuschlag folgen Vertragsverhandlungen mit dem Bauherren."
+
+      - id: PROC-INIT
+        name: Projektinitialisierung (Set-up)
+        definition: >
+          Strukturierter Projektstart nach Vertragsabschluss, inkl. Einrichtung
+          der Arbeitsumgebung und Kickoff.
+        subcodes:
+          - id: PROC-INIT-01
+            name: Kickoff und Rollenklärung
+            ankerbeispiel: "Im Kickoff definieren wir, wer welche Rolle übernimmt."
+          - id: PROC-INIT-02
+            name: CDE- und Projektstruktur-Einrichtung
+            ankerbeispiel: "Wir legen die Ordnerstruktur im CDE einmal zentral an."
+          - id: PROC-INIT-03
+            name: AIA/BAP-Erstellung oder -Übernahme
+            ankerbeispiel: "Die AIA bekommen wir vom Bauherren, daraus entwickeln wir den BAP."
+          - id: PROC-INIT-04
+            name: Vorlagen- und Template-Bereitstellung
+            ankerbeispiel: "Wir starten mit unserer Büroschablone für ArchiCAD."
+
+      - id: PROC-PLAN
+        name: Planungsprozess (operativ)
+        definition: >
+          Wiederholbare Kernprozesse während der Planungsphasen – von Modellierung
+          bis Freigabe.
+        subcodes:
+          - id: PROC-PLAN-01
+            name: Modellierung und Fortschreibung
+            ankerbeispiel: "Jede Woche wird das Architekturmodell fortgeschrieben und hochgeladen."
+          - id: PROC-PLAN-02
+            name: Koordination und Kollisionsprüfung
+            ankerbeispiel: "Koordinationsbesprechung jeden Donnerstag auf Basis des kombinierten Modells."
+          - id: PROC-PLAN-03
+            name: Planableitung und -freigabe
+            ankerbeispiel: "Pläne werden aus dem Modell abgeleitet und im CDE freigegeben."
+          - id: PROC-PLAN-04
+            name: Änderungsmanagement
+            ankerbeispiel: "Änderungswünsche laufen über Tickets im CDE."
+
+      - id: PROC-REVIEW
+        name: Prüf- und Freigabeprozess
+        definition: >
+          Prozesse zur internen und externen Qualitätssicherung sowie zur
+          formalen Freigabe von Plänen und Modellen.
+        subcodes:
+          - id: PROC-REVIEW-01
+            name: Interne Qualitätssicherung
+            ankerbeispiel: "Vor dem Upload prüft der Projektleiter das Modell."
+          - id: PROC-REVIEW-02
+            name: Externe Prüfung (Prüfingenieur, Behörde)
+            ankerbeispiel: "Der Prüfingenieur erhält eine abgespeckte Modellvariante."
+          - id: PROC-REVIEW-03
+            name: Bauherrenfreigabe
+            ankerbeispiel: "Freigaben des Bauherren dokumentieren wir im CDE."
+
+      - id: PROC-EXEC
+        name: Ausführungs- und Übergabeprozess
+        definition: >
+          Prozesse während LPH 8 und 9 – Bauüberwachung, Abnahme, As-built.
+        subcodes:
+          - id: PROC-EXEC-01
+            name: Bauüberwachung modellbasiert
+            ankerbeispiel: "Wir vergleichen auf der Baustelle mit dem 3D-Modell."
+          - id: PROC-EXEC-02
+            name: Mängelerfassung und Nachverfolgung
+            ankerbeispiel: "Mängel verorten wir im Modell per BCF."
+          - id: PROC-EXEC-03
+            name: As-built-Ableitung und Übergabe
+            ankerbeispiel: "Am Ende übergeben wir das bereinigte As-built-Modell."
+
+  # -------------------------------------------------------------------
+  # R – ROLLEN UND PROZESSBETEILIGTE
+  # -------------------------------------------------------------------
+  - id: R
+    name: Rollen und Prozessbeteiligte
+    definition: >
+      Personen, Funktionen oder Organisationen mit definierten Verantwortungen
+      im Projekt. Unterschieden in Bauherr-/Auftraggeberseite, Auftragnehmerseite,
+      BIM-spezifische Rollen und Dritte (Behörden, Prüfer, Nutzer).
+    codes:
+
+      - id: R-BH
+        name: Bauherr / Auftraggeberseite
+        subcodes:
+          - id: R-BH-01
+            name: Bauherr (privat/gewerblich)
+          - id: R-BH-02
+            name: Öffentlicher Auftraggeber (Bund/Land/Kommune)
+          - id: R-BH-03
+            name: Projektsteuerer des Bauherren
+          - id: R-BH-04
+            name: Nutzervertreter
+
+      - id: R-PL
+        name: Planerseite (Auftragnehmer)
+        subcodes:
+          - id: R-PL-01
+            name: Objektplaner / Architekt
+          - id: R-PL-02
+            name: Tragwerksplaner
+          - id: R-PL-03
+            name: TGA-Planer (HLS/Elt/MSR)
+          - id: R-PL-04
+            name: Brandschutzplaner
+          - id: R-PL-05
+            name: Bauphysiker
+          - id: R-PL-06
+            name: Vermessungsingenieur / Scan-to-BIM-Dienstleister
+
+      - id: R-BIM
+        name: BIM-spezifische Rollen
+        subcodes:
+          - id: R-BIM-01
+            name: BIM-Manager (bauherrenseitig)
+            definition: "Strategisch, Vorgaben, Überwachung."
+          - id: R-BIM-02
+            name: BIM-Gesamtkoordinator
+            definition: "Gesamtkoordination zwischen den Fachgewerken."
+          - id: R-BIM-03
+            name: BIM-Fachkoordinator
+            definition: "Fachspezifische Koordination in einem Gewerk."
+          - id: R-BIM-04
+            name: BIM-Modellierer
+          - id: R-BIM-05
+            name: BIM-Informationsmanager / CDE-Administrator
+
+      - id: R-BAU
+        name: Ausführende und Handwerk
+        subcodes:
+          - id: R-BAU-01
+            name: Generalunternehmer / Totalunternehmer
+          - id: R-BAU-02
+            name: Fachunternehmer / Nachunternehmer
+          - id: R-BAU-03
+            name: Hersteller / Lieferant
+
+      - id: R-EXT
+        name: Externe Dritte
+        subcodes:
+          - id: R-EXT-01
+            name: Genehmigungsbehörde
+          - id: R-EXT-02
+            name: Prüfingenieur / Prüfstatiker
+          - id: R-EXT-03
+            name: Sachverständige / Gutachter
+
+  # -------------------------------------------------------------------
+  # IS – INFORMATIONSSTRÖME
+  # -------------------------------------------------------------------
+  - id: IS
+    name: Informationsströme
+    definition: >
+      Gerichtete Weitergabe von Informationen zwischen Rollen oder Systemen.
+      Ein Informationsstrom hat immer: Sender, Empfänger, Inhalt, Format,
+      Auslöser und (optional) Frequenz.
+    codes:
+
+      - id: IS-BH
+        name: Bauherr <-> Planerteam
+        subcodes:
+          - id: IS-BH-01
+            name: Anforderungsweitergabe (AIA, Bedarfsplan)
+            ankerbeispiel: "Die AIA wird zu Projektbeginn vom Bauherren übergeben."
+          - id: IS-BH-02
+            name: Zwischenstandberichte
+          - id: IS-BH-03
+            name: Freigaben und Entscheidungen
+          - id: IS-BH-04
+            name: Änderungswünsche
+
+      - id: IS-FP
+        name: Zwischen Fachplanern
+        subcodes:
+          - id: IS-FP-01
+            name: Fachmodell-Austausch (IFC)
+            ankerbeispiel: "Tragwerk liefert monatlich ein IFC."
+          - id: IS-FP-02
+            name: Planunterlagen (2D-Ableitungen)
+          - id: IS-FP-03
+            name: Koordinationskommentare (BCF)
+          - id: IS-FP-04
+            name: Schlitz-/Durchbruchsanforderungen
+
+      - id: IS-AUS
+        name: Planung -> Ausführung
+        subcodes:
+          - id: IS-AUS-01
+            name: LV und Mengenangaben
+          - id: IS-AUS-02
+            name: Werk- und Montagepläne
+          - id: IS-AUS-03
+            name: Änderungen in der Bauphase
+
+      - id: IS-FM
+        name: Ausführung -> Betrieb (FM)
+        subcodes:
+          - id: IS-FM-01
+            name: As-built-Modell und -Pläne
+          - id: IS-FM-02
+            name: Wartungs- und Betriebsdaten
+          - id: IS-FM-03
+            name: Gewährleistungs- und Dokumentationsunterlagen
+
+  # -------------------------------------------------------------------
+  # SN – SCHNITTSTELLEN
+  # -------------------------------------------------------------------
+  - id: SN
+    name: Schnittstellen
+    definition: >
+      Definierte Übergabepunkte zwischen zwei Akteuren, Systemen, Gewerken
+      oder Phasen, an denen Information, Verantwortung oder Produkt wechselt.
+      Umfasst technische (Datenformate, APIs), organisatorische (Rollen,
+      Verträge) und phasenbezogene (Leistungsphasen-Grenzen) Schnittstellen.
+    codes:
+
+      - id: SN-TECH
+        name: Technische Schnittstellen
+        subcodes:
+          - id: SN-TECH-01
+            name: IFC-Datenaustausch
+            ankerbeispiel: "Wir exportieren IFC 2x3 TC1 für den Prüfingenieur."
+          - id: SN-TECH-02
+            name: BCF-Kommentaraustausch
+          - id: SN-TECH-03
+            name: CDE-zu-CDE-Schnittstelle (z.B. BIMcollab, KARTEN)
+          - id: SN-TECH-04
+            name: Native Format-Austausch (RVT, PLA, ...)
+          - id: SN-TECH-05
+            name: Mengen-/AVA-Schnittstelle (GAEB, X31, ...)
+          - id: SN-TECH-06
+            name: Statik-Schnittstelle (SAF, CIS/2, ...)
+
+      - id: SN-ORG
+        name: Organisatorische Schnittstellen
+        subcodes:
+          - id: SN-ORG-01
+            name: Fachgewerke-Übergaben
+          - id: SN-ORG-02
+            name: Vertragliche Schnittstellen (GU, Einzelvergabe)
+          - id: SN-ORG-03
+            name: Auftraggeber-Auftragnehmer-Schnittstelle
+
+      - id: SN-PHASE
+        name: Phasenschnittstellen
+        subcodes:
+          - id: SN-PHASE-01
+            name: LPH-Wechsel (z.B. LP3 -> LP4)
+          - id: SN-PHASE-02
+            name: Planung -> Ausführung
+          - id: SN-PHASE-03
+            name: Ausführung -> Betrieb
+
+  # -------------------------------------------------------------------
+  # AWF – BIM-ANWENDUNGSFÄLLE nach Masterplan BIM Bundesbau
+  # -------------------------------------------------------------------
+  - id: AWF
+    name: BIM-Anwendungsfälle
+    definition: >
+      Standardisierte BIM-Anwendungsfälle nach Masterplan BIM Bundesbau.
+    quelle: "Masterplan BIM Bundesbau"
+    codes:
+      - id: AWF-GRP-VORB
+        name: Vorbereitung und Bestand
+        subcodes:
+          - id: AWF-000
+            name: Grundsätzliches (AIA/BAP/Besprechungen)
+          - id: AWF-010
+            name: Bestandserfassung und -modellierung
+          - id: AWF-020
+            name: Bedarfsplanung
+
+      - id: AWF-GRP-PLAN
+        name: Planung
+        subcodes:
+          - id: AWF-030
+            name: Planungsvarianten und haushaltsbegründende Unterlagen
+          - id: AWF-040
+            name: Visualisierung
+          - id: AWF-050
+            name: Koordination der Fachgewerke
+          - id: AWF-060
+            name: Planungsfortschrittskontrolle und Qualitätsprüfung
+          - id: AWF-070
+            name: Bemessung und Nachweisführung
+          - id: AWF-080
+            name: Ableitung von Planunterlagen
+          - id: AWF-090
+            name: Genehmigungsprozess
+
+      - id: AWF-GRP-KOST
+        name: Kosten, Vergabe und Zeit
+        subcodes:
+          - id: AWF-100
+            name: Mengen- und Kostenermittlung
+          - id: AWF-110
+            name: Leistungsverzeichnis, Ausschreibung, Vergabe
+          - id: AWF-120
+            name: Terminplanung der Ausführung
+          - id: AWF-130
+            name: Logistikplanung
+
+      - id: AWF-GRP-BAU
+        name: Bauausführung
+        subcodes:
+          - id: AWF-140
+            name: Baufortschrittskontrolle
+          - id: AWF-150
+            name: Änderungs- und Nachtragsmanagement
+          - id: AWF-160
+            name: Abrechnung von Bauleistungen
+          - id: AWF-170
+            name: Abnahme- und Mängelmanagement
+
+      - id: AWF-GRP-BETR
+        name: Inbetriebnahme und Betrieb
+        subcodes:
+          - id: AWF-180
+            name: Inbetriebnahmemanagement
+          - id: AWF-190
+            name: Projekt- und Bauwerksdokumentation
+          - id: AWF-200
+            name: Nutzung für Betrieb und Erhaltung
+
+  # -------------------------------------------------------------------
+  # ILZ – INFORMATIONSLIEFERZEITPUNKTE
+  # -------------------------------------------------------------------
+  - id: ILZ
+    name: Informationslieferzeitpunkte
+    definition: >
+      Zeitpunkte im Projektverlauf, zu denen eine bestimmte Information oder
+      ein Modellstand an einen Empfänger übergeben werden muss. Verknüpft
+      typischerweise die HOAI-Leistungsphasen mit LOIN-Stufen und konkreten
+      Dokumententypen.
+    codes:
+
+      - id: ILZ-MILESTONE
+        name: Meilenstein-Lieferzeitpunkte (formal)
+        subcodes:
+          - id: ILZ-MS-LP1
+            name: Ende LPH 1 – Grundlagen geklärt
+          - id: ILZ-MS-LP2
+            name: Ende LPH 2 – Vorplanung abgegeben
+          - id: ILZ-MS-LP3
+            name: Ende LPH 3 – Entwurf mit Kostenberechnung
+          - id: ILZ-MS-LP4
+            name: Ende LPH 4 – Bauantrag eingereicht
+          - id: ILZ-MS-LP5
+            name: Ende LPH 5 – Ausführungsplanung vorhanden
+          - id: ILZ-MS-LP6
+            name: Ende LPH 6 – LV fertig
+          - id: ILZ-MS-LP8
+            name: Ende LPH 8 – Bauabnahme
+
+      - id: ILZ-ITER
+        name: Iterative Lieferzeitpunkte (operativ)
+        subcodes:
+          - id: ILZ-IT-01
+            name: Regelmäßige Modell-Uploads (wöchentlich, 14-tägig)
+            ankerbeispiel: "Jeden Freitag liegt der aktuelle Stand im CDE."
+          - id: ILZ-IT-02
+            name: Anlassbezogene Lieferungen (vor Koordinationsbesprechung)
+          - id: ILZ-IT-03
+            name: Freigabe-Lieferungen
+
+      - id: ILZ-AD-HOC
+        name: Ad-hoc Lieferzeitpunkte
+        subcodes:
+          - id: ILZ-AH-01
+            name: Bauherrenanfragen
+          - id: ILZ-AH-02
+            name: Änderungsdokumentation
+          - id: ILZ-AH-03
+            name: Behördenanfragen
+
+  # -------------------------------------------------------------------
+  # IAR – INFORMATIONSAUSTAUSCHANFORDERUNGEN
+  # -------------------------------------------------------------------
+  - id: IAR
+    name: Informationsaustauschanforderungen
+    definition: >
+      Anforderungen an einen konkreten Informationsaustausch – bezogen auf
+      Inhalt, Format, Struktur, Qualität, Rechte und Prüfbarkeit. Entspricht
+      dem Konzept des "Exchange Information Requirements" (EIR) nach
+      ISO 19650 bzw. dem LOIN-Ansatz nach DIN EN 17412-1.
+    codes:
+
+      - id: IAR-INH
+        name: Inhaltliche Anforderungen
+        subcodes:
+          - id: IAR-INH-01
+            name: Geometrie-Detaillierung (LOG)
+          - id: IAR-INH-02
+            name: Alphanumerische Attribute (LOI)
+          - id: IAR-INH-03
+            name: Dokumentenarten (Modell, Plan, Liste, Bericht)
+          - id: IAR-INH-04
+            name: Klassifikation (z.B. BBSR-BK, Uniclass, DIN 276 KG)
+
+      - id: IAR-FORM
+        name: Format- und Struktur-Anforderungen
+        subcodes:
+          - id: IAR-FORM-01
+            name: Dateiformat (IFC-Version, PDF/A, Excel, ...)
+          - id: IAR-FORM-02
+            name: Namenskonventionen
+          - id: IAR-FORM-03
+            name: Ordnerstruktur im CDE
+          - id: IAR-FORM-04
+            name: Metadaten-Schemata
+
+      - id: IAR-QUAL
+        name: Qualitätsanforderungen
+        subcodes:
+          - id: IAR-QUAL-01
+            name: Modell-Regelkonformität (Checker-Regeln)
+          - id: IAR-QUAL-02
+            name: Vollständigkeit und Konsistenz
+          - id: IAR-QUAL-03
+            name: Prüfprotokoll / Freigabestatus
+          - id: IAR-QUAL-04
+            name: Nachvollziehbarkeit und Versionierung
+
+      - id: IAR-RECHT
+        name: Rechte- und Nutzungsanforderungen
+        subcodes:
+          - id: IAR-RECHT-01
+            name: Zugriffsrechte im CDE
+          - id: IAR-RECHT-02
+            name: Urheberrecht und Nutzungsrechte
+          - id: IAR-RECHT-03
+            name: Datenschutz / Geheimhaltung
+
+  # ===================================================================
+  # TEIL II – PROJEKTKONTEXT (für Projekt-DB)
+  # ===================================================================
+
+  - id: PK
+    name: Projektkontext
+    definition: >
+      Strukturelle Metadaten eines Projekts, die in der Projekt-DB abgelegt
+      und für Quervergleiche zwischen Firmen/Projekten genutzt werden.
+      Jede Code-Zuweisung soll idealerweise mit Quelle (Datei + Seite + Zitat)
+      belegt sein.
+    codes:
+
+      - id: PK-GRUND
+        name: Grunddaten
+        subcodes:
+          - id: PK-GRUND-01
+            name: Projektname und Identifier
+          - id: PK-GRUND-02
+            name: Firma / Auftragnehmer
+          - id: PK-GRUND-03
+            name: Bauherr / Auftraggeber
+          - id: PK-GRUND-04
+            name: Region / Standort
+          - id: PK-GRUND-05
+            name: Projektzeitraum (Start/Ende)
+
+      - id: PK-GEB
+        name: Gebäudecharakteristik
+        subcodes:
+          - id: PK-GEB-01
+            name: Gebäudetyp (EFH, MFH, Gewerbe, Schule, ...)
+          - id: PK-GEB-02
+            name: Nutzung (Wohnen, Büro, Produktion, ...)
+          - id: PK-GEB-03
+            name: Bauweise (Massiv, Holz, Hybrid, ...)
+          - id: PK-GEB-04
+            name: Bruttogrundflläche / Bruttorauminhalt
+          - id: PK-GEB-05
+            name: Besondere Nutzungsanforderungen
+
+      - id: PK-KOST
+        name: Kosten nach DIN 276
+        subcodes:
+          - id: PK-KOST-100
+            name: "KG 100 – Grundstück"
+          - id: PK-KOST-200
+            name: "KG 200 – Herrichten und Erschließen"
+          - id: PK-KOST-300
+            name: "KG 300 – Bauwerk – Baukonstruktionen"
+          - id: PK-KOST-400
+            name: "KG 400 – Bauwerk – Technische Anlagen"
+          - id: PK-KOST-500
+            name: "KG 500 – Außenanlagen"
+          - id: PK-KOST-600
+            name: "KG 600 – Ausstattung und Kunstwerke"
+          - id: PK-KOST-700
+            name: "KG 700 – Baunebenkosten"
+
+      - id: PK-KMPL
+        name: Komplexität
+        subcodes:
+          - id: PK-KMPL-01
+            name: Komplexitätsstufe (1-5)
+          - id: PK-KMPL-02
+            name: Besondere Randbedingungen (Denkmalschutz, Bestand, ...)
+          - id: PK-KMPL-03
+            name: Anzahl Fachplaner / Gewerke
+          - id: PK-KMPL-04
+            name: Projektorganisationsform (Einzelvergabe, GU, IPD, ...)
+
+      - id: PK-LPH
+        name: Bearbeitete Leistungsphasen
+        definition: "Welche LPHs hat der Auftragnehmer übernommen?"
+        subcodes:
+          - id: PK-LPH-01
+            name: LPH 1 bearbeitet
+          - id: PK-LPH-02
+            name: LPH 2 bearbeitet
+          - id: PK-LPH-03
+            name: LPH 3 bearbeitet
+          - id: PK-LPH-04
+            name: LPH 4 bearbeitet
+          - id: PK-LPH-05
+            name: LPH 5 bearbeitet
+          - id: PK-LPH-06
+            name: LPH 6 bearbeitet
+          - id: PK-LPH-07
+            name: LPH 7 bearbeitet
+          - id: PK-LPH-08
+            name: LPH 8 bearbeitet
+          - id: PK-LPH-09
+            name: LPH 9 bearbeitet
+
+      - id: PK-LEIST
+        name: Leistungsumfang
+        subcodes:
+          - id: PK-LEIST-01
+            name: Grundleistungen (HOAI)
+          - id: PK-LEIST-02
+            name: Besondere Leistungen
+          - id: PK-LEIST-03
+            name: BIM-Leistungen (AIA/BAP-Erstellung, Koordination, ...)
+
+      - id: PK-MOD
+        name: Modellumfang
+        subcodes:
+          - id: PK-MOD-01
+            name: Vorhandene Fachmodelle (ARC, TRA, TGA-HLS, TGA-ELT, ...)
+          - id: PK-MOD-02
+            name: LOG-Zielstufe je Phase
+          - id: PK-MOD-03
+            name: LOI-Zielstufe je Phase
+          - id: PK-MOD-04
+            name: LOIN-Festlegungen im AIA/BAP
+
+      - id: PK-VERTR
+        name: Vertrag und Arbeitsweise
+        subcodes:
+          - id: PK-VERTR-01
+            name: Vertragsmodell (Einzel/GU/TU/IPD/PPP)
+          - id: PK-VERTR-02
+            name: Honorarmodell (HOAI, pauschal, time&material)
+          - id: PK-VERTR-03
+            name: BIM-Vertragsergänzungen
+
+      - id: PK-STRUKT
+        name: Projektstruktur und Checklisten
+        subcodes:
+          - id: PK-STRUKT-01
+            name: Projektstartcheckliste vorhanden
+          - id: PK-STRUKT-02
+            name: BIM-Setup-Checkliste vorhanden
+          - id: PK-STRUKT-03
+            name: Rollenverteilung dokumentiert
+          - id: PK-STRUKT-04
+            name: CDE-Struktur dokumentiert
+
+  # ===================================================================
+  # TEIL III – BIM-THEMEN AUS INTERVIEWS (A–L)
+  # Aus codebook_origianal.yml übernommen. Inhaltliche Themen, die
+  # in Experteninterviews häufig vorkommen.
+  # ===================================================================
+
+  # -------------------------------------------------------------------
+  # A – Projektakquise und Auftragsvergabe
+  # -------------------------------------------------------------------
+  - id: A
+    name: Projektakquise und Auftragsvergabe
+    codes:
+      - id: A-01
+        name: Öffentliche Ausschreibungsverfahren
+        definition: >
+          Beschreibung der Akquise über öffentliche Vergabeplattformen
+          und Eignungsnachweise (VOB/VgV-Verfahren).
+        ankerbeispiel: "Bewerbung auf VgV-Verfahren über Vergabeplattformen mit Referenzprojekten."
+        abgrenzung: "Abgrenzung zu A-02: Hier öffentliche Verfahren, dort private Direktaufträge."
+
+      - id: A-02
+        name: Direktaufträge über Kontakte
+        definition: >
+          Projektakquise durch bestehende Geschäftskontakte und Empfehlungen.
+        ankerbeispiel: "Bauherr kommt über Webseite oder Referenzprojekt direkt auf das Büro zu."
+        abgrenzung: "Abgrenzung zu A-01: Hier persönliche Kontakte, dort formelle Ausschreibungen."
+
+      - id: A-03
+        name: Wettbewerbssituation und Marktentwicklung
+        definition: >
+          Veränderte Wettbewerbssituation bei öffentlichen Wettbewerben.
+        ankerbeispiel: "Weniger öffentliche Wettbewerbe führen zu verschärfter Konkurrenz."
+        abgrenzung: "Abgrenzung zu F-03: Hier Marktmechanismen, dort konkrete Honorarauswirkungen."
+
+  # -------------------------------------------------------------------
+  # B – Planungsprozess und Projektablauf
+  # -------------------------------------------------------------------
+  - id: B
+    name: Planungsprozess und Projektablauf
+    codes:
+      - id: B-01
+        name: Projektstart-Checklisten
+        definition: >
+          Standardisierte Checklisten für den systematischen Projektbeginn.
+        ankerbeispiel: "Prüfung der Vollständigkeit von Leistungsphase 1 durch Checklisten."
+        abgrenzung: "Abgrenzung zu B-02: Hier allgemeine Struktur, dort BIM-spezifische Anforderungen."
+
+      - id: B-02
+        name: BIM-spezifische Projektanforderungen
+        definition: >
+          Umsetzung von AIA in BAP als BIM-spezifischer Planungsschritt.
+        ankerbeispiel: "Übersetzung der Auftraggeber-Informationsanforderungen in den BIM-Abwicklungsplan."
+        abgrenzung: "Abgrenzung zu C-02: Hier Planungsorganisation, dort konkrete BIM-Rollen."
+
+      - id: B-03
+        name: Unterlagenanalyse und Vollständigkeitsprüfung
+        definition: >
+          Systematische Prüfung und Analyse der Bestandsunterlagen zu Projektbeginn.
+        ankerbeispiel: "Prüfung ob Leistungsphase 1 vollständig erbracht wurde."
+        abgrenzung: "Abgrenzung zu B-01: Hier inhaltliche Analyse, dort strukturelle Checklisten."
+
+      - id: B-04
+        name: Projektzeitrahmen und Durchlaufzeiten
+        definition: >
+          Zeitliche Strukturierung des Gesamtprojektablaufs von
+          Vertragsabschluss bis Fertigstellung.
+        ankerbeispiel: "16-18 Monate Grundprozess plus 6-12 Wochen Ausbau."
+
+      - id: B-LPH
+        name: Leistungsphasen (HOAI)
+        definition: >
+          Bezugnahme auf eine konkrete Leistungsphase nach HOAI im Kontext
+          des Planungsprozesses oder der BIM-Anforderungen.
+        subcodes:
+          - id: LPH-01
+            name: "LPH 1 – Grundlagenermittlung"
+          - id: LPH-02
+            name: "LPH 2 – Vorplanung"
+          - id: LPH-03
+            name: "LPH 3 – Entwurfsplanung"
+          - id: LPH-04
+            name: "LPH 4 – Genehmigungsplanung"
+          - id: LPH-05
+            name: "LPH 5 – Ausführungsplanung"
+          - id: LPH-06
+            name: "LPH 6 – Vorbereitung der Vergabe"
+          - id: LPH-07
+            name: "LPH 7 – Mitwirkung bei der Vergabe"
+          - id: LPH-08
+            name: "LPH 8 – Objektüberwachung"
+          - id: LPH-09
+            name: "LPH 9 – Objektbetreuung"
+
+  # -------------------------------------------------------------------
+  # C – Digitale Werkzeuge und BIM
+  # -------------------------------------------------------------------
+  - id: C
+    name: Digitale Werkzeuge und BIM
+    codes:
+      - id: C-01
+        name: Entwicklung der AIA-Qualität
+        definition: >
+          Verbesserung der Qualität von Auftraggeber-Informationsanforderungen über Zeit.
+        ankerbeispiel: "BBR-Musterbausteine werden projektspezifisch präziser formuliert."
+
+      - id: C-02
+        name: BIM-Rollen und Koordination
+        definition: >
+          Rollenverteilung in BIM-Projekten mit Fokus auf Gesamtkoordination
+          durch Architekten.
+        ankerbeispiel: "Architekt übernimmt sowohl BIM-Fachkoordination als auch BIM-Gesamtkoordination."
+
+      - id: C-03
+        name: BIM-Anwendungsfälle und Mehrwert
+        definition: >
+          Bedeutung klar definierter BIM-Anwendungsfälle für Projekterfolg.
+        ankerbeispiel: "Nur bei eindeutigem Mehrwert und Bauherrennutzen wird BIM-Anwendungsfall umgesetzt."
+
+      - id: C-04
+        name: Datenaustausch zwischen Fachplanern
+        definition: >
+          IFC als Standard für den Datenaustausch mit Fachplanern
+          unabhängig von Software.
+        ankerbeispiel: "Fachplaner-Auswahl nach Kompetenz, nicht nach genutzter Software."
+
+      - id: C-05
+        name: BIM-Software und Werkzeuge
+        definition: >
+          Einsatz spezifischer BIM-Software für verschiedene Anwendungsfälle.
+        ankerbeispiel: "Solibri für Koordination, Nova AVA für Ausschreibung und Kostenermittlung."
+
+  # -------------------------------------------------------------------
+  # D – Kommunikation und Zusammenarbeit
+  # -------------------------------------------------------------------
+  - id: D
+    name: Kommunikation und Zusammenarbeit
+    codes:
+      - id: D-01
+        name: Projektstrukturen und Beteiligte
+        definition: >
+          Komplexe Organisationsstrukturen bei öffentlichen Großprojekten.
+        ankerbeispiel: "Ministerium als Bauherr über BWR und Staatsbauamt vertreten."
+
+      - id: D-02
+        name: CDE und Aufgabenmanagement
+        definition: >
+          Bewertung von Common Data Environment und Aufgabenmanagement-Systemen.
+        ankerbeispiel: "KARTEN als integrierte Plattform für Modelle, Pläne und Ticketmanagement."
+
+      - id: D-03
+        name: Bauherren-Einbindung in BIM
+        definition: >
+          Unterschiedliche Grade der Bauherren-Beteiligung an BIM-Prozessen.
+        ankerbeispiel: "IT-Firmen-Chef nutzt BIM-Modell intensiv für Planungsberatung."
+
+      - id: D-04
+        name: Schlitz- und Durchbruchskoordination
+        definition: >
+          Systematischer Workflow für die Koordination von Durchbrüchen
+          zwischen Fachplanern.
+        ankerbeispiel: "TGA-Planer erstellt Durchbruchsvorschläge als Volumenkörper für Statiker-Prüfung."
+
+  # -------------------------------------------------------------------
+  # E – Normen, Vorschriften und Regularien
+  # -------------------------------------------------------------------
+  - id: E
+    name: Normen, Vorschriften und Regularien
+    codes:
+      - id: E-01
+        name: Digitaler Bauantrag
+        definition: >
+          Digitaler Bauantrag als relevanter BIM-Anwendungsfall.
+        ankerbeispiel: "BIM-Modelle für digitale Bauantragsverfahren nutzen."
+
+      - id: E-02
+        name: CAD-Standards und Layer-Konventionen
+        definition: >
+          Anpassung an vorgegebene CAD-Standards und Layer-Konventionen.
+        ankerbeispiel: "Bundesbau-Pflichtenhefte mit spezifischen Layer-Benennungen."
+
+  # -------------------------------------------------------------------
+  # F – Kosten und Wirtschaftlichkeit
+  # -------------------------------------------------------------------
+  - id: F
+    name: Kosten und Wirtschaftlichkeit
+    codes:
+      - id: F-01
+        name: BIM-Mehraufwand und Kalkulation
+        definition: >
+          Zeit- und Kostenaufwand für BIM-spezifische Leistungen.
+        ankerbeispiel: "Unklare Attribut-Anforderungen führen zu Kalkulationsproblemen."
+
+      - id: F-02
+        name: Modellbasierte Mengenermittlung
+        definition: >
+          Automatisierte Kostenermittlung und Ausschreibung aus BIM-Modellen.
+        ankerbeispiel: "Flächengewerke können gut modellbasiert ausgeschrieben werden."
+
+      - id: F-03
+        name: HOAI-Liberalisierung und Preisdruck
+        definition: >
+          Auswirkungen der HOAI-Liberalisierung auf Honorarverhandlungen.
+        ankerbeispiel: "Angebote 25% unter HOAI-Sätzen durch Marktdruck."
+
+  # -------------------------------------------------------------------
+  # G – Nachhaltigkeit und Energieeffizienz
+  # -------------------------------------------------------------------
+  - id: G
+    name: Nachhaltigkeit und Energieeffizienz
+    codes:
+      - id: G-01
+        name: Energieeffizienz-Attribute
+        definition: >
+          Integration von Nachhaltigkeits- und Energieeffizienz-Parametern
+          in BIM-Modelle.
+        ankerbeispiel: "U-Werte und Schallschutzwerte werden manuell in Bauteile eingetragen."
+
+  # -------------------------------------------------------------------
+  # H – Herausforderungen und Problemfelder
+  # -------------------------------------------------------------------
+  - id: H
+    name: Herausforderungen und Problemfelder
+    codes:
+      - id: H-01
+        name: Komplexität vs. Nutzen bei kleinen Projekten
+        definition: >
+          Herausforderung der BIM-Rechtfertigung bei einfachen
+          Installationssituationen.
+        ankerbeispiel: "Einfamilienhaus mit 6cm Installationsbereich ohne Kollisionsprobleme."
+
+      - id: H-02
+        name: CDE-Komplexität und Benutzerfreundlichkeit
+        definition: >
+          Herausforderung der Benutzerfreundlichkeit bei komplexen CDE-Systemen.
+        ankerbeispiel: "Überforderung durch zu viele Funktionen und variable Konfigurationsmöglichkeiten."
+
+      - id: H-03
+        name: Modellbasierte Kostenermittlung Probleme
+        definition: >
+          Persistente technische Probleme bei der modellbasierten Kostenermittlung.
+        ankerbeispiel: "Seit 5-6 Jahren Entwicklungsarbeit an ArchiCAD-Nova AVA Schnittstelle."
+
+      - id: H-04
+        name: IT-Wartungsaufwand
+        definition: >
+          Notwendigkeit von IT-Expertise für BIM-Schnittstellenbetreuung.
+        ankerbeispiel: "Schnittstellenprogrammierung erfordert IT-Fachkräfte statt Konstrukteure."
+
+  # -------------------------------------------------------------------
+  # I – Innovation und Zukunftsperspektiven
+  # -------------------------------------------------------------------
+  - id: I
+    name: Innovation und Zukunftsperspektiven
+    codes:
+      - id: I-01
+        name: Visualisierung und Konfiguratoren
+        definition: >
+          Zukunftspotential von Echtzeit-Visualisierung und Material-Konfiguratoren.
+        ankerbeispiel: "Auto-Konfigurator für Häuser mit Live-Visualisierung und Kostenauswirkung."
+
+      - id: I-02
+        name: Standardisierung für Effizienzsteigerung
+        definition: >
+          Zukunftsvision standardisierter Bauteilbibliotheken für Effizienzsteigerung.
+        ankerbeispiel: "Goldbeck und andere Systemplaner mit standardisierten Bauteilkatalogen."
+
+      - id: I-03
+        name: Integrierte Projektabwicklung
+        definition: >
+          Vision einer vertrauensbasierten, projektfokussierten Zusammenarbeit.
+        ankerbeispiel: "BIM als Chance für transparente Zusammenarbeit ohne Haftungsabgrenzung."
+
+      - id: I-04
+        name: Automatisierungspotenziale
+        definition: >
+          Tätigkeiten und Prozesse, die durch Automatisierung oder
+          Standardisierung effizienter gestaltet werden könnten.
+        ankerbeispiel: "Automatisierte Planableitung und Mengenermittlung aus dem Modell."
+
+      - id: I-05
+        name: Förderinstrumente und politische Rahmenbedingungen
+        definition: >
+          Gewünschte Unterstützung und Förderinstrumente für BIM
+          von öffentlicher Seite (z.B. Bundesregierung).
+        ankerbeispiel: "Wünsche an die Bundesregierung zur BIM-Förderung."
+
+  # -------------------------------------------------------------------
+  # J – Qualitätssicherung und Kontrolle
+  # -------------------------------------------------------------------
+  - id: J
+    name: Qualitätssicherung und Kontrolle
+    codes:
+      - id: J-01
+        name: BIM-basierte Qualitätssicherung
+        definition: >
+          BIM als primäres Werkzeug zur Qualitätssicherung bei komplexen Projekten.
+        ankerbeispiel: "Mangelfreie Bauwerke durch BIM-basierte Planung und Koordination."
+
+      - id: J-02
+        name: Modellkonsistenz und Planableitung
+        definition: >
+          Konsistenz der Planung durch automatische Planableitung aus 3D-Modell.
+        ankerbeispiel: "Keine Widersprüche zwischen Grundriss, Ansicht und Schnitt mehr."
+
+      - id: J-03
+        name: Nachgelagerte Modellprüfung
+        definition: >
+          Systematische Prüfung bei Rückführung externer Fachplanungsdaten.
+        ankerbeispiel: "Kollisionsprüfung beim Import von Haustechnikplanungsdaten."
+
+  # -------------------------------------------------------------------
+  # K – Erfahrungswissen und Best Practices
+  # -------------------------------------------------------------------
+  - id: K
+    name: Erfahrungswissen und Best Practices
+    codes:
+      - id: K-01
+        name: Pragmatischer BIM-Ansatz
+        definition: >
+          Erfahrungsbasierter Ansatz für bedarfsgerechten BIM-Einsatz.
+        ankerbeispiel: "So wenig BIM wie möglich, so viel wie nötig für Projekterfolg."
+
+      - id: K-02
+        name: Standardisierte Projektabläufe
+        definition: >
+          Etablierung von BIM-Mindeststandards als Büro-Routine.
+        ankerbeispiel: "Jedes Projekt nutzt 3D-Planableitung und automatische Listen."
+
+      - id: K-03
+        name: Attribute und Standardisierung
+        definition: >
+          Entwicklung bürospezifischer Standard-Attribute für verschiedene
+          Leistungsphasen.
+        ankerbeispiel: "Mindest-Attribute wie Lage (innen/außen) und Tragfähigkeit bei jedem Bauteil."
+
+  # -------------------------------------------------------------------
+  # L – Ziele und Motivation BIM-Methode
+  # -------------------------------------------------------------------
+  - id: L
+    name: Ziele und Motivation BIM-Methode
+    codes:
+      - id: L-01
+        name: Motivation für BIM-Einführung
+        definition: >
+          Gründe und Anlässe, warum ein Büro oder Projekt BIM einsetzt
+          (z.B. Bauherrenanforderung, eigener Antrieb, Wettbewerbsvorteil).
+        ankerbeispiel: "Wir haben BIM eingeführt, weil die öffentlichen Auftraggeber es verlangten."
+
+      - id: L-02
+        name: Erwartete BIM-Mehrwerte
+        definition: >
+          Konkret benannte Mehrwerte, die durch BIM erwartet oder
+          erfahren werden (Qualität, Kosten, Zeitersparnis, Transparenz).
+        ankerbeispiel: "Der größte Mehrwert ist die Kollisionsprüfung und konsistente Planung."
+
+  # ===================================================================
+  # TEIL IV – LOIN / LOG / LOI
+  # ===================================================================
+
+  - id: M
+    name: LOIN – Level of Information Need
+    definition: >
+      Gesamtbedarf an Informationen zu einem BIM-Objekt in einer
+      bestimmten Projektphase. LOIN = LOG + LOI (nach DIN EN 17412-1).
+    codes:
+
+      - id: M-LOG
+        name: Level of Geometry (LOG)
+        definition: >
+          Geometrischer Detaillierungsgrad eines BIM-Objekts –
+          wie präzise und detailliert ein Bauteil dreidimensional modelliert ist.
+        norm: "ISO 19650, DIN EN 17412-1"
+        subcodes:
+          - id: LOG-01
+            name: "LOG 1 – Konzept"
+            definition: >
+              Symbolische oder schematische Darstellung. Keine realistische
+              Geometrie, nur Platzhalter.
+          - id: LOG-02
+            name: "LOG 2 – Vorentwurf / Machbarkeit"
+            definition: >
+              Grobe, vereinfachte 3D-Geometrie. Annäherungsabmessungen.
+          - id: LOG-03
+            name: "LOG 3 – Entwurf"
+            definition: >
+              Realitätsnahe Geometrie mit tatsächlichen Abmessungen.
+              Bauteilstruktur ablesbar, Hauptanschlüsse vorhanden.
+          - id: LOG-04
+            name: "LOG 4 – Genehmigung / Ausführungsplanung"
+            definition: >
+              Vollständige, genaue Geometrie. Alle Details modelliert
+              (Bewehrung, Dämmstärken, Anschlussdetails). Maßhaltig.
+          - id: LOG-05
+            name: "LOG 5 – Ausführung / Fertigung"
+            definition: >
+              Präzise Fertigungsgeometrie. Herstellerspezifisch,
+              Einbaumaße inklusive Toleranzen.
+          - id: LOG-06
+            name: "LOG 6 – Inbetriebnahme (As-built)"
+            definition: >
+              As-built-Geometrie (aufgemessen oder Scan-to-BIM).
+              Abweichungen zur Planung dokumentiert.
+          - id: LOG-07
+            name: "LOG 7 – Betrieb / FM"
+            definition: >
+              Vereinfachte, betriebsrelevante Geometrie. Raummodelle,
+              Zonenmodelle für FM-Zwecke, Wartungsbereiche.
+
+      - id: M-LOI
+        name: Level of Information (LOI)
+        definition: >
+          Detaillierungsgrad der alphanumerischen (nicht-geometrischen)
+          Informationen eines BIM-Objekts (Attribute, Properties, Metadaten).
+        norm: "ISO 19650, DIN EN 17412-1"
+        subcodes:
+          - id: LOI-01
+            name: "LOI 1 – Konzept"
+            definition: >
+              Grundlegende Klassifikation (Objekttyp, Funktion).
+          - id: LOI-02
+            name: "LOI 2 – Vorentwurf / Machbarkeit"
+            definition: >
+              Bauteilkategorie definiert. Wesentliche Leistungsmerkmale.
+          - id: LOI-03
+            name: "LOI 3 – Entwurf"
+            definition: >
+              Spezifische Materialeigenschaften, normkonforme Bezeichnungen,
+              Schallschutz/Brandschutz hinterlegt.
+          - id: LOI-04
+            name: "LOI 4 – Genehmigung / Ausführungsplanung"
+            definition: >
+              Vollständige technische Spezifikation. Herstellerangaben,
+              Mengen-/Massenermittlung, ausschreibungsrelevante Attribute.
+          - id: LOI-05
+            name: "LOI 5 – Ausführung / Fertigung"
+            definition: >
+              Produktspezifische Daten (Hersteller, Artikelnummer, Charge).
+              Einbauanweisungen, Zertifikate, Nachweise.
+          - id: LOI-06
+            name: "LOI 6 – Inbetriebnahme"
+            definition: >
+              As-built-Dokumentation der Eigenschaften.
+              Abnahmeprotokolle, Messwerte, Betriebsparameter.
+          - id: LOI-07
+            name: "LOI 7 – Betrieb / FM"
+            definition: >
+              FM-relevante Attribute (Wartungszyklen, Garantien, Servicedaten).
+              Integrationsfähig in CAFM-/CMMS-Systeme.
+
+      - id: M-LOIN-MATRIX
+        name: LOIN-Zuordnung nach Leistungsphase
+        definition: >
+          Typische Zuordnung von LOIN-Stufen zu HOAI-Leistungsphasen
+          als Orientierungsrahmen (projektspezifisch im AIA/BAP festzulegen).
+        subcodes:
+          - id: LOIN-LP1
+            name: "LP 1 – LOIN 1"
+            definition: "Grundlagenermittlung: LOG 1 + LOI 1"
+          - id: LOIN-LP2
+            name: "LP 2 – LOIN 2"
+            definition: "Vorplanung: LOG 2 + LOI 2"
+          - id: LOIN-LP3
+            name: "LP 3 – LOIN 3"
+            definition: "Entwurfsplanung: LOG 3 + LOI 3"
+          - id: LOIN-LP4
+            name: "LP 4 – LOIN 3-4"
+            definition: "Genehmigungsplanung: je nach Anforderung LOG 3-4 + LOI 3-4"
+          - id: LOIN-LP5
+            name: "LP 5 – LOIN 4"
+            definition: "Ausführungsplanung: LOG 4 + LOI 4"
+          - id: LOIN-LP6
+            name: "LP 6 – LOIN 4"
+            definition: "Vorbereitung Vergabe: LOI 4 vollständig für LV"
+          - id: LOIN-LP7
+            name: "LP 7 – LOIN 4-5"
+            definition: "Mitwirkung Vergabe: LOG 4-5 + LOI 4-5"
+          - id: LOIN-LP8
+            name: "LP 8 – LOIN 5"
+            definition: "Bauüberwachung: LOG 5 + LOI 5"
+          - id: LOIN-LP9
+            name: "LP 9 – LOIN 6-7"
+            definition: "Objektbetreuung / FM: As-built (LOG 6) + Betriebsdaten (LOI 7)"
+
+  # ===================================================================
+  # TEIL V – VISUELLE ANALYSE (Plandarstellungen)
+  # Für die Vision-Pipeline (Pläne, Zeichnungen, Fotos)
+  # ===================================================================
+
+  # -------------------------------------------------------------------
+  # O – Bauelemente und Konstruktion (visuell)
+  # -------------------------------------------------------------------
+  - id: O
+    name: Bauelemente und Konstruktion
+    codes:
+      - id: O-01
+        name: Tragende Bauteile
+        definition: >
+          Tragende Bauteile in Plänen sichtbar: Wände, Stützen, Decken,
+          Fundamente, Unterzüge. IFC: IfcWall, IfcColumn, IfcSlab, IfcFooting.
+        ankerbeispiel: "Grundriss zeigt tragende Wände mit Schraffur und Bemaßung."
+
+      - id: O-02
+        name: Nichttragende Bauteile
+        definition: >
+          Nichttragende Elemente: Trennwände, Brüstungen, Vorsatzschalen.
+          IFC: IfcWall (non-loadbearing), IfcCurtainWall.
+
+      - id: O-03
+        name: Öffnungen
+        definition: >
+          Türen, Fenster, Tore in Plänen sichtbar.
+          IFC: IfcDoor, IfcWindow.
+
+      - id: O-04
+        name: Treppen und Rampen
+        definition: >
+          Vertikale Erschließung: Treppen, Rampen, Aufzüge.
+          IFC: IfcStair, IfcRamp, IfcTransportElement.
+
+      - id: O-05
+        name: Dachkonstruktion
+        definition: >
+          Dachform, Dachaufbau, Gauben, Dachfenster.
+          IFC: IfcRoof, IfcSlab (Dach).
+
+      - id: O-06
+        name: Fassade und Außenhülle
+        definition: >
+          Fassadengestaltung, Materialisierung, Fensteraufteilung in Ansichten.
+          IFC: IfcCurtainWall, IfcWall (außen).
+
+      - id: O-07
+        name: Technische Gebäudeausrüstung
+        definition: >
+          Sichtbare TGA-Elemente in Plänen: Leitungsführung, Schächte,
+          Heizkörper, Sanitärobjekte.
+          IFC: IfcDistributionElement und Unterklassen.
+
+      - id: O-08
+        name: Außenanlagen und Gelände
+        definition: >
+          Geländemodellierung, Zufahrten, Stellplätze, Bepflanzung im Lageplan.
+          IFC: IfcSite, IfcGeographicElement.
+
+  # -------------------------------------------------------------------
+  # PD – Plandarstellung und Dokumentationstyp
+  # (Umbenannt von P zu PD, da P in der Triangulation für Prozesse steht)
+  # -------------------------------------------------------------------
+  - id: PD
+    name: Plandarstellung und Dokumentationstyp
+    codes:
+      - id: PD-01
+        name: Grundriss
+        definition: >
+          Horizontalschnitt durch ein Geschoss. Zeigt Raumaufteilung,
+          Wände, Öffnungen, Bemaßung.
+
+      - id: PD-02
+        name: Schnitt
+        definition: >
+          Vertikaler Durchschnitt durch das Gebäude. Zeigt Geschosshöhen,
+          Deckenaufbauten, Gründung.
+
+      - id: PD-03
+        name: Ansicht
+        definition: >
+          Fassadenansicht von außen. Zeigt Materialisierung,
+          Fensteraufteilung, Dachform.
+
+      - id: PD-04
+        name: Detailzeichnung
+        definition: >
+          Konstruktionsdetail im großen Maßstab (1:5 bis 1:20).
+          Anschlüsse, Schichtaufbauten, Abdichtungen.
+
+      - id: PD-05
+        name: Lageplan und Umgebungsplan
+        definition: >
+          Draufsicht auf Grundstück mit Gebäudeposition, Abständen,
+          Erschließung, Nachbarbebauung.
+
+      - id: PD-06
+        name: Maßstab und Bemaßung
+        definition: >
+          Vorhandensein und Qualität von Maßangaben, Maßstabsleiste,
+          Raumflächen in Raumstempeln.
+
+      - id: PD-07
+        name: Legende und Symbole
+        definition: >
+          Planlegende mit Erklärung der verwendeten Symbole,
+          Schraffuren, Linientypen.
+
+      - id: PD-08
+        name: Schriftfeld und Plankopf-Metadaten
+        definition: >
+          Informationen aus dem Plankopf: Maßstab, Plan-Nr.,
+          Leistungsphase, Gewerk, Index, Datum, Bauherr.
+
+  # -------------------------------------------------------------------
+  # Q – LOD/LOG-Evidenz (visuell)
+  # -------------------------------------------------------------------
+  - id: Q
+    name: LOD/LOG-Evidenz visuell
+    codes:
+      - id: Q-01
+        name: LOG-Stufe aus Plandarstellung
+        definition: >
+          Sichtbarer geometrischer Detaillierungsgrad (LOG) eines
+          Bauelements in der Plandarstellung.
+
+      - id: Q-02
+        name: LOI-Evidenz aus Beschriftungen
+        definition: >
+          Sichtbare nicht-geometrische Informationen (LOI) in Plänen:
+          Materialbeschriftungen, Bauteilnummern, Parameter in Tabellen.
+
+      - id: Q-03
+        name: Detaillierungsgrad-Abweichung
+        definition: >
+          Abweichung zwischen erwartetem LOD (laut LPH/AIA) und
+          tatsächlich in Plänen erreichtem LOD.

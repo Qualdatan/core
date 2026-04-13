@@ -1,0 +1,82 @@
+name: Qualitative Inhaltsanalyse nach Mayring
+id: mayring
+description: >
+  Deduktiv-induktive qualitative Inhaltsanalyse nach Philipp Mayring.
+  Textstellen werden anhand eines Kategoriensystems kodiert, wobei
+  bestehende Kategorien deduktiv angewandt und neue induktiv gebildet werden.
+
+model: claude-sonnet-4-20250514
+max_tokens: 16384
+
+categories:
+  A: Projektakquise und Auftragsvergabe
+  B: Planungsprozess und Projektablauf
+  C: Digitale Werkzeuge und BIM
+  D: Kommunikation und Zusammenarbeit
+  E: Normen, Vorschriften und Regularien
+  F: Kosten und Wirtschaftlichkeit
+  G: Nachhaltigkeit und Energieeffizienz
+  H: Herausforderungen und Problemfelder
+  I: Innovation und Zukunftsperspektiven
+  J: Qualitätssicherung und Kontrolle
+  K: Erfahrungswissen und Best Practices
+
+prompt_template: |
+  Du bist ein Experte für qualitative Inhaltsanalyse nach Mayring (deduktiv-induktiv).
+
+  Analysiere das folgende Transkript eines Experteninterviews.
+  Die Inhalte sind als nummerierte Blöcke mit IDs in eckigen Klammern aufbereitet.
+
+  ## Hauptkategorien (deduktiv vorgegeben):
+  {categories}
+
+  {codebase_section}
+
+  ## Aufgabe:
+  1. Identifiziere alle relevanten Textblöcke und weise ihnen Codes zu.
+  2. Referenziere Blöcke über ihre ID (z.B. "p1_b3").
+  3. Jeder Code gehört zu genau einer Hauptkategorie ({category_keys}).
+  4. Vergib Code-IDs im Format "X-NN" (z.B. "A-01", "B-03").
+  5. Erstelle eine Kodierdefinition, ein Ankerbeispiel und eine Abgrenzungsregel für jeden Code.
+  6. Formuliere 3-5 Kernergebnisse als wissenschaftliche Befunde.
+
+  ## Transkript ({filename}):
+  ---
+  {content}
+  ---
+
+  ## Antwortformat (strikt JSON, keine Erklärungen davor/danach):
+  {{
+    "codings": [
+      {{
+        "block_id": "p1_b3",
+        "code_id": "A-01",
+        "code_name": "Kurzer Code-Name",
+        "hauptkategorie": "A",
+        "kodierdefinition": "Definition des Codes",
+        "ankerbeispiel": "Typisches Beispiel",
+        "abgrenzungsregel": "Abgrenzung zum Nachbarcode"
+      }}
+    ],
+    "kernergebnisse": [
+      {{
+        "nr": 1,
+        "befund": "Kurzer Befund",
+        "erlaeuterung": "Wissenschaftliche Erläuterung"
+      }}
+    ]
+  }}
+
+  WICHTIG:
+  - Verwende die Block-IDs exakt wie angegeben (z.B. "p1_b3").
+  - Ein Block kann mehrere Codes bekommen (als separate Einträge).
+  - Gib NUR valides JSON zurück, keine Markdown-Codeblöcke.
+  - Sei gründlich: kodiere ALLE relevanten Stellen, nicht nur die offensichtlichsten.
+  - Nutze pro Hauptkategorie mehrere spezifische Codes (mindestens 2-3 verschiedene wo möglich).
+
+codebase_prompt: |
+  ## Vorhandene Codebasis (deduktiv anzuwenden):
+  Die folgenden Codes sind bereits definiert und MÜSSEN vorrangig verwendet werden.
+  Neue Codes dürfen nur induktiv ergänzt werden, wenn keine bestehende Kategorie passt.
+
+  {codebase}

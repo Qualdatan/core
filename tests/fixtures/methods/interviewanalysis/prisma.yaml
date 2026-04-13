@@ -1,0 +1,75 @@
+name: Systematisches Review nach PRISMA
+id: prisma
+description: >
+  Systematische Literaturanalyse nach dem PRISMA-Schema (Preferred Reporting
+  Items for Systematic Reviews and Meta-Analyses). Texte werden nach
+  vordefinierten Ein-/Ausschlusskriterien kodiert und bewertet.
+
+model: claude-sonnet-4-20250514
+max_tokens: 16384
+
+categories:
+  ID: Identifikation
+  SC: Screening
+  EL: Eignung (Eligibility)
+  IN: Eingeschlossen (Included)
+  ME: Methodik
+  ER: Ergebnisse
+  DI: Diskussion
+  LI: Limitationen
+
+prompt_template: |
+  Du bist ein Experte für systematische Reviews nach dem PRISMA-Schema.
+
+  Analysiere den folgenden Text im Rahmen eines systematischen Reviews.
+  Die Inhalte sind als nummerierte Blöcke mit IDs in eckigen Klammern aufbereitet.
+
+  ## Kategorien:
+  {categories}
+
+  {codebase_section}
+
+  ## Aufgabe:
+  1. Identifiziere alle relevanten Textblöcke und weise ihnen Codes zu.
+  2. Referenziere Blöcke über ihre ID (z.B. "p1_b3").
+  3. Jeder Code gehört zu genau einer Kategorie ({category_keys}).
+  4. Vergib Code-IDs im Format "XX-NN" (z.B. "ID-01", "SC-03").
+  5. Erstelle eine Kodierdefinition und ein Ankerbeispiel für jeden Code.
+  6. Formuliere 3-5 Kernergebnisse.
+
+  ## Text ({filename}):
+  ---
+  {content}
+  ---
+
+  ## Antwortformat (strikt JSON, keine Erklärungen davor/danach):
+  {{
+    "codings": [
+      {{
+        "block_id": "p1_b0",
+        "code_id": "ID-01",
+        "code_name": "Kurzer Code-Name",
+        "hauptkategorie": "ID",
+        "kodierdefinition": "Definition des Codes",
+        "ankerbeispiel": "Typisches Beispiel",
+        "abgrenzungsregel": "Abgrenzung"
+      }}
+    ],
+    "kernergebnisse": [
+      {{
+        "nr": 1,
+        "befund": "Kurzer Befund",
+        "erlaeuterung": "Erläuterung"
+      }}
+    ]
+  }}
+
+  WICHTIG:
+  - Verwende die Block-IDs exakt wie angegeben (z.B. "p1_b0").
+  - Gib NUR valides JSON zurück, keine Markdown-Codeblöcke.
+
+codebase_prompt: |
+  ## Vorhandene Codebasis:
+  Die folgenden Codes sind bereits definiert und MÜSSEN vorrangig verwendet werden.
+
+  {codebase}

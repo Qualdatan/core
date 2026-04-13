@@ -20,7 +20,6 @@ classifiers = [
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
     "Topic :: Text Processing :: Linguistic",
-    "License :: OSI Approved :: GNU Affero General Public License v3",
 ]
 
 dependencies = [
