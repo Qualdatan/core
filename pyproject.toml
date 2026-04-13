@@ -1,0 +1,106 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simple-bim"
+version = "0.1.0"
+description = "Qualitative Analyse-Pipeline fuer Experteninterviews und Projektdokumente mit Claude API und MAXQDA-Export"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [
+    { name = "Friedrich Schroedter" },
+]
+keywords = ["bim", "qualitative-analysis", "maxqda", "claude", "refi-qda"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Text Processing :: Linguistic",
+]
+
+dependencies = [
+    "anthropic>=0.40.0",
+    "python-docx>=1.0.0",
+    "openpyxl>=3.1.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+    "pymupdf>=1.27.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+simple-bim = "main:main"
+
+[project.urls]
+Repository = "https://github.com/friedrichschroedter/simple-bim"
+
+# ---------------------------------------------------------------------------
+# Packaging
+# ---------------------------------------------------------------------------
+# The project has two import roots:
+#   - `src` (the business-logic package; kept as-is to avoid a big rename)
+#   - `main` (top-level module, the CLI entry point)
+[tool.setuptools]
+py-modules = ["main"]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+exclude = ["tests*", "output*", "input*", ".obsidian*", "docs*", "scripts*"]
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = [
+    "-q",
+    "--strict-markers",
+]
+markers = [
+    "slow: tests that make real API calls or are otherwise slow",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff (linter + formatter)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = [
+    "output",
+    "input",
+    ".venv",
+    "improvement",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "E501",  # line-length handled by formatter, don't fail the lint
+    "B008",  # function calls in default args (common pattern here)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B", "F401"]     # tests often import fixtures, use asserts with side effects
+"scripts/*" = ["B", "F401"]
