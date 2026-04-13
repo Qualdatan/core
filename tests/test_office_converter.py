@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from src.office_converter import (
+from qualdatan_core.office_converter import (
     SUPPORTED_EXTENSIONS,
     OfficeConverterUnavailable,
     convert_to_pdf,

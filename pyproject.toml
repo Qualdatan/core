@@ -47,11 +47,12 @@ Issues = "https://github.com/Qualdatan/core/issues"
 # ---------------------------------------------------------------------------
 # Packaging
 # ---------------------------------------------------------------------------
-# Kept at `src/` during Phase 1; Phase A renames to `src/qualdatan_core/` and
-# introduces proper subpackages (pdf/, qdpx/, steps/, llm/, coding/, facets/).
+# src/qualdatan_core/ is the importable package. Phase A.2 adds subpackages
+# (pdf/, qdpx/, steps/, coding/, llm/, facets/) without changing the
+# top-level import path.
 [tool.setuptools.packages.find]
-include = ["src*"]
-exclude = ["tests*"]
+where = ["src"]
+include = ["qualdatan_core*"]
 
 # ---------------------------------------------------------------------------
 # Pytest
@@ -59,7 +60,7 @@ exclude = ["tests*"]
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = ["src"]
 addopts = [
     "-q",
     "--strict-markers",

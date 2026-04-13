@@ -4,7 +4,7 @@ import json
 import threading
 import pytest
 
-from src.db import PipelineDB
+from qualdatan_core.db import PipelineDB
 
 
 @pytest.fixture

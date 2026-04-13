@@ -3,7 +3,7 @@
 import dataclasses
 
 import pytest
-from src.recipe import (
+from qualdatan_core.recipe import (
     list_recipes, load_recipe, _strategy_instruction, CODING_STRATEGIES,
 )
 

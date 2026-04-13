@@ -9,7 +9,7 @@ from pathlib import Path
 import fitz
 import pytest
 
-from src.pdf_annotator import annotate_text_pdf, annotate_visual_pdf
+from qualdatan_core.pdf_annotator import annotate_text_pdf, annotate_visual_pdf
 
 
 # ---------------------------------------------------------------------------

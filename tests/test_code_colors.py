@@ -4,7 +4,7 @@ import colorsys
 import pytest
 import yaml
 
-from src.code_colors import (
+from qualdatan_core.code_colors import (
     CodeColorMap,
     _hex_to_rgb,
     _rgb_to_hex,

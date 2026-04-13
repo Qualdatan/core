@@ -2,11 +2,11 @@
 
 import json
 import pytest
-from src.step1_analyze import extract_json, validate_positions, resolve_block_codings
-from src.pdf_extractor import (
+from qualdatan_core.step1_analyze import extract_json, validate_positions, resolve_block_codings
+from qualdatan_core.pdf_extractor import (
     build_fulltext_and_positions, extract_docx, extract_document,
 )
-from src.run_context import RunContext
+from qualdatan_core.run_context import RunContext
 
 
 class TestExtractJson:
