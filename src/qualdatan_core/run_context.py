@@ -2,21 +2,32 @@
 
 Nutzt pipeline.db (SQLite) fuer State-Tracking.
 Prompts und Responses bleiben als Textdateien (Debugging).
+
+Phase D.2: Der RunContext kann zusaetzlich (additiv) an die globale
+:class:`qualdatan_core.app_db.AppDB` angebunden werden. Die bestehende
+``pipeline.db``-Semantik bleibt unveraendert; die App-DB spiegelt lediglich
+Projekt-/Run-Katalog sowie Materialien/Facets fuer das Multi-Repo-Setup.
 """
 
 import json
+import sqlite3
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .config import OUTPUT_ROOT
 from .db import PipelineDB
+
+if TYPE_CHECKING:
+    from .app_db import AppDB
 
 
 class RunStatus(str, Enum):
     RUNNING = "running"
     COMPLETED = "completed"
     INTERRUPTED = "interrupted"
+    FAILED = "failed"
 
 
 class RunContext:
@@ -35,7 +46,10 @@ class RunContext:
         └── analysis_results.json
     """
 
-    def __init__(self, run_dir: Path):
+    def __init__(self, run_dir: Path,
+                 app_db: "AppDB | None" = None,
+                 app_project_id: int | None = None,
+                 app_run_id: int | None = None):
         self.run_dir = run_dir
         self.cache_dir = run_dir / ".cache"  # Legacy-Kompatibilitaet
         self.prompts_dir = run_dir / "prompts"
@@ -50,8 +64,166 @@ class RunContext:
         self.evaluation_xlsx = self.evaluation_dir / "auswertung.xlsx"
         self.qdpx_file = self.qda_dir / "project.qdpx"
 
-        # Datenbank
+        # Datenbank (per-Run, bleibt unveraendert)
         self.db = PipelineDB(run_dir / "pipeline.db")
+
+        # Optionale Anbindung an globale App-DB (Phase D.2)
+        self.app_db: "AppDB | None" = app_db
+        self.app_project_id: int | None = app_project_id
+        self.app_run_id: int | None = app_run_id
+
+    # ------------------------------------------------------------------
+    # App-DB Anbindung (Phase D.2)
+    # ------------------------------------------------------------------
+
+    def attach_to_app_db(self, app_db: "AppDB", project_name: str, *,
+                         preset_id: str = "",
+                         config: dict | None = None,
+                         description: str = "") -> int:
+        """Verbindet diesen RunContext idempotent mit der App-DB.
+
+        Holt das Projekt per :func:`get_project_by_name` oder legt es via
+        :func:`create_project` neu an. Erzeugt anschliessend einen Run mit
+        ``run_dir=str(self.run_dir)`` und Status ``pending``. Bei
+        ``UNIQUE(project_id, run_dir)``-Verletzung (sqlite3.IntegrityError)
+        wird der bestehende Run-Datensatz geholt.
+
+        Args:
+            app_db: Offene :class:`AppDB`-Instanz.
+            project_name: Name des Projekts in der App-DB.
+            preset_id: Optionales Bundle-/Preset-Kennzeichen.
+            config: Optionaler Config-Snapshot, als JSON gespeichert.
+            description: Beschreibung fuer neu angelegte Projekte.
+
+        Returns:
+            Die neue oder bestehende ``app_run_id``.
+        """
+        from .app_db import (
+            create_project,
+            create_run as _app_db_create_run,
+            get_project_by_name,
+        )
+
+        project = get_project_by_name(app_db, project_name)
+        if project is None:
+            project = create_project(
+                app_db,
+                name=project_name,
+                description=description,
+                preset_id=preset_id,
+            )
+
+        config_json = json.dumps(config or {})
+        try:
+            run = _app_db_create_run(
+                app_db,
+                project_id=project.id,
+                run_dir=str(self.run_dir),
+                config_json=config_json,
+                status="pending",
+            )
+            run_id = run.id
+        except sqlite3.IntegrityError:
+            # UNIQUE(project_id, run_dir) verletzt -> existierenden Run holen
+            with app_db.connection() as conn:
+                row = conn.execute(
+                    "SELECT id FROM runs WHERE project_id = ? AND run_dir = ?",
+                    (project.id, str(self.run_dir)),
+                ).fetchone()
+            if row is None:  # pragma: no cover - defensive
+                raise
+            run_id = row["id"]
+
+        self.app_db = app_db
+        self.app_project_id = project.id
+        self.app_run_id = run_id
+        return run_id
+
+    def register_material(self, material_kind: str, path: str, *,
+                          relative_path: str = "",
+                          source_label: str = "") -> int | None:
+        """Registriert ein Material in der App-DB (falls angebunden).
+
+        Args:
+            material_kind: Z.B. ``"transcript"``, ``"pdf_text"``, ``"image"``.
+            path: Absoluter Pfad zur Quelldatei.
+            relative_path: Projekt-relativer Pfad (optional).
+            source_label: Freies Label (optional).
+
+        Returns:
+            Die neue ``run_material``-ID, oder ``None`` wenn dieser Context
+            nicht an eine App-DB angebunden ist oder das Einfuegen scheitert.
+        """
+        if self.app_db is None or self.app_run_id is None:
+            return None
+        try:
+            from .app_db import add_run_material
+            material = add_run_material(
+                self.app_db,
+                self.app_run_id,
+                material_kind=material_kind,
+                path=path,
+                relative_path=relative_path,
+                source_label=source_label,
+            )
+            return material.id
+        except Exception:
+            return None
+
+    def register_facet(self, facet_id: str, *, bundle_id: str = "",
+                       params: dict | None = None) -> int | None:
+        """Aktiviert eine Facet fuer diesen Run in der App-DB.
+
+        Args:
+            facet_id: Stabiler Facet-Identifier.
+            bundle_id: Optionales Bundle, zu dem die Facet gehoert.
+            params: Optionale Parameter (werden als JSON serialisiert).
+
+        Returns:
+            Die neue ``run_facet``-ID, oder ``None`` wenn nicht angebunden
+            oder das Einfuegen scheitert.
+        """
+        if self.app_db is None or self.app_run_id is None:
+            return None
+        try:
+            from .app_db import add_run_facet
+            facet = add_run_facet(
+                self.app_db,
+                self.app_run_id,
+                facet_id=facet_id,
+                bundle_id=bundle_id,
+                params_json=json.dumps(params or {}),
+            )
+            return facet.id
+        except Exception:
+            return None
+
+    def mark_failed(self, reason: str = ""):
+        """Markiert den Run als fehlgeschlagen.
+
+        Setzt in der ``pipeline.db`` den Status auf ``INTERRUPTED`` (damit
+        der Resume-Mechanismus den Run findet) und spiegelt dies, falls
+        angebunden, als ``failed`` in die App-DB (best-effort).
+
+        Args:
+            reason: Optionaler Fehlergrund (wird in der pipeline.db gesetzt).
+        """
+        self.db.set_state("status", RunStatus.INTERRUPTED)
+        if reason:
+            self.db.set_state("error_reason", reason)
+        self.db.set_state("updated_at", datetime.now().isoformat())
+
+        if self.app_db is not None and self.app_run_id is not None:
+            try:
+                from .app_db import update_run_status
+                update_run_status(
+                    self.app_db,
+                    self.app_run_id,
+                    "failed",
+                    finished_at=datetime.now().isoformat(),
+                )
+            except Exception:
+                pass
 
     # ------------------------------------------------------------------
     # Annotator-Pfade (Phase 5)
@@ -188,6 +360,14 @@ class RunContext:
         self.db.set_state("started_at", datetime.now().isoformat())
         self.db.set_state("updated_at", datetime.now().isoformat())
 
+        # App-DB Mirror (best-effort, Phase D.2)
+        if self.app_db is not None and self.app_run_id is not None:
+            try:
+                from .app_db import update_run_status
+                update_run_status(self.app_db, self.app_run_id, "running")
+            except Exception:
+                pass
+
     def mark_transcript_done(self, filename: str):
         """Markiert ein Transkript als fertig analysiert."""
         done = self.db.get_state("completed_transcripts", [])
@@ -209,6 +389,19 @@ class RunContext:
         self.db.set_state("status", RunStatus.COMPLETED)
         self.db.set_state("finished_at", datetime.now().isoformat())
         self.db.set_state("updated_at", datetime.now().isoformat())
+
+        # App-DB Mirror (best-effort, Phase D.2)
+        if self.app_db is not None and self.app_run_id is not None:
+            try:
+                from .app_db import update_run_status
+                update_run_status(
+                    self.app_db,
+                    self.app_run_id,
+                    "completed",
+                    finished_at=datetime.now().isoformat(),
+                )
+            except Exception:
+                pass
 
     def get_state(self) -> dict:
         return self.db.get_all_state()
@@ -282,8 +475,23 @@ class RunContext:
 # Run-Verwaltung: Erstellen, Finden, Resume
 # ======================================================================
 
-def create_run() -> RunContext:
-    """Erstellt einen neuen Run mit Datetime-Verzeichnis."""
+def create_run(*, app_db: "AppDB | None" = None,
+               project_name: str | None = None,
+               preset_id: str = "",
+               config: dict | None = None) -> RunContext:
+    """Erstellt einen neuen Run mit Datetime-Verzeichnis.
+
+    Args:
+        app_db: Optionale App-DB-Instanz. Wenn zusammen mit ``project_name``
+            gesetzt, wird der neue :class:`RunContext` automatisch via
+            :meth:`RunContext.attach_to_app_db` angebunden.
+        project_name: Projektname in der App-DB (nur relevant mit ``app_db``).
+        preset_id: Bundle-/Preset-ID fuer das Projekt (optional).
+        config: Config-Snapshot, der als JSON in die App-DB gespeichert wird.
+
+    Returns:
+        Der frisch erzeugte, optional an die App-DB angebundene RunContext.
+    """
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = OUTPUT_ROOT / timestamp
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -298,6 +506,14 @@ def create_run() -> RunContext:
         latest.symlink_to(run_dir.name)
     except OSError:
         pass  # Symlinks auf Windows manchmal nicht moeglich
+
+    if app_db is not None and project_name:
+        ctx.attach_to_app_db(
+            app_db,
+            project_name,
+            preset_id=preset_id,
+            config=config,
+        )
 
     return ctx
 
