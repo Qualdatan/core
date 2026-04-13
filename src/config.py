@@ -29,7 +29,7 @@ def _path(env_var: str, default: Path) -> Path:
 
 
 # === Statische Daten (ueber Runs hinweg geteilt) ===
-METHODS_DIR     = _path("METHODS_DIR",     PROJECT_ROOT / "methods")
+METHODS_DIR     = _path("METHODS_DIR",     PROJECT_ROOT / "input" / "methods")
 CODEBASES_DIR   = _path("CODEBASES_DIR",   PROJECT_ROOT / "input" / "codebases")
 
 # === Run-spezifische Daten ===
