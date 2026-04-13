@@ -21,6 +21,12 @@ uv sync
 AGPL-3.0-only — siehe [LICENSE](LICENSE). SPDX-Header-Vorlage:
 [Umbrella docs/agpl-header.txt](https://github.com/GeneralPawz/Qualdatan/blob/main/docs/agpl-header.txt).
 
+## Dokumentation
+
+- Live-Site: https://qualdatan.github.io/core/
+- Lokaler Preview: `pip install -e ".[docs]" && mkdocs serve`
+- Docs-Policy und -Struktur: [CLAUDE.md](CLAUDE.md)
+
 ## Kontext
 
 - Architektur-Ueberblick im Umbrella:
