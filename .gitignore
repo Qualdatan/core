@@ -8,3 +8,6 @@ __pycache__/
 *.egg-info/
 .obsidian/
 improvement/
+
+# MkDocs build
+site/
