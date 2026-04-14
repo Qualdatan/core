@@ -17,7 +17,6 @@ from qualdatan_core.app_db.migrate import (
     migrate_legacy_output,
 )
 
-
 # ---------------------------------------------------------------------------
 # Legacy-Fixture-Builder
 # ---------------------------------------------------------------------------
@@ -223,9 +222,7 @@ class TestMigrateLegacyOutput:
             assert report.materials_imported == 3  # 2 PDFs + 1 interview
 
             with db.connection() as conn:
-                proj = conn.execute(
-                    "SELECT id, name FROM projects"
-                ).fetchone()
+                proj = conn.execute("SELECT id, name FROM projects").fetchone()
                 assert proj["name"] == "HKS"
 
                 run = conn.execute("SELECT * FROM runs").fetchone()
@@ -241,10 +238,7 @@ class TestMigrateLegacyOutput:
                 assert codes == {"PROC-EXEC", "ROLE-PM"}
                 # 100-200 -> parsed segment
                 ranged = [c for c in codings if c["segment_start"] is not None]
-                assert any(
-                    c["segment_start"] == 100 and c["segment_end"] == 200
-                    for c in ranged
-                )
+                assert any(c["segment_start"] == 100 and c["segment_end"] == 200 for c in ranged)
 
     def test_status_mapping_running(self, tmp_path: Path):
         output = tmp_path / "output"
@@ -381,9 +375,7 @@ class TestMigrateLegacyOutput:
             assert report.projects_created == 2
             assert report.run_dirs_migrated == 1  # ein run_dir, 2 runs
             with db.connection() as conn:
-                rows = conn.execute(
-                    "SELECT name FROM projects ORDER BY name"
-                ).fetchall()
+                rows = conn.execute("SELECT name FROM projects ORDER BY name").fetchall()
                 names = [r["name"] for r in rows]
                 (rn,) = conn.execute("SELECT COUNT(*) FROM runs").fetchone()
             assert names == ["HKS", "PBN"]

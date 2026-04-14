@@ -25,9 +25,10 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 __all__ = [
     "LLMCacheEntry",
@@ -183,9 +184,7 @@ def _row_to_pdf(row) -> PDFCacheEntry:
 def llm_cache_get(db, key_sha: str) -> LLMCacheEntry | None:
     """Liefert den Cache-Eintrag zu ``key_sha`` oder ``None``."""
     with db.connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM cache_llm WHERE key_sha = ?", (key_sha,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM cache_llm WHERE key_sha = ?", (key_sha,)).fetchone()
     return _row_to_llm(row) if row is not None else None
 
 
@@ -252,9 +251,7 @@ def llm_cache_clear(db, *, older_than_iso: str | None = None) -> int:
         if older_than_iso is None:
             cur = conn.execute("DELETE FROM cache_llm")
         else:
-            cur = conn.execute(
-                "DELETE FROM cache_llm WHERE created_at < ?", (older_than_iso,)
-            )
+            cur = conn.execute("DELETE FROM cache_llm WHERE created_at < ?", (older_than_iso,))
         return cur.rowcount or 0
 
 
@@ -289,9 +286,7 @@ def pdf_cache_get(db, path: Path | str) -> PDFCacheEntry | None:
 def pdf_cache_get_by_key(db, key_sha: str) -> PDFCacheEntry | None:
     """Liefert die Zeile zu ``key_sha`` auch, wenn die Datei verschwunden ist."""
     with db.connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM cache_pdf WHERE key_sha = ?", (key_sha,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM cache_pdf WHERE key_sha = ?", (key_sha,)).fetchone()
     return _row_to_pdf(row) if row is not None else None
 
 
@@ -339,7 +334,5 @@ def pdf_cache_clear(db, *, older_than_iso: str | None = None) -> int:
         if older_than_iso is None:
             cur = conn.execute("DELETE FROM cache_pdf")
         else:
-            cur = conn.execute(
-                "DELETE FROM cache_pdf WHERE created_at < ?", (older_than_iso,)
-            )
+            cur = conn.execute("DELETE FROM cache_pdf WHERE created_at < ?", (older_than_iso,))
         return cur.rowcount or 0

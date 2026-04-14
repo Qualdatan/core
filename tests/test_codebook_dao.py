@@ -38,7 +38,9 @@ def project_b(db):
 class TestUpsert:
     def test_upsert_insert_creates_entry(self, db, project):
         entry = upsert_codebook_entry(
-            db, project.id, "A-01",
+            db,
+            project.id,
+            "A-01",
             label_override="Label A",
             color_override="#112233",
             definition_override="Definition A",
@@ -54,12 +56,16 @@ class TestUpsert:
 
     def test_upsert_update_overwrites_fields(self, db, project):
         upsert_codebook_entry(
-            db, project.id, "A-01",
+            db,
+            project.id,
+            "A-01",
             label_override="Old",
             color_override="#000000",
         )
         entry = upsert_codebook_entry(
-            db, project.id, "A-01",
+            db,
+            project.id,
+            "A-01",
             label_override="New",
             color_override="#FFFFFF",
         )
@@ -71,16 +77,16 @@ class TestUpsert:
 
     def test_partial_update_preserves_untouched_fields(self, db, project):
         upsert_codebook_entry(
-            db, project.id, "A-01",
+            db,
+            project.id,
+            "A-01",
             label_override="Label",
             color_override="#ABCDEF",
             definition_override="Def",
             examples_override=["a", "b"],
         )
         # Nur label_override updaten:
-        entry = upsert_codebook_entry(
-            db, project.id, "A-01", label_override="New Label"
-        )
+        entry = upsert_codebook_entry(db, project.id, "A-01", label_override="New Label")
         assert entry.label_override == "New Label"
         assert entry.color_override == "#ABCDEF"
         assert entry.definition_override == "Def"
@@ -88,13 +94,13 @@ class TestUpsert:
 
     def test_upsert_explicit_none_clears_field(self, db, project):
         upsert_codebook_entry(
-            db, project.id, "A-01",
+            db,
+            project.id,
+            "A-01",
             label_override="Label",
             color_override="#ABCDEF",
         )
-        entry = upsert_codebook_entry(
-            db, project.id, "A-01", color_override=None
-        )
+        entry = upsert_codebook_entry(db, project.id, "A-01", color_override=None)
         assert entry.color_override is None
         assert entry.label_override == "Label"
 
@@ -105,7 +111,9 @@ class TestGet:
 
     def test_examples_roundtrip(self, db, project):
         upsert_codebook_entry(
-            db, project.id, "A-01",
+            db,
+            project.id,
+            "A-01",
             examples_override=["eins", "zwei", "drei"],
         )
         entry = get_codebook_entry(db, project.id, "A-01")
@@ -113,9 +121,7 @@ class TestGet:
         assert entry.examples_override == ["eins", "zwei", "drei"]
 
     def test_examples_none_when_not_set(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", label_override="Nur Label"
-        )
+        upsert_codebook_entry(db, project.id, "A-01", label_override="Nur Label")
         entry = get_codebook_entry(db, project.id, "A-01")
         assert entry is not None
         assert entry.examples_override is None

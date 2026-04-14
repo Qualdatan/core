@@ -17,11 +17,12 @@ Public names (werden vom Coordinator in ``app_db/__init__.py`` re-exportiert):
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
-from . import AppDB
 from ..models import CodedSegment
+from . import AppDB
 
 
 # ---------------------------------------------------------------------------
@@ -98,9 +99,7 @@ def _row_to_coding(row: sqlite3.Row) -> CodingRecord:
 
 
 def _fetch_coding(conn: sqlite3.Connection, coding_id: int) -> CodingRecord:
-    row = conn.execute(
-        "SELECT * FROM codings WHERE id = ?", (coding_id,)
-    ).fetchone()
+    row = conn.execute("SELECT * FROM codings WHERE id = ?", (coding_id,)).fetchone()
     return _row_to_coding(row)
 
 
@@ -276,9 +275,7 @@ def add_codings_bulk(
 def get_coding(db: AppDB, coding_id: int) -> CodingRecord | None:
     """Liest ein Coding per ID, ``None`` wenn nicht vorhanden."""
     with db.connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM codings WHERE id = ?", (coding_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM codings WHERE id = ?", (coding_id,)).fetchone()
     return _row_to_coding(row) if row else None
 
 
@@ -351,9 +348,7 @@ def delete_codings_for_run(db: AppDB, run_id: int) -> int:
         Anzahl geloeschter Zeilen.
     """
     with db.transaction() as conn:
-        cur = conn.execute(
-            "DELETE FROM codings WHERE run_id = ?", (run_id,)
-        )
+        cur = conn.execute("DELETE FROM codings WHERE run_id = ?", (run_id,))
     return int(cur.rowcount or 0)
 
 
@@ -430,8 +425,7 @@ def unique_codes_for_project(db: AppDB, project_id: int) -> list[str]:
     """Alle in einem Projekt vorkommenden ``code_id``-Werte (sortiert)."""
     with db.connection() as conn:
         rows = conn.execute(
-            "SELECT DISTINCT code_id FROM codings "
-            "WHERE project_id = ? ORDER BY code_id ASC",
+            "SELECT DISTINCT code_id FROM codings WHERE project_id = ? ORDER BY code_id ASC",
             (project_id,),
         ).fetchall()
     return [r["code_id"] for r in rows]

@@ -21,16 +21,14 @@ Public names (werden vom Coordinator in ``app_db/__init__.py`` re-exportiert):
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Iterable
+from datetime import UTC, datetime
+from typing import Any
 
 from . import AppDB
 
-
-VALID_RUN_STATUSES: frozenset[str] = frozenset(
-    {"pending", "running", "completed", "failed"}
-)
+VALID_RUN_STATUSES: frozenset[str] = frozenset({"pending", "running", "completed", "failed"})
 _TERMINAL_STATUSES: frozenset[str] = frozenset({"completed", "failed"})
 
 
@@ -137,16 +135,13 @@ def _rows(cursor: Iterable[sqlite3.Row], mapper) -> list:
 def _utc_now_iso() -> str:
     # Timezone-naive UTC ISO string (stripped "+00:00") for schema-kompatible
     # Timestamps analog zu SQLite's CURRENT_TIMESTAMP.
-    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat(
-        timespec="seconds"
-    )
+    return datetime.now(UTC).replace(tzinfo=None).isoformat(timespec="seconds")
 
 
 def _validate_status(status: str) -> None:
     if status not in VALID_RUN_STATUSES:
         raise ValueError(
-            f"Ungueltiger Run-Status: {status!r}. Erlaubt: "
-            f"{sorted(VALID_RUN_STATUSES)}"
+            f"Ungueltiger Run-Status: {status!r}. Erlaubt: {sorted(VALID_RUN_STATUSES)}"
         )
 
 
@@ -168,41 +163,32 @@ def create_project(
 
     with db.transaction() as conn:
         cur = conn.execute(
-            "INSERT INTO projects(name, description, preset_id) "
-            "VALUES (?, ?, ?)",
+            "INSERT INTO projects(name, description, preset_id) VALUES (?, ?, ?)",
             (name, description, preset_id),
         )
         new_id = cur.lastrowid
-        row = conn.execute(
-            "SELECT * FROM projects WHERE id = ?", (new_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM projects WHERE id = ?", (new_id,)).fetchone()
     return _row_to_project(row)
 
 
 def get_project(db: AppDB, project_id: int) -> Project | None:
     """Liest ein Projekt per ID, ``None`` wenn nicht vorhanden."""
     with db.connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM projects WHERE id = ?", (project_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
     return _row_to_project(row) if row else None
 
 
 def get_project_by_name(db: AppDB, name: str) -> Project | None:
     """Liest ein Projekt per Name."""
     with db.connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM projects WHERE name = ?", (name,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM projects WHERE name = ?", (name,)).fetchone()
     return _row_to_project(row) if row else None
 
 
 def list_projects(db: AppDB) -> list[Project]:
     """Alle Projekte alphabetisch nach Name."""
     with db.connection() as conn:
-        rows = conn.execute(
-            "SELECT * FROM projects ORDER BY name ASC"
-        ).fetchall()
+        rows = conn.execute("SELECT * FROM projects ORDER BY name ASC").fetchall()
     return _rows(rows, _row_to_project)
 
 
@@ -228,9 +214,7 @@ def update_project(
         updates["preset_id"] = preset_id
 
     with db.transaction() as conn:
-        existing = conn.execute(
-            "SELECT id FROM projects WHERE id = ?", (project_id,)
-        ).fetchone()
+        existing = conn.execute("SELECT id FROM projects WHERE id = ?", (project_id,)).fetchone()
         if existing is None:
             raise LookupError(f"Projekt {project_id} existiert nicht")
         if updates:
@@ -239,9 +223,7 @@ def update_project(
                 f"UPDATE projects SET {cols} WHERE id = ?",
                 (*updates.values(), project_id),
             )
-        row = conn.execute(
-            "SELECT * FROM projects WHERE id = ?", (project_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
     return _row_to_project(row)
 
 
@@ -272,22 +254,17 @@ def create_run(
     _validate_status(status)
     with db.transaction() as conn:
         cur = conn.execute(
-            "INSERT INTO runs(project_id, run_dir, config_json, status) "
-            "VALUES (?, ?, ?, ?)",
+            "INSERT INTO runs(project_id, run_dir, config_json, status) VALUES (?, ?, ?, ?)",
             (project_id, run_dir, config_json, status),
         )
-        row = conn.execute(
-            "SELECT * FROM runs WHERE id = ?", (cur.lastrowid,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM runs WHERE id = ?", (cur.lastrowid,)).fetchone()
     return _row_to_run(row)
 
 
 def get_run(db: AppDB, run_id: int) -> Run | None:
     """Liest einen Run per ID."""
     with db.connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM runs WHERE id = ?", (run_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone()
     return _row_to_run(row) if row else None
 
 
@@ -345,17 +322,13 @@ def update_run_status(
     """
     _validate_status(status)
     with db.transaction() as conn:
-        row = conn.execute(
-            "SELECT * FROM runs WHERE id = ?", (run_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone()
         if row is None:
             raise LookupError(f"Run {run_id} existiert nicht")
 
         if status == "running":
             # finished_at unveraendert lassen
-            conn.execute(
-                "UPDATE runs SET status = ? WHERE id = ?", (status, run_id)
-            )
+            conn.execute("UPDATE runs SET status = ? WHERE id = ?", (status, run_id))
         elif status in _TERMINAL_STATUSES:
             ts = finished_at
             if ts is None and row["finished_at"] is None:
@@ -382,9 +355,7 @@ def update_run_status(
                     (status, run_id),
                 )
 
-        new_row = conn.execute(
-            "SELECT * FROM runs WHERE id = ?", (run_id,)
-        ).fetchone()
+        new_row = conn.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone()
     return _row_to_run(new_row)
 
 
@@ -392,8 +363,7 @@ def get_latest_run(db: AppDB, project_id: int) -> Run | None:
     """Liefert den neuesten Run des Projekts (nach ``id`` DESC)."""
     with db.connection() as conn:
         row = conn.execute(
-            "SELECT * FROM runs WHERE project_id = ? "
-            "ORDER BY id DESC LIMIT 1",
+            "SELECT * FROM runs WHERE project_id = ? ORDER BY id DESC LIMIT 1",
             (project_id,),
         ).fetchone()
     return _row_to_run(row) if row else None
@@ -429,9 +399,7 @@ def add_run_material(
             "VALUES (?, ?, ?, ?, ?)",
             (run_id, material_kind, path, relative_path, source_label),
         )
-        row = conn.execute(
-            "SELECT * FROM run_materials WHERE id = ?", (cur.lastrowid,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM run_materials WHERE id = ?", (cur.lastrowid,)).fetchone()
     return _row_to_material(row)
 
 
@@ -463,13 +431,10 @@ def add_run_facet(
     """
     with db.transaction() as conn:
         cur = conn.execute(
-            "INSERT INTO run_facets(run_id, facet_id, bundle_id, params_json) "
-            "VALUES (?, ?, ?, ?)",
+            "INSERT INTO run_facets(run_id, facet_id, bundle_id, params_json) VALUES (?, ?, ?, ?)",
             (run_id, facet_id, bundle_id, params_json),
         )
-        row = conn.execute(
-            "SELECT * FROM run_facets WHERE id = ?", (cur.lastrowid,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM run_facets WHERE id = ?", (cur.lastrowid,)).fetchone()
     return _row_to_facet(row)
 
 

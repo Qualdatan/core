@@ -62,7 +62,7 @@ class MigrationReport:
 # ---------------------------------------------------------------------------
 _STATUS_MAP = {
     "COMPLETED": "completed",
-    "RUNNING": "failed",   # wurde unterbrochen -> failed
+    "RUNNING": "failed",  # wurde unterbrochen -> failed
 }
 
 
@@ -115,11 +115,13 @@ def _get_run_state(conn: sqlite3.Connection) -> dict[str, str]:
     out: dict[str, str] = {}
     for row in rows:
         k, v = row[0], row[1]
-        if isinstance(v, str) and v and v[0] in "\"{[":
+        if isinstance(v, str) and v and v[0] in '"{[':
             try:
                 decoded = json.loads(v)
                 v = decoded if isinstance(decoded, str) else v
             except Exception:
+                # Rohwert war zwar JSON-artig, aber nicht decodierbar —
+                # dann den Legacy-String 1:1 uebernehmen.
                 pass
         out[k] = v if isinstance(v, str) else json.dumps(v)
     return out
@@ -156,13 +158,9 @@ def _connect_legacy_ro(path: Path) -> sqlite3.Connection:
     return conn
 
 
-def _ensure_project(
-    app_conn: sqlite3.Connection, name: str, description: str
-) -> tuple[int, bool]:
+def _ensure_project(app_conn: sqlite3.Connection, name: str, description: str) -> tuple[int, bool]:
     """Insert-or-get. Gibt ``(project_id, created)`` zurueck."""
-    row = app_conn.execute(
-        "SELECT id FROM projects WHERE name = ?", (name,)
-    ).fetchone()
+    row = app_conn.execute("SELECT id FROM projects WHERE name = ?", (name,)).fetchone()
     if row is not None:
         return (int(row[0]), False)
     cur = app_conn.execute(
@@ -172,9 +170,7 @@ def _ensure_project(
     return (int(cur.lastrowid), True)
 
 
-def _existing_run_id(
-    app_conn: sqlite3.Connection, project_id: int, run_dir: str
-) -> int | None:
+def _existing_run_id(app_conn: sqlite3.Connection, project_id: int, run_dir: str) -> int | None:
     row = app_conn.execute(
         "SELECT id FROM runs WHERE project_id = ? AND run_dir = ?",
         (project_id, run_dir),
@@ -186,7 +182,7 @@ def _existing_run_id(
 # Core migration
 # ---------------------------------------------------------------------------
 def migrate_legacy_output(
-    db: "AppDB", output_root: Path, *, dry_run: bool = False
+    db: AppDB, output_root: Path, *, dry_run: bool = False
 ) -> MigrationReport:
     """Scannt ``output_root`` rekursiv nach ``run_*``-Verzeichnissen.
 
@@ -214,9 +210,7 @@ def migrate_legacy_output(
         pipeline_path = run_dir / "pipeline.db"
         if not pipeline_path.exists():
             report.run_dirs_skipped += 1
-            report.warnings.append(
-                f"{run_dir}: keine pipeline.db gefunden"
-            )
+            report.warnings.append(f"{run_dir}: keine pipeline.db gefunden")
             continue
         try:
             codings, materials, warnings, migrated = _migrate_one_run(
@@ -224,9 +218,7 @@ def migrate_legacy_output(
             )
         except sqlite3.DatabaseError as exc:
             report.run_dirs_skipped += 1
-            report.warnings.append(
-                f"{run_dir}: pipeline.db nicht lesbar ({exc})"
-            )
+            report.warnings.append(f"{run_dir}: pipeline.db nicht lesbar ({exc})")
             continue
 
         report.codings_imported += codings
@@ -241,7 +233,7 @@ def migrate_legacy_output(
 
 
 def _migrate_one_run(
-    db: "AppDB",
+    db: AppDB,
     pipeline_db_path: Path,
     run_dir: Path,
     dry_run: bool,
@@ -280,9 +272,7 @@ def _migrate_one_run(
         company_rows: list[sqlite3.Row | dict] = []
         if _table_exists(legacy, "companies"):
             try:
-                company_rows = list(
-                    legacy.execute("SELECT id, name FROM companies").fetchall()
-                )
+                company_rows = list(legacy.execute("SELECT id, name FROM companies").fetchall())
             except sqlite3.Error as exc:
                 warnings.append(f"{run_dir}: companies nicht lesbar ({exc})")
 
@@ -322,7 +312,7 @@ def _migrate_one_run(
 
 def _migrate_company_slice(
     *,
-    db: "AppDB",
+    db: AppDB,
     legacy: sqlite3.Connection,
     run_dir: Path,
     run_dir_str: str,
@@ -411,8 +401,7 @@ def _import_materials(
         try:
             if has_company and legacy_company_id is not None:
                 rows = legacy.execute(
-                    "SELECT path, relative_path, filename FROM pdf_documents "
-                    "WHERE company_id = ?",
+                    "SELECT path, relative_path, filename FROM pdf_documents WHERE company_id = ?",
                     (legacy_company_id,),
                 ).fetchall()
             elif legacy_company_id is None:
@@ -435,8 +424,7 @@ def _import_materials(
                                           relative_path, source_label)
                 VALUES (?, 'pdf_text', ?, ?, ?)
                 """,
-                (run_id, r["path"] or "", r["relative_path"] or "",
-                 r["filename"] or ""),
+                (run_id, r["path"] or "", r["relative_path"] or "", r["filename"] or ""),
             )
             count += 1
 
@@ -445,14 +433,11 @@ def _import_materials(
         try:
             if legacy_company_id is not None:
                 rows = legacy.execute(
-                    "SELECT path, filename FROM interview_documents "
-                    "WHERE company_id = ?",
+                    "SELECT path, filename FROM interview_documents WHERE company_id = ?",
                     (legacy_company_id,),
                 ).fetchall()
             else:
-                rows = legacy.execute(
-                    "SELECT path, filename FROM interview_documents"
-                ).fetchall()
+                rows = legacy.execute("SELECT path, filename FROM interview_documents").fetchall()
         except sqlite3.Error as exc:
             warnings.append(f"{run_dir}: interview_documents nicht lesbar ({exc})")
             rows = []
@@ -486,9 +471,7 @@ def _count_materials_for_company(
                     (legacy_company_id,),
                 ).fetchone()
             else:
-                row = legacy.execute(
-                    "SELECT COUNT(*) FROM pdf_documents"
-                ).fetchone()
+                row = legacy.execute("SELECT COUNT(*) FROM pdf_documents").fetchone()
             count += int(row[0])
         except sqlite3.Error as exc:
             warnings.append(f"{run_dir}: pdf_documents count ({exc})")
@@ -500,9 +483,7 @@ def _count_materials_for_company(
                     (legacy_company_id,),
                 ).fetchone()
             else:
-                row = legacy.execute(
-                    "SELECT COUNT(*) FROM interview_documents"
-                ).fetchone()
+                row = legacy.execute("SELECT COUNT(*) FROM interview_documents").fetchone()
             count += int(row[0])
         except sqlite3.Error as exc:
             warnings.append(f"{run_dir}: interview_documents count ({exc})")
@@ -578,9 +559,7 @@ def _import_codings(
     codes_lookup: dict[int, list[str]] = {}
     if has_coding_codes:
         try:
-            for r in legacy.execute(
-                "SELECT coding_id, code_id FROM coding_codes"
-            ).fetchall():
+            for r in legacy.execute("SELECT coding_id, code_id FROM coding_codes").fetchall():
                 codes_lookup.setdefault(int(r["coding_id"]), []).append(r["code_id"])
         except sqlite3.Error as exc:
             warnings.append(f"{run_dir}: coding_codes nicht lesbar ({exc})")
@@ -588,13 +567,18 @@ def _import_codings(
     count = 0
     for row in coding_rows:
         pdf_id = row["pdf_id"]
-        doc, pdf_company = pdf_lookup.get(int(pdf_id), ("", None)) if pdf_id is not None else ("", None)
+        doc, pdf_company = (
+            pdf_lookup.get(int(pdf_id), ("", None)) if pdf_id is not None else ("", None)
+        )
 
         # Wenn wir eine spezifische Company filtern und das PDF einer
         # anderen Company gehoert, ueberspringen. Wenn keine Zuordnung
         # moeglich ist (Spalte fehlt), zaehle alle mit.
-        if legacy_company_id is not None and pdf_company is not None \
-                and pdf_company != legacy_company_id:
+        if (
+            legacy_company_id is not None
+            and pdf_company is not None
+            and pdf_company != legacy_company_id
+        ):
             continue
 
         block_id = row["block_id"] or ""
@@ -616,8 +600,13 @@ def _import_codings(
                 VALUES (?, ?, ?, ?, ?, ?, ?, '', NULL, ?, '')
                 """,
                 (
-                    run_id, project_id, doc, code_id,
-                    seg_start, seg_end, description,
+                    run_id,
+                    project_id,
+                    doc,
+                    code_id,
+                    seg_start,
+                    seg_end,
+                    description,
                     begruendung,
                 ),
             )
@@ -646,9 +635,7 @@ def _count_codings_for_company(
 
         # 1 Coding kann N Codes haben -> N Zeilen in codings
         if legacy_company_id is None:
-            row = legacy.execute(
-                "SELECT COUNT(*) FROM coding_codes"
-            ).fetchone()
+            row = legacy.execute("SELECT COUNT(*) FROM coding_codes").fetchone()
             return int(row[0])
 
         pdf_cols = _columns(legacy, "pdf_documents")

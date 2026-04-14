@@ -19,19 +19,17 @@ import pytest
 import yaml
 
 from qualdatan_core.curation import bootstrap as codebook_curation
-from qualdatan_core.curation.bootstrap import bootstrap_codebook, CurationStats
+from qualdatan_core.curation.bootstrap import CurationStats, bootstrap_codebook
 from qualdatan_core.models import AnalysisResult, CodedSegment
 from qualdatan_core.recipe import Recipe
 from qualdatan_core.run_context import RunContext
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
 
-def _make_recipe(coding_strategy: str = "hybrid",
-                 categories: dict | None = None) -> Recipe:
+def _make_recipe(coding_strategy: str = "hybrid", categories: dict | None = None) -> Recipe:
     """Minimales Recipe fuer Tests — kein echter Template-Aufbau."""
     return Recipe(
         id="test_recipe",
@@ -39,7 +37,8 @@ def _make_recipe(coding_strategy: str = "hybrid",
         description="",
         model="claude-sonnet-4-20250514",
         max_tokens=4096,
-        categories=categories or {
+        categories=categories
+        or {
             "A": "Projektakquise",
             "B": "Planungsprozess",
             "C": "Digitale Werkzeuge",
@@ -60,8 +59,7 @@ def ctx(tmp_path) -> RunContext:
     return c
 
 
-def _make_analysis_result(codes_meta: dict,
-                          segments: list[dict]) -> AnalysisResult:
+def _make_analysis_result(codes_meta: dict, segments: list[dict]) -> AnalysisResult:
     """Baut ein AnalysisResult aus einem kompakten Dict."""
     result = AnalysisResult()
     result.categories = {"A": "Akquise", "B": "Planung", "C": "Digitales"}
@@ -94,32 +92,50 @@ class TestBootstrapWithoutSeed:
         recipe = _make_recipe()
         codes_meta = {
             "A-01": {
-                "name": "Ausschreibung", "hauptkategorie": "A",
+                "name": "Ausschreibung",
+                "hauptkategorie": "A",
                 "kodierdefinition": "Oeffentliche Vergabe",
                 "ankerbeispiel": "VgV-Verfahren",
-                "abgrenzungsregel": "", "count": 0,
+                "abgrenzungsregel": "",
+                "count": 0,
             },
             "B-01": {
-                "name": "Entwurfsplanung", "hauptkategorie": "B",
+                "name": "Entwurfsplanung",
+                "hauptkategorie": "B",
                 "kodierdefinition": "Definition",
-                "ankerbeispiel": "", "abgrenzungsregel": "",
+                "ankerbeispiel": "",
+                "abgrenzungsregel": "",
                 "count": 0,
             },
         }
         segments = [
-            {"code_id": "A-01", "code_name": "Ausschreibung",
-             "hauptkategorie": "A", "text": "VgV-Verfahren X"},
-            {"code_id": "A-01", "code_name": "Ausschreibung",
-             "hauptkategorie": "A", "text": "Kurzes Beispiel"},
-            {"code_id": "B-01", "code_name": "Entwurfsplanung",
-             "hauptkategorie": "B", "text": "Langes Beispiel text text"},
+            {
+                "code_id": "A-01",
+                "code_name": "Ausschreibung",
+                "hauptkategorie": "A",
+                "text": "VgV-Verfahren X",
+            },
+            {
+                "code_id": "A-01",
+                "code_name": "Ausschreibung",
+                "hauptkategorie": "A",
+                "text": "Kurzes Beispiel",
+            },
+            {
+                "code_id": "B-01",
+                "code_name": "Entwurfsplanung",
+                "hauptkategorie": "B",
+                "text": "Langes Beispiel text text",
+            },
         ]
         result = _make_analysis_result(codes_meta, segments)
 
         path, stats = bootstrap_codebook(
-            ctx=ctx, recipe=recipe,
+            ctx=ctx,
+            recipe=recipe,
             sample_files=[Path("interview1.docx")],
-            codebase_seed=None, analysis_result=result,
+            codebase_seed=None,
+            analysis_result=result,
         )
 
         assert path.exists()
@@ -133,11 +149,7 @@ class TestBootstrapWithoutSeed:
         # Inhalt parsen
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         assert "kategorien" in data
-        code_ids = {
-            c["id"]
-            for kat in data["kategorien"]
-            for c in kat.get("codes", [])
-        }
+        code_ids = {c["id"] for kat in data["kategorien"] for c in kat.get("codes", [])}
         assert {"A-01", "B-01"} == code_ids
 
         # Metadaten pruefen
@@ -152,17 +164,27 @@ class TestBootstrapWithoutSeed:
         recipe = _make_recipe()
         result = _make_analysis_result(
             codes_meta={
-                "A-01": {"name": "Ausschreibung", "hauptkategorie": "A",
-                         "kodierdefinition": "d", "ankerbeispiel": "",
-                         "abgrenzungsregel": "", "count": 0},
+                "A-01": {
+                    "name": "Ausschreibung",
+                    "hauptkategorie": "A",
+                    "kodierdefinition": "d",
+                    "ankerbeispiel": "",
+                    "abgrenzungsregel": "",
+                    "count": 0,
+                },
             },
             segments=[
-                {"code_id": "A-01", "code_name": "Ausschreibung",
-                 "hauptkategorie": "A", "text": "einmalig"},
+                {
+                    "code_id": "A-01",
+                    "code_name": "Ausschreibung",
+                    "hauptkategorie": "A",
+                    "text": "einmalig",
+                },
             ],
         )
         _, stats = bootstrap_codebook(
-            ctx=ctx, recipe=recipe,
+            ctx=ctx,
+            recipe=recipe,
             sample_files=[Path("x.docx")],
             analysis_result=result,
         )
@@ -172,19 +194,28 @@ class TestBootstrapWithoutSeed:
         recipe = _make_recipe()
         result = _make_analysis_result(
             codes_meta={
-                "A-01": {"name": "Ausschreibung", "hauptkategorie": "A",
-                         "kodierdefinition": "", "ankerbeispiel": "",
-                         "abgrenzungsregel": "", "count": 0},
+                "A-01": {
+                    "name": "Ausschreibung",
+                    "hauptkategorie": "A",
+                    "kodierdefinition": "",
+                    "ankerbeispiel": "",
+                    "abgrenzungsregel": "",
+                    "count": 0,
+                },
             },
             segments=[
-                {"code_id": "A-01", "code_name": "A",
-                 "hauptkategorie": "A", "text": "ein ziemlich langer Text"},
-                {"code_id": "A-01", "code_name": "A",
-                 "hauptkategorie": "A", "text": "kurz"},
+                {
+                    "code_id": "A-01",
+                    "code_name": "A",
+                    "hauptkategorie": "A",
+                    "text": "ein ziemlich langer Text",
+                },
+                {"code_id": "A-01", "code_name": "A", "hauptkategorie": "A", "text": "kurz"},
             ],
         )
         path, _ = bootstrap_codebook(
-            ctx=ctx, recipe=recipe,
+            ctx=ctx,
+            recipe=recipe,
             sample_files=[Path("x.docx")],
             analysis_result=result,
         )
@@ -199,8 +230,7 @@ class TestBootstrapWithoutSeed:
 
 
 class TestBootstrapWithSeed:
-    def _write_seed(self, tmp_path: Path,
-                    monkeypatch: pytest.MonkeyPatch) -> str:
+    def _write_seed(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
         """Schreibt eine Seed-YAML und lenkt CODEBASES_DIR auf tmp_path um."""
         seed = {
             "kategorien": [
@@ -250,33 +280,48 @@ class TestBootstrapWithSeed:
 
         result = _make_analysis_result(
             codes_meta={
-                "A-01": {"name": "Ausschreibung", "hauptkategorie": "A",
-                         "kodierdefinition": "", "ankerbeispiel": "",
-                         "abgrenzungsregel": "", "count": 0},
-                "C-07": {"name": "Neuer Code", "hauptkategorie": "C",
-                         "kodierdefinition": "neu", "ankerbeispiel": "",
-                         "abgrenzungsregel": "", "count": 0},
+                "A-01": {
+                    "name": "Ausschreibung",
+                    "hauptkategorie": "A",
+                    "kodierdefinition": "",
+                    "ankerbeispiel": "",
+                    "abgrenzungsregel": "",
+                    "count": 0,
+                },
+                "C-07": {
+                    "name": "Neuer Code",
+                    "hauptkategorie": "C",
+                    "kodierdefinition": "neu",
+                    "ankerbeispiel": "",
+                    "abgrenzungsregel": "",
+                    "count": 0,
+                },
             },
             segments=[
-                {"code_id": "A-01", "code_name": "Ausschreibung",
-                 "hauptkategorie": "A", "text": "Beispiel A"},
-                {"code_id": "C-07", "code_name": "Neuer Code",
-                 "hauptkategorie": "C", "text": "Beispiel C"},
+                {
+                    "code_id": "A-01",
+                    "code_name": "Ausschreibung",
+                    "hauptkategorie": "A",
+                    "text": "Beispiel A",
+                },
+                {
+                    "code_id": "C-07",
+                    "code_name": "Neuer Code",
+                    "hauptkategorie": "C",
+                    "text": "Beispiel C",
+                },
             ],
         )
         path, stats = bootstrap_codebook(
-            ctx=ctx, recipe=recipe,
+            ctx=ctx,
+            recipe=recipe,
             sample_files=[Path("a.docx")],
             codebase_seed=seed_name,
             analysis_result=result,
         )
 
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
-        code_by_id = {
-            c["id"]: c
-            for kat in data["kategorien"]
-            for c in kat.get("codes", [])
-        }
+        code_by_id = {c["id"]: c for kat in data["kategorien"] for c in kat.get("codes", [])}
 
         # Seed-Codes sind da
         assert "A-01" in code_by_id
@@ -310,7 +355,8 @@ class TestBootstrapWithSeed:
         result = _make_analysis_result({}, [])
         with pytest.raises(FileNotFoundError):
             bootstrap_codebook(
-                ctx=ctx, recipe=recipe,
+                ctx=ctx,
+                recipe=recipe,
                 sample_files=[Path("x.docx")],
                 codebase_seed="doesnt_exist",
                 analysis_result=result,
@@ -327,7 +373,8 @@ class TestDraftYamlSchema:
         recipe = _make_recipe()
         result = _make_analysis_result({}, [])
         path, stats = bootstrap_codebook(
-            ctx=ctx, recipe=recipe,
+            ctx=ctx,
+            recipe=recipe,
             sample_files=[Path("nope.docx")],
             analysis_result=result,
         )
@@ -343,7 +390,8 @@ class TestDraftYamlSchema:
         recipe = _make_recipe()
         result = _make_analysis_result({}, [])
         path, _ = bootstrap_codebook(
-            ctx=ctx, recipe=recipe,
+            ctx=ctx,
+            recipe=recipe,
             sample_files=[Path("x.docx")],
             analysis_result=result,
         )
@@ -358,17 +406,20 @@ class TestDraftYamlSchema:
 
 class TestStrictStrategyFilter:
     def test_enforce_strict_drops_neue_codes(self):
-        from src.step1_analyze import enforce_strict_strategy
+        from qualdatan_core.steps.step1_analyze import enforce_strict_strategy
 
         recipe = _make_recipe(coding_strategy="strict")
         data = {
             "codings": [
-                {"block_id": "p1_b0", "code_id": "A-01", "code_name": "X",
-                 "hauptkategorie": "A"},
+                {"block_id": "p1_b0", "code_id": "A-01", "code_name": "X", "hauptkategorie": "A"},
             ],
             "neue_codes": [
-                {"code_id": "Z-99", "code_name": "Neuer Spam",
-                 "hauptkategorie": "Z", "kodierdefinition": "..."},
+                {
+                    "code_id": "Z-99",
+                    "code_name": "Neuer Spam",
+                    "hauptkategorie": "Z",
+                    "kodierdefinition": "...",
+                },
             ],
         }
         out = enforce_strict_strategy(data, recipe, filename="x.docx")
@@ -377,21 +428,25 @@ class TestStrictStrategyFilter:
         assert out["codings"][0]["code_id"] == "A-01"
 
     def test_hybrid_keeps_neue_codes(self):
-        from src.step1_analyze import enforce_strict_strategy
+        from qualdatan_core.steps.step1_analyze import enforce_strict_strategy
 
         recipe = _make_recipe(coding_strategy="hybrid")
         data = {
             "codings": [],
             "neue_codes": [
-                {"code_id": "Z-99", "code_name": "X",
-                 "hauptkategorie": "Z", "kodierdefinition": ""},
+                {
+                    "code_id": "Z-99",
+                    "code_name": "X",
+                    "hauptkategorie": "Z",
+                    "kodierdefinition": "",
+                },
             ],
         }
         out = enforce_strict_strategy(data, recipe, filename="x.docx")
         assert len(out["neue_codes"]) == 1
 
     def test_enforce_strict_handles_missing_key(self):
-        from src.step1_analyze import enforce_strict_strategy
+        from qualdatan_core.steps.step1_analyze import enforce_strict_strategy
 
         recipe = _make_recipe(coding_strategy="strict")
         data = {"codings": []}
@@ -400,7 +455,7 @@ class TestStrictStrategyFilter:
         assert out.get("neue_codes") in (None, [])
 
     def test_enforce_non_dict_noop(self):
-        from src.step1_analyze import enforce_strict_strategy
+        from qualdatan_core.steps.step1_analyze import enforce_strict_strategy
 
         recipe = _make_recipe(coding_strategy="strict")
         assert enforce_strict_strategy([], recipe) == []
@@ -422,40 +477,46 @@ class TestDbIngest:
             path="/tmp/doc.pdf",
         )
         ctx.db.save_coding(
-            pdf_id=pdf_id, page=1, block_id="p1_b0",
-            codes=["A-01"], source="text",
+            pdf_id=pdf_id,
+            page=1,
+            block_id="p1_b0",
+            codes=["A-01"],
+            source="text",
             begruendung="weil es wichtig ist",
         )
         ctx.db.save_coding(
-            pdf_id=pdf_id, page=1, block_id="p1_b1",
-            codes=["A-01", "B-02"], source="text",
+            pdf_id=pdf_id,
+            page=1,
+            block_id="p1_b1",
+            codes=["A-01", "B-02"],
+            source="text",
             begruendung="zweite Begruendung",
         )
-        ctx.db.save_neue_codes([
-            {"code_id": "C-99", "code_name": "Neuer Code",
-             "hauptkategorie": "C", "kodierdefinition": "dummy"},
-        ], pdf_id)
+        ctx.db.save_neue_codes(
+            [
+                {
+                    "code_id": "C-99",
+                    "code_name": "Neuer Code",
+                    "hauptkategorie": "C",
+                    "kodierdefinition": "dummy",
+                },
+            ],
+            pdf_id,
+        )
 
         recipe = _make_recipe()
         path, stats = bootstrap_codebook(
-            ctx=ctx, recipe=recipe,
+            ctx=ctx,
+            recipe=recipe,
             sample_files=[Path("doc.pdf")],
             analysis_result=None,  # DB-only
         )
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
-        code_ids = {
-            c["id"]
-            for kat in data["kategorien"]
-            for c in kat.get("codes", [])
-        }
+        code_ids = {c["id"] for kat in data["kategorien"] for c in kat.get("codes", [])}
         # A-01 erscheint zweimal (in zwei codings), B-02 einmal, C-99 aus neue_codes
         assert {"A-01", "B-02", "C-99"}.issubset(code_ids)
 
         # Frequenzen
-        by_id = {
-            c["id"]: c
-            for kat in data["kategorien"]
-            for c in kat.get("codes", [])
-        }
+        by_id = {c["id"]: c for kat in data["kategorien"] for c in kat.get("codes", [])}
         assert by_id["A-01"]["_meta"]["frequency"] == 2
         assert by_id["B-02"]["_meta"]["frequency"] == 1

@@ -25,7 +25,8 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from .coding.colors import CodeColorMap
 
@@ -33,9 +34,7 @@ from .coding.colors import CodeColorMap
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _run_config_value(
-    run_config: Mapping[str, Any] | None, code_id: str, key: str
-) -> Any:
+def _run_config_value(run_config: Mapping[str, Any] | None, code_id: str, key: str) -> Any:
     """Liest ``run_config['codes'][code_id][key]`` tolerant."""
     if not isinstance(run_config, Mapping):
         return None
@@ -130,10 +129,7 @@ def resolve_definition(
     if v is not None:
         return v
     entry = _db_entry(app_db, project_id, code_id)
-    if (
-        entry is not None
-        and _nonempty_str(entry.definition_override) is not None
-    ):
+    if entry is not None and _nonempty_str(entry.definition_override) is not None:
         return entry.definition_override  # type: ignore[return-value]
     if _nonempty_str(bundle_default) is not None:
         return bundle_default  # type: ignore[return-value]

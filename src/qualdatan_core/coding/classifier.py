@@ -7,25 +7,25 @@ Drei Modi:
 """
 
 import base64
-import io
 import json
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import fitz  # pymupdf
-
 
 # ---------------------------------------------------------------------------
 # Datenstrukturen
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PageClassification:
     """Klassifikation einer einzelnen PDF-Seite."""
+
     page: int
-    page_type: str          # text | plan | photo | mixed
-    confidence: float       # 0.0 - 1.0
+    page_type: str  # text | plan | photo | mixed
+    confidence: float  # 0.0 - 1.0
     plan_subtype: str = ""  # floor_plan | section | elevation | site_plan | detail | schedule | ""
     metrics: dict = field(default_factory=dict)
     title_block: dict = field(default_factory=dict)
@@ -34,14 +34,16 @@ class PageClassification:
 @dataclass
 class DocumentClassification:
     """Klassifikation eines gesamten PDF-Dokuments."""
+
     file: str
-    document_type: str      # text | plan | photo | mixed
+    document_type: str  # text | plan | photo | mixed
     confidence: float
     page_count: int
     pages: list[PageClassification] = field(default_factory=list)
     title_block_metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
+        """Serialisierbare Form fuer JSON-Cache und DB-Eintraege."""
         return {
             "file": self.file,
             "document_type": self.document_type,
@@ -52,6 +54,7 @@ class DocumentClassification:
         }
 
     def summary(self) -> str:
+        """Einzeiler fuer Logs: Dokumenttyp + Seitentyp-Histogramm."""
         type_counts = {}
         for p in self.pages:
             type_counts[p.page_type] = type_counts.get(p.page_type, 0) + 1
@@ -65,24 +68,53 @@ class DocumentClassification:
 
 # Schluesselwoerter die auf ein Schriftfeld hindeuten
 _TITLE_BLOCK_KEYWORDS = [
-    "massstab", "maßstab", "masstab", "m 1:", "1:50", "1:100", "1:200",
-    "plan-nr", "plan nr", "plannr", "zeichnungs-nr", "blatt-nr",
-    "leistungsphase", "lph", "l.ph",
-    "bauherr", "bauvorhaben", "projekt",
-    "architekt", "planer", "verfasser", "bearbeiter",
-    "datum", "index", "revision", "gewerk",
-    "gezeichnet", "geprüft", "geprueft", "freigabe",
+    "massstab",
+    "maßstab",
+    "masstab",
+    "m 1:",
+    "1:50",
+    "1:100",
+    "1:200",
+    "plan-nr",
+    "plan nr",
+    "plannr",
+    "zeichnungs-nr",
+    "blatt-nr",
+    "leistungsphase",
+    "lph",
+    "l.ph",
+    "bauherr",
+    "bauvorhaben",
+    "projekt",
+    "architekt",
+    "planer",
+    "verfasser",
+    "bearbeiter",
+    "datum",
+    "index",
+    "revision",
+    "gewerk",
+    "gezeichnet",
+    "geprüft",
+    "geprueft",
+    "freigabe",
 ]
 
 # Regex fuer strukturierte Felder im Schriftfeld
 _TITLE_BLOCK_FIELDS = {
     "massstab": re.compile(r"(?:Ma[sß]{1,2}stab|M)\s*[:\s]\s*(\d+\s*:\s*\d+)", re.IGNORECASE),
-    "plan_nr": re.compile(r"(?:Plan|Zeichnungs?|Blatt)[- ]?(?:Nr|Nummer)\.?\s*[:\s]\s*([\w.\-/]+)", re.IGNORECASE),
+    "plan_nr": re.compile(
+        r"(?:Plan|Zeichnungs?|Blatt)[- ]?(?:Nr|Nummer)\.?\s*[:\s]\s*([\w.\-/]+)", re.IGNORECASE
+    ),
     "leistungsphase": re.compile(r"(?:LP|LPH|Leistungsphase)\s*[:\s]*(\d+)", re.IGNORECASE),
     "gewerk": re.compile(r"Gewerk\s*[:\s]\s*(.+?)(?:\n|$)", re.IGNORECASE),
     "index": re.compile(r"(?:Index|Rev(?:ision)?)\s*[:\s]\s*([A-Z]\d?)", re.IGNORECASE),
-    "datum": re.compile(r"(?:Datum|Erstellt|Stand)\s*[:\s]\s*(\d{1,2}[./]\d{1,2}[./]\d{2,4})", re.IGNORECASE),
-    "bauvorhaben": re.compile(r"(?:Bauvorhaben|Projekt|Vorhaben)\s*[:\s]\s*(.+?)(?:\n|$)", re.IGNORECASE),
+    "datum": re.compile(
+        r"(?:Datum|Erstellt|Stand)\s*[:\s]\s*(\d{1,2}[./]\d{1,2}[./]\d{2,4})", re.IGNORECASE
+    ),
+    "bauvorhaben": re.compile(
+        r"(?:Bauvorhaben|Projekt|Vorhaben)\s*[:\s]\s*(.+?)(?:\n|$)", re.IGNORECASE
+    ),
 }
 
 
@@ -100,8 +132,10 @@ def _detect_title_block(page: fitz.Page) -> tuple[bool, dict]:
 
     # Suchbereich: untere 20%, rechte 60%
     search_rect = fitz.Rect(
-        width * 0.4, height * 0.80,
-        width, height,
+        width * 0.4,
+        height * 0.80,
+        width,
+        height,
     )
 
     # Text im Suchbereich extrahieren
@@ -130,6 +164,7 @@ def _detect_title_block(page: fitz.Page) -> tuple[bool, dict]:
 # ---------------------------------------------------------------------------
 # Seitenmetriken berechnen (lokal, kein LLM)
 # ---------------------------------------------------------------------------
+
 
 def _compute_page_metrics(page: fitz.Page) -> dict:
     """Berechnet Metriken fuer eine PDF-Seite zur Klassifikation.
@@ -219,6 +254,7 @@ def _compute_page_metrics(page: fitz.Page) -> dict:
 # Modus 1: Lokale Klassifikation (Heuristik)
 # ---------------------------------------------------------------------------
 
+
 def _classify_page_local(metrics: dict, has_title_block: bool) -> tuple[str, float, str]:
     """Klassifiziert eine Seite anhand lokaler Metriken.
 
@@ -281,6 +317,7 @@ def _classify_page_local(metrics: dict, has_title_block: bool) -> tuple[str, flo
 # Modus 2: LLM-Klassifikation (Vision)
 # ---------------------------------------------------------------------------
 
+
 def _render_thumbnail(page: fitz.Page, dpi: int = 72) -> str:
     """Rendert eine PDF-Seite als base64-encoded PNG Thumbnail.
 
@@ -300,7 +337,7 @@ def _build_classification_prompt(page_indices: list[int]) -> str:
     """Baut den Klassifikations-Prompt fuer die Vision-API."""
     return f"""Klassifiziere jede der {len(page_indices)} PDF-Seiten.
 
-Fuer jede Seite (in Reihenfolge der Bilder, Seiten {', '.join(str(i) for i in page_indices)}):
+Fuer jede Seite (in Reihenfolge der Bilder, Seiten {", ".join(str(i) for i in page_indices)}):
 
 Antworte als JSON-Array:
 [
@@ -331,9 +368,13 @@ Plan-Subtypen:
 Bei building_elements: Nenne sichtbare Bauteile (Waende, Decken, Tueren, Fenster, Treppen, Dach, TGA etc.)"""
 
 
-def classify_pages_llm(doc: fitz.Document, page_indices: list[int] = None,
-                       client=None, model: str = "claude-haiku-4-5-20251001",
-                       batch_size: int = 15) -> dict[int, PageClassification]:
+def classify_pages_llm(
+    doc: fitz.Document,
+    page_indices: list[int] = None,
+    client=None,
+    model: str = "claude-haiku-4-5-20251001",
+    batch_size: int = 15,
+) -> dict[int, PageClassification]:
     """Klassifiziert Seiten mittels Vision-LLM.
 
     Args:
@@ -347,6 +388,7 @@ def classify_pages_llm(doc: fitz.Document, page_indices: list[int] = None,
         {page_number (1-basiert): PageClassification}
     """
     from anthropic import Anthropic
+
     from .step1_analyze import extract_json
 
     if client is None:
@@ -359,7 +401,7 @@ def classify_pages_llm(doc: fitz.Document, page_indices: list[int] = None,
 
     # In Batches aufteilen
     for batch_start in range(0, len(page_indices), batch_size):
-        batch = page_indices[batch_start:batch_start + batch_size]
+        batch = page_indices[batch_start : batch_start + batch_size]
         page_numbers = [i + 1 for i in batch]  # 1-basiert
 
         # Content mit Thumbnails bauen
@@ -367,19 +409,23 @@ def classify_pages_llm(doc: fitz.Document, page_indices: list[int] = None,
         for idx in batch:
             page = doc[idx]
             thumbnail_b64 = _render_thumbnail(page, dpi=72)
-            content.append({
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": "image/png",
-                    "data": thumbnail_b64,
-                },
-            })
+            content.append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/png",
+                        "data": thumbnail_b64,
+                    },
+                }
+            )
 
-        content.append({
-            "type": "text",
-            "text": _build_classification_prompt(page_numbers),
-        })
+        content.append(
+            {
+                "type": "text",
+                "text": _build_classification_prompt(page_numbers),
+            }
+        )
 
         response = client.messages.create(
             model=model,
@@ -403,8 +449,10 @@ def classify_pages_llm(doc: fitz.Document, page_indices: list[int] = None,
                 page_type=item.get("page_type", "mixed"),
                 confidence=item.get("confidence", 0.8),
                 plan_subtype=item.get("plan_subtype", ""),
-                metrics={"building_elements": item.get("building_elements", []),
-                          "description": item.get("description", "")},
+                metrics={
+                    "building_elements": item.get("building_elements", []),
+                    "description": item.get("description", ""),
+                },
             )
 
     return results
@@ -414,9 +462,10 @@ def classify_pages_llm(doc: fitz.Document, page_indices: list[int] = None,
 # Hauptfunktionen
 # ---------------------------------------------------------------------------
 
-def classify_document(pdf_path: str | Path,
-                      mode: str = "local",
-                      client=None) -> DocumentClassification:
+
+def classify_document(
+    pdf_path: str | Path, mode: str = "local", client=None
+) -> DocumentClassification:
     """Klassifiziert ein PDF-Dokument.
 
     Args:
@@ -481,9 +530,7 @@ def classify_document(pdf_path: str | Path,
                 uncertain_indices.append(page_num - 1)  # 0-basiert
 
         if uncertain_indices:
-            llm_results = classify_pages_llm(
-                doc, page_indices=uncertain_indices, client=client
-            )
+            llm_results = classify_pages_llm(doc, page_indices=uncertain_indices, client=client)
         else:
             llm_results = {}
 
@@ -547,9 +594,10 @@ def _aggregate_document_type(pages: list[PageClassification]) -> tuple[str, floa
 # Batch-Klassifikation (fuer ganze Projekte)
 # ---------------------------------------------------------------------------
 
-def classify_project_pdfs(pdfs: list[dict], mode: str = "local",
-                          client=None,
-                          cache_dir: Path = None) -> dict[str, DocumentClassification]:
+
+def classify_project_pdfs(
+    pdfs: list[dict], mode: str = "local", client=None, cache_dir: Path = None
+) -> dict[str, DocumentClassification]:
     """Klassifiziert alle PDFs eines Projekts.
 
     Args:
@@ -607,14 +655,16 @@ def _classification_from_dict(data: dict) -> DocumentClassification:
     """Rekonstruiert eine DocumentClassification aus einem Dict."""
     pages = []
     for p in data.get("pages", []):
-        pages.append(PageClassification(
-            page=p["page"],
-            page_type=p["page_type"],
-            confidence=p["confidence"],
-            plan_subtype=p.get("plan_subtype", ""),
-            metrics=p.get("metrics", {}),
-            title_block=p.get("title_block", {}),
-        ))
+        pages.append(
+            PageClassification(
+                page=p["page"],
+                page_type=p["page_type"],
+                confidence=p["confidence"],
+                plan_subtype=p.get("plan_subtype", ""),
+                metrics=p.get("metrics", {}),
+                title_block=p.get("title_block", {}),
+            )
+        )
     return DocumentClassification(
         file=data["file"],
         document_type=data["document_type"],
@@ -629,9 +679,10 @@ def _classification_from_dict(data: dict) -> DocumentClassification:
 # Hilfsfunktionen fuer Pipeline-Integration
 # ---------------------------------------------------------------------------
 
-def split_by_type(pdfs: list[dict],
-                  classifications: dict[str, DocumentClassification]
-                  ) -> dict[str, list[dict]]:
+
+def split_by_type(
+    pdfs: list[dict], classifications: dict[str, DocumentClassification]
+) -> dict[str, list[dict]]:
     """Teilt PDFs nach Dokumenttyp auf.
 
     Returns:
@@ -652,7 +703,7 @@ def print_classification_summary(classifications: dict[str, DocumentClassificati
     total_pages = 0
     plan_pages = 0
 
-    for rel_path, cls in classifications.items():
+    for _rel_path, cls in classifications.items():
         type_counts[cls.document_type] = type_counts.get(cls.document_type, 0) + 1
         total_pages += cls.page_count
         plan_pages += sum(1 for p in cls.pages if p.page_type == "plan")

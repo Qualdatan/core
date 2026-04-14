@@ -71,6 +71,7 @@ def _backend_available() -> bool:
 # Backend-Erkennung (immer ausfuehrbar)
 # ---------------------------------------------------------------------------
 
+
 class TestDetectBackend:
     def test_detect_returns_known_backend_or_none(self):
         result = detect_backend()
@@ -85,6 +86,7 @@ class TestDetectBackend:
 # ---------------------------------------------------------------------------
 # find_office_files
 # ---------------------------------------------------------------------------
+
 
 class TestFindOfficeFiles:
     def test_finds_supported_extensions(self, tmp_path):
@@ -137,6 +139,7 @@ class TestFindOfficeFiles:
 # convert_to_pdf — fehleresillient ohne Backend
 # ---------------------------------------------------------------------------
 
+
 class TestConvertToPdfErrorHandling:
     def test_unsupported_extension_raises(self, tmp_path):
         src = tmp_path / "test.txt"
@@ -149,9 +152,7 @@ class TestConvertToPdfErrorHandling:
             convert_to_pdf(tmp_path / "missing.docx", tmp_path / "out.pdf")
 
     def test_no_backend_raises(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(
-            "qualdatan_core.office.converter.detect_backend", lambda: None
-        )
+        monkeypatch.setattr("qualdatan_core.office.converter.detect_backend", lambda: None)
         src = tmp_path / "x.docx"
         src.write_bytes(b"placeholder")
         with pytest.raises(OfficeConverterUnavailable):
@@ -162,8 +163,8 @@ class TestConvertToPdfErrorHandling:
 # Integrationstests: nur wenn Backend verfuegbar
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skipif(not _backend_available(),
-                    reason="Kein Office-Backend installiert")
+
+@pytest.mark.skipif(not _backend_available(), reason="Kein Office-Backend installiert")
 class TestRealConversion:
     def test_docx_to_pdf(self, docx_file, tmp_path):
         dst = tmp_path / "out.pdf"
@@ -174,6 +175,7 @@ class TestRealConversion:
 
         # Lesbar als PDF?
         import fitz
+
         doc = fitz.open(str(dst))
         assert len(doc) >= 1
         text = doc[0].get_text()
@@ -186,6 +188,7 @@ class TestRealConversion:
         assert dst.exists()
 
         import fitz
+
         doc = fitz.open(str(dst))
         # 3 Sheets → mindestens 3 Seiten
         assert len(doc) >= 3
@@ -209,6 +212,7 @@ class TestRealConversion:
         first_mtime = dst.stat().st_mtime
 
         import time
+
         time.sleep(1.1)  # Filesystem-Aufloesung
         convert_to_pdf(docx_file, dst, force=True)
         assert dst.stat().st_mtime > first_mtime

@@ -5,23 +5,24 @@ Stufe 3 (Haiku):  Verfeinert Positionen innerhalb von Blöcken.
                   Nur wenn ganzer_block=false. Parallelisierbar.
 """
 
-import json
 import concurrent.futures
+import json
 from pathlib import Path
 
 from anthropic import Anthropic
 
-from ..steps.step1_analyze import extract_json
 from ..pdf.extractor import extraction_to_text_summary
 from ..recipe import Recipe, _strategy_instruction
-
+from ..steps.step1_analyze import extract_json
 
 # ---------------------------------------------------------------------------
 # Stufe 2: Code-Zuweisung (Sonnet)
 # ---------------------------------------------------------------------------
 
-def build_coding_prompt(extraction_data: dict, recipe: Recipe,
-                        project_name: str, codesystem: str = "") -> str:
+
+def build_coding_prompt(
+    extraction_data: dict, recipe: Recipe, project_name: str, codesystem: str = ""
+) -> str:
     """Baut den Prompt für Stufe 2: Code-Zuweisung.
 
     Args:
@@ -36,9 +37,7 @@ def build_coding_prompt(extraction_data: dict, recipe: Recipe,
     # Recipe-Template nutzen falls vorhanden, sonst Default
     if hasattr(recipe, "prompt_template") and recipe.prompt_template:
         prompt = recipe.prompt_template
-        categories_text = "\n".join(
-            f"  {k}: {v}" for k, v in recipe.categories.items()
-        )
+        categories_text = "\n".join(f"  {k}: {v}" for k, v in recipe.categories.items())
         prompt = prompt.replace("{categories}", categories_text)
         prompt = prompt.replace("{project_name}", project_name)
         prompt = prompt.replace("{filename}", filename)
@@ -53,14 +52,12 @@ def build_coding_prompt(extraction_data: dict, recipe: Recipe,
         strat_block = _strategy_instruction(strategy, has_cs)
         if strat_block:
             section_parts.append(strat_block)
-        prompt = prompt.replace(
-            "{codebase_section}", "\n\n".join(section_parts).strip()
-        )
+        prompt = prompt.replace("{codebase_section}", "\n\n".join(section_parts).strip())
         return prompt
 
     # Fallback: Default-Prompt
     parts = [
-        f"Du analysierst extrahierte Inhalte aus einer Projektunterlage.",
+        "Du analysierst extrahierte Inhalte aus einer Projektunterlage.",
         f"Projekt: {project_name}",
         f"Datei: {filename}",
         "",
@@ -110,11 +107,15 @@ Antworte ausschliesslich als JSON:
     return "\n".join(parts)
 
 
-def analyze_pdf_codes(client: Anthropic, extraction_data: dict,
-                      recipe: Recipe, project_name: str,
-                      codesystem: str = "",
-                      cache_dir: Path = None,
-                      cache_key: str = "") -> dict:
+def analyze_pdf_codes(
+    client: Anthropic,
+    extraction_data: dict,
+    recipe: Recipe,
+    project_name: str,
+    codesystem: str = "",
+    cache_dir: Path = None,
+    cache_key: str = "",
+) -> dict:
     """Stufe 2: Sendet extrahierten Text an Sonnet für Code-Zuweisung.
 
     Args:
@@ -140,8 +141,7 @@ def analyze_pdf_codes(client: Anthropic, extraction_data: dict,
             except (json.JSONDecodeError, OSError):
                 pass
 
-    prompt = build_coding_prompt(extraction_data, recipe,
-                                 project_name, codesystem)
+    prompt = build_coding_prompt(extraction_data, recipe, project_name, codesystem)
 
     # Prompt cachen
     if cache_dir and cache_key:
@@ -152,8 +152,7 @@ def analyze_pdf_codes(client: Anthropic, extraction_data: dict,
     # Dynamische max_tokens: kürzere Dokumente brauchen weniger Output
     n_blocks = sum(len(p["blocks"]) for p in extraction_data["pages"])
     dynamic_max = min(recipe.max_tokens, max(4096, n_blocks * 200 + 2000))
-    print(f"    Sende an {recipe.model} ({len(prompt)} Zeichen, "
-          f"max_tokens={dynamic_max})...")
+    print(f"    Sende an {recipe.model} ({len(prompt)} Zeichen, max_tokens={dynamic_max})...")
 
     response = client.messages.create(
         model=recipe.model,
@@ -162,7 +161,7 @@ def analyze_pdf_codes(client: Anthropic, extraction_data: dict,
     )
 
     if response.stop_reason == "max_tokens":
-        print(f"    WARNUNG: Antwort abgeschnitten")
+        print("    WARNUNG: Antwort abgeschnitten")
 
     response_text = response.content[0].text
 
@@ -178,9 +177,7 @@ def analyze_pdf_codes(client: Anthropic, extraction_data: dict,
     if cache_dir and cache_key:
         parsed_path = cache_dir / "parsed" / f"{cache_key}.json"
         parsed_path.parent.mkdir(parents=True, exist_ok=True)
-        parsed_path.write_text(
-            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        parsed_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return data
 
@@ -207,8 +204,7 @@ def _refine_batch(client: Anthropic, items: list[dict]) -> dict[str, dict]:
     parts = []
     for i, item in enumerate(items, 1):
         parts.append(
-            f'{i}. ID="{item["key"]}" | Code="{item["code_id"]}"\n'
-            f'   Text: """{item["text"]}"""'
+            f'{i}. ID="{item["key"]}" | Code="{item["code_id"]}"\n   Text: """{item["text"]}"""'
         )
 
     prompt = f"""Für jeden der folgenden Textblöcke: Bestimme char_start und char_end
@@ -234,9 +230,9 @@ Antworte als JSON-Objekt mit den IDs als Schlüssel:
     return data
 
 
-def refine_positions(client: Anthropic, codings: list[dict],
-                     extraction_data: dict,
-                     max_workers: int = 5) -> list[dict]:
+def refine_positions(
+    client: Anthropic, codings: list[dict], extraction_data: dict, max_workers: int = 5
+) -> list[dict]:
     """Stufe 3: Verfeinert Positionen für Blöcke mit ganzer_block=false.
 
     Batcht mehrere Refinements pro API-Call (bis zu REFINEMENT_BATCH_SIZE)
@@ -267,32 +263,32 @@ def refine_positions(client: Anthropic, codings: list[dict],
             continue
         for code_id in coding.get("codes", []):
             key = f"{coding['block_id']}_{code_id}"
-            to_refine.append({
-                "key": key,
-                "block_id": coding["block_id"],
-                "code_id": code_id,
-                "text": block["text"],
-            })
+            to_refine.append(
+                {
+                    "key": key,
+                    "block_id": coding["block_id"],
+                    "code_id": code_id,
+                    "text": block["text"],
+                }
+            )
 
     if not to_refine:
         return codings
 
     # In Batches aufteilen
     batches = [
-        to_refine[i:i + REFINEMENT_BATCH_SIZE]
+        to_refine[i : i + REFINEMENT_BATCH_SIZE]
         for i in range(0, len(to_refine), REFINEMENT_BATCH_SIZE)
     ]
 
-    print(f"    Stufe 3: {len(to_refine)} Positionen in {len(batches)} "
-          f"Batches verfeinern (Haiku)...")
+    print(
+        f"    Stufe 3: {len(to_refine)} Positionen in {len(batches)} Batches verfeinern (Haiku)..."
+    )
 
     # Batches parallel ausführen
     results = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {
-            pool.submit(_refine_batch, client, batch): i
-            for i, batch in enumerate(batches)
-        }
+        futures = {pool.submit(_refine_batch, client, batch): i for i, batch in enumerate(batches)}
 
         for future in concurrent.futures.as_completed(futures):
             batch_idx = futures[future]
@@ -317,6 +313,7 @@ def refine_positions(client: Anthropic, codings: list[dict],
 # ---------------------------------------------------------------------------
 # Codesystem aus Analyse-Ergebnis formatieren
 # ---------------------------------------------------------------------------
+
 
 def format_codesystem(categories: dict, codes: dict) -> str:
     """Formatiert bestehendes Codesystem als Text für den Prompt.

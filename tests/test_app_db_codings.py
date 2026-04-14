@@ -30,9 +30,7 @@ from qualdatan_core.models import CodedSegment
 # ---------------------------------------------------------------------------
 def _make_project(db, name: str = "P1") -> int:
     with db.transaction() as conn:
-        cur = conn.execute(
-            "INSERT INTO projects(name) VALUES (?)", (name,)
-        )
+        cur = conn.execute("INSERT INTO projects(name) VALUES (?)", (name,))
     return int(cur.lastrowid)
 
 
@@ -231,20 +229,36 @@ class TestBulk:
 @pytest.fixture
 def seeded(db, project_id, run_id, second_run):
     add_coding(
-        db, run_id=run_id, project_id=project_id,
-        document="a.txt", code_id="C1", facet_id="F1",
+        db,
+        run_id=run_id,
+        project_id=project_id,
+        document="a.txt",
+        code_id="C1",
+        facet_id="F1",
     )
     add_coding(
-        db, run_id=run_id, project_id=project_id,
-        document="a.txt", code_id="C2", facet_id="F2",
+        db,
+        run_id=run_id,
+        project_id=project_id,
+        document="a.txt",
+        code_id="C2",
+        facet_id="F2",
     )
     add_coding(
-        db, run_id=second_run, project_id=project_id,
-        document="b.txt", code_id="C1", facet_id="F1",
+        db,
+        run_id=second_run,
+        project_id=project_id,
+        document="b.txt",
+        code_id="C1",
+        facet_id="F1",
     )
     add_coding(
-        db, run_id=second_run, project_id=project_id,
-        document="b.txt", code_id="C3", facet_id="F2",
+        db,
+        run_id=second_run,
+        project_id=project_id,
+        document="b.txt",
+        code_id="C3",
+        facet_id="F2",
     )
     return {"run_id": run_id, "second_run": second_run, "project_id": project_id}
 
@@ -285,9 +299,7 @@ class TestListCount:
 
     def test_count_matches_list(self, db, seeded):
         assert count_codings(db) == len(list_codings(db))
-        assert count_codings(db, code_id="C1") == len(
-            list_codings(db, code_id="C1")
-        )
+        assert count_codings(db, code_id="C1") == len(list_codings(db, code_id="C1"))
         assert count_codings(db, document="b.txt", facet_id="F1") == 1
 
 
@@ -312,20 +324,14 @@ class TestDelete:
 class TestFrequencies:
     def test_two_runs_three_codes(self, db, project_id, run_id, second_run):
         # C1: 2 runs, 2 docs, 3 codings
-        add_coding(db, run_id=run_id, project_id=project_id,
-                   document="a.txt", code_id="C1")
-        add_coding(db, run_id=run_id, project_id=project_id,
-                   document="a.txt", code_id="C1")
-        add_coding(db, run_id=second_run, project_id=project_id,
-                   document="b.txt", code_id="C1")
+        add_coding(db, run_id=run_id, project_id=project_id, document="a.txt", code_id="C1")
+        add_coding(db, run_id=run_id, project_id=project_id, document="a.txt", code_id="C1")
+        add_coding(db, run_id=second_run, project_id=project_id, document="b.txt", code_id="C1")
         # C2: 1 run, 1 doc, 2 codings
-        add_coding(db, run_id=run_id, project_id=project_id,
-                   document="a.txt", code_id="C2")
-        add_coding(db, run_id=run_id, project_id=project_id,
-                   document="a.txt", code_id="C2")
+        add_coding(db, run_id=run_id, project_id=project_id, document="a.txt", code_id="C2")
+        add_coding(db, run_id=run_id, project_id=project_id, document="a.txt", code_id="C2")
         # C3: 1 run, 1 doc, 1 coding
-        add_coding(db, run_id=second_run, project_id=project_id,
-                   document="b.txt", code_id="C3")
+        add_coding(db, run_id=second_run, project_id=project_id, document="b.txt", code_id="C3")
 
         freqs = code_frequencies(db, project_id=project_id)
         by_code = {f.code_id: f for f in freqs}
@@ -336,10 +342,8 @@ class TestFrequencies:
         assert [f.code_id for f in freqs] == ["C1", "C2", "C3"]
 
     def test_filter_code_ids(self, db, project_id, run_id):
-        add_coding(db, run_id=run_id, project_id=project_id,
-                   document="a.txt", code_id="C1")
-        add_coding(db, run_id=run_id, project_id=project_id,
-                   document="a.txt", code_id="C2")
+        add_coding(db, run_id=run_id, project_id=project_id, document="a.txt", code_id="C1")
+        add_coding(db, run_id=run_id, project_id=project_id, document="a.txt", code_id="C2")
         freqs = code_frequencies(db, project_id=project_id, code_ids=["C2"])
         assert len(freqs) == 1
         assert freqs[0].code_id == "C2"
@@ -350,10 +354,8 @@ class TestFrequencies:
     def test_isolates_by_project(self, db, project_id, run_id):
         other_p = _make_project(db, "P2")
         other_r = _make_run(db, other_p, "/tmp/other")
-        add_coding(db, run_id=run_id, project_id=project_id,
-                   document="a.txt", code_id="C1")
-        add_coding(db, run_id=other_r, project_id=other_p,
-                   document="z.txt", code_id="C1")
+        add_coding(db, run_id=run_id, project_id=project_id, document="a.txt", code_id="C1")
+        add_coding(db, run_id=other_r, project_id=other_p, document="z.txt", code_id="C1")
         freqs = code_frequencies(db, project_id=project_id)
         assert len(freqs) == 1
         assert freqs[0].coding_count == 1
@@ -361,16 +363,12 @@ class TestFrequencies:
 
 class TestCodingsByDocument:
     def test_returns_only_document(self, db, seeded):
-        rows = codings_by_document(
-            db, project_id=seeded["project_id"], document="a.txt"
-        )
+        rows = codings_by_document(db, project_id=seeded["project_id"], document="a.txt")
         assert len(rows) == 2
         assert all(r.document == "a.txt" for r in rows)
 
     def test_empty_when_unknown_document(self, db, seeded):
-        rows = codings_by_document(
-            db, project_id=seeded["project_id"], document="missing.txt"
-        )
+        rows = codings_by_document(db, project_id=seeded["project_id"], document="missing.txt")
         assert rows == []
 
 
@@ -382,9 +380,7 @@ class TestUniqueCodes:
     def test_isolated_per_project(self, db, project_id, run_id):
         other_p = _make_project(db, "P2")
         other_r = _make_run(db, other_p, "/tmp/other")
-        add_coding(db, run_id=run_id, project_id=project_id,
-                   document="a.txt", code_id="C-ONLY-P1")
-        add_coding(db, run_id=other_r, project_id=other_p,
-                   document="z.txt", code_id="C-ONLY-P2")
+        add_coding(db, run_id=run_id, project_id=project_id, document="a.txt", code_id="C-ONLY-P1")
+        add_coding(db, run_id=other_r, project_id=other_p, document="z.txt", code_id="C-ONLY-P2")
         assert unique_codes_for_project(db, project_id) == ["C-ONLY-P1"]
         assert unique_codes_for_project(db, other_p) == ["C-ONLY-P2"]

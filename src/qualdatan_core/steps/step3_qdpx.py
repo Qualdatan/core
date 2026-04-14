@@ -2,14 +2,14 @@
 
 import uuid
 import zipfile
-from pathlib import Path
-from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
-from xml.dom import minidom
 from datetime import datetime
+from pathlib import Path
+from xml.dom import minidom
+from xml.etree.ElementTree import Element, SubElement, tostring
 
+from ..coding.colors import CodeColorMap
 from ..config import TRANSCRIPTS_DIR
 from ..models import AnalysisResult
-from ..coding.colors import CodeColorMap
 
 
 def _uuid() -> str:
@@ -36,8 +36,10 @@ def build_refi_qda_xml(
     project = Element("Project")
     project.set("xmlns", "urn:QDA-XML:project:1.0")
     project.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
-    project.set("xsi:schemaLocation",
-                "urn:QDA-XML:project:1.0 http://schema.qdasoftware.org/versions/Project/v1.5/Project.xsd")
+    project.set(
+        "xsi:schemaLocation",
+        "urn:QDA-XML:project:1.0 http://schema.qdasoftware.org/versions/Project/v1.5/Project.xsd",
+    )
     project.set("name", "Mayring Qualitative Inhaltsanalyse")
     project.set("origin", "Python Mayring Analyzer")
     project.set("creatingUserGUID", _uuid())
@@ -80,7 +82,7 @@ def build_refi_qda_xml(
 
     # GUIDs für Codes und Kategorien
     code_guids: dict[str, str] = {}  # code_id -> guid
-    cat_guids: dict[str, str] = {}   # cat_key -> guid (Hauptkategorien)
+    cat_guids: dict[str, str] = {}  # cat_key -> guid (Hauptkategorien)
 
     def _mk_code_elem(parent, code_id: str, name: str, description: str) -> Element:
         guid = _uuid()
@@ -118,7 +120,7 @@ def build_refi_qda_xml(
 
         # Zusaetzliche Kategorien aus result.categories (z.B. wenn sie im
         # Codebook unter anderem Schluessel stehen)
-        for cat_key, cat_name in result.categories.items():
+        for cat_key, _cat_name in result.categories.items():
             if cat_key not in cat_info and cat_key not in cat_order:
                 cat_order.append(cat_key)
 
@@ -135,7 +137,8 @@ def build_refi_qda_xml(
             kids.sort(key=lambda t: t[0])
             for code_id, cinfo in kids:
                 _mk_code_elem(
-                    cat_elem, code_id,
+                    cat_elem,
+                    code_id,
                     cinfo.get("name", code_id),
                     cinfo.get("description", ""),
                 )
@@ -153,7 +156,8 @@ def build_refi_qda_xml(
                         parent = elem
                         break
             _mk_code_elem(
-                parent, code_id,
+                parent,
+                code_id,
                 rinfo.get("name", code_id),
                 rinfo.get("kodierdefinition", ""),
             )
@@ -161,7 +165,9 @@ def build_refi_qda_xml(
         # --- Legacy-Verhalten: nur result.categories + result.codes ---
         for cat_key, cat_name in result.categories.items():
             cat_elem = _mk_code_elem(
-                codes_elem, cat_key, cat_name,
+                codes_elem,
+                cat_key,
+                cat_name,
                 f"Hauptkategorie {cat_key}: {cat_name}",
             )
             cat_guids[cat_key] = code_guids[cat_key]
@@ -180,7 +186,8 @@ def build_refi_qda_xml(
                         break
             for code_id, info in sorted(codes_by_cat[cat_key]):
                 _mk_code_elem(
-                    parent, code_id,
+                    parent,
+                    code_id,
                     info.get("name", code_id),
                     info.get("kodierdefinition", ""),
                 )
@@ -189,7 +196,7 @@ def build_refi_qda_xml(
     sources = SubElement(project, "Sources")
     doc_guids = {}  # filename -> guid
 
-    for i, filename in enumerate(sorted(result.documents.keys()), 1):
+    for filename in sorted(result.documents.keys()):
         doc_guid = _uuid()
         doc_guids[filename] = doc_guid
 
@@ -263,13 +270,14 @@ def generate_qdpx(
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
     if codebase_codes and codebase_name:
-        print(f"  QDPX: nutze Codebook '{codebase_name}' mit "
-              f"{len(codebase_codes)} Codes")
+        print(f"  QDPX: nutze Codebook '{codebase_name}' mit {len(codebase_codes)} Codes")
     elif codebase_codes:
         print(f"  QDPX: nutze vollstaendiges Codebook ({len(codebase_codes)} Codes)")
 
     xml_bytes = build_refi_qda_xml(
-        result, codebase_codes=codebase_codes, codebase_name=codebase_name,
+        result,
+        codebase_codes=codebase_codes,
+        codebase_name=codebase_name,
     )
 
     with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:

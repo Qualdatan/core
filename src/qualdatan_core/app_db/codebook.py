@@ -136,24 +136,27 @@ def upsert_codebook_entry(
     """
     with db.transaction() as conn:
         existing = conn.execute(
-            "SELECT * FROM codebook_entries "
-            "WHERE project_id = ? AND code_id = ?",
+            "SELECT * FROM codebook_entries WHERE project_id = ? AND code_id = ?",
             (project_id, code_id),
         ).fetchone()
 
         label = (
-            existing["label_override"] if existing is not None else None
-        ) if isinstance(label_override, _Unset) else label_override
+            (existing["label_override"] if existing is not None else None)
+            if isinstance(label_override, _Unset)
+            else label_override
+        )
         color = (
-            existing["color_override"] if existing is not None else None
-        ) if isinstance(color_override, _Unset) else color_override
+            (existing["color_override"] if existing is not None else None)
+            if isinstance(color_override, _Unset)
+            else color_override
+        )
         definition = (
-            existing["definition_override"] if existing is not None else None
-        ) if isinstance(definition_override, _Unset) else definition_override
+            (existing["definition_override"] if existing is not None else None)
+            if isinstance(definition_override, _Unset)
+            else definition_override
+        )
         if isinstance(examples_override, _Unset):
-            examples_raw = (
-                existing["examples_override"] if existing is not None else None
-            )
+            examples_raw = existing["examples_override"] if existing is not None else None
         else:
             examples_raw = _serialise_examples(examples_override)
 
@@ -171,21 +174,17 @@ def upsert_codebook_entry(
             (project_id, code_id, label, color, definition, examples_raw),
         )
         row = conn.execute(
-            "SELECT * FROM codebook_entries "
-            "WHERE project_id = ? AND code_id = ?",
+            "SELECT * FROM codebook_entries WHERE project_id = ? AND code_id = ?",
             (project_id, code_id),
         ).fetchone()
     return _row_to_entry(row)
 
 
-def get_codebook_entry(
-    db: AppDB, project_id: int, code_id: str
-) -> CodebookEntry | None:
+def get_codebook_entry(db: AppDB, project_id: int, code_id: str) -> CodebookEntry | None:
     """Liest den Eintrag zu (``project_id``, ``code_id``) oder ``None``."""
     with db.connection() as conn:
         row = conn.execute(
-            "SELECT * FROM codebook_entries "
-            "WHERE project_id = ? AND code_id = ?",
+            "SELECT * FROM codebook_entries WHERE project_id = ? AND code_id = ?",
             (project_id, code_id),
         ).fetchone()
     return _row_to_entry(row) if row else None
@@ -195,16 +194,13 @@ def list_codebook_entries(db: AppDB, project_id: int) -> list[CodebookEntry]:
     """Alle Codebook-Overrides eines Projekts, stabil nach ``code_id``."""
     with db.connection() as conn:
         rows = conn.execute(
-            "SELECT * FROM codebook_entries WHERE project_id = ? "
-            "ORDER BY code_id ASC",
+            "SELECT * FROM codebook_entries WHERE project_id = ? ORDER BY code_id ASC",
             (project_id,),
         ).fetchall()
     return [_row_to_entry(r) for r in rows]
 
 
-def reset_codebook_entry(
-    db: AppDB, project_id: int, code_id: str
-) -> bool:
+def reset_codebook_entry(db: AppDB, project_id: int, code_id: str) -> bool:
     """Loescht den Eintrag fuer (``project_id``, ``code_id``).
 
     Returns:
@@ -213,8 +209,7 @@ def reset_codebook_entry(
     """
     with db.transaction() as conn:
         cur = conn.execute(
-            "DELETE FROM codebook_entries "
-            "WHERE project_id = ? AND code_id = ?",
+            "DELETE FROM codebook_entries WHERE project_id = ? AND code_id = ?",
             (project_id, code_id),
         )
         return cur.rowcount > 0

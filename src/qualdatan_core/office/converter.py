@@ -21,7 +21,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-
 SUPPORTED_EXTENSIONS = {".docx", ".doc", ".xlsx", ".xls"}
 
 
@@ -52,11 +51,17 @@ def detect_backend() -> str | None:
     if shutil.which("powershell.exe"):
         try:
             result = subprocess.run(
-                ["powershell.exe", "-NoProfile", "-Command",
-                 "if (Get-Command Get-ItemProperty -ErrorAction SilentlyContinue) "
-                 "{ try { New-Object -ComObject Word.Application | Out-Null; 'ok' } "
-                 "catch { 'no-word' } } else { 'no-ps' }"],
-                capture_output=True, text=True, timeout=15,
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-Command",
+                    "if (Get-Command Get-ItemProperty -ErrorAction SilentlyContinue) "
+                    "{ try { New-Object -ComObject Word.Application | Out-Null; 'ok' } "
+                    "catch { 'no-word' } } else { 'no-ps' }",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=15,
             )
             if "ok" in result.stdout:
                 _BACKEND_CACHE = "powershell-com"
@@ -115,9 +120,7 @@ try {{
 
 def _to_windows_path(p: Path) -> str:
     """WSL-Pfad in Windows-Pfad konvertieren."""
-    return subprocess.check_output(
-        ["wslpath", "-w", str(p.resolve())]
-    ).decode().strip()
+    return subprocess.check_output(["wslpath", "-w", str(p.resolve())]).decode().strip()
 
 
 def _convert_via_powershell(src: Path, dst: Path) -> None:
@@ -136,7 +139,9 @@ def _convert_via_powershell(src: Path, dst: Path) -> None:
 
     result = subprocess.run(
         ["powershell.exe", "-NoProfile", "-Command", script],
-        capture_output=True, text=True, timeout=300,
+        capture_output=True,
+        text=True,
+        timeout=300,
     )
     if result.returncode != 0 or not dst.exists():
         raise RuntimeError(
@@ -149,6 +154,7 @@ def _convert_via_powershell(src: Path, dst: Path) -> None:
 # LibreOffice Backend
 # ---------------------------------------------------------------------------
 
+
 def _convert_via_libreoffice(src: Path, dst: Path) -> None:
     """Konvertiert via LibreOffice headless."""
     soffice = shutil.which("soffice") or shutil.which("libreoffice")
@@ -159,14 +165,14 @@ def _convert_via_libreoffice(src: Path, dst: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     result = subprocess.run(
-        [soffice, "--headless", "--convert-to", "pdf",
-         "--outdir", str(out_dir), str(src)],
-        capture_output=True, text=True, timeout=300,
+        [soffice, "--headless", "--convert-to", "pdf", "--outdir", str(out_dir), str(src)],
+        capture_output=True,
+        text=True,
+        timeout=300,
     )
     if result.returncode != 0:
         raise RuntimeError(
-            f"LibreOffice-Konvertierung fehlgeschlagen ({src.name}): "
-            f"{result.stderr.strip()[:300]}"
+            f"LibreOffice-Konvertierung fehlgeschlagen ({src.name}): {result.stderr.strip()[:300]}"
         )
 
     # LibreOffice schreibt nach <outdir>/<src.stem>.pdf
@@ -183,9 +189,8 @@ def _convert_via_libreoffice(src: Path, dst: Path) -> None:
 # Public API
 # ---------------------------------------------------------------------------
 
-def convert_to_pdf(src: Path, dst: Path,
-                   force: bool = False,
-                   backend: str | None = None) -> Path:
+
+def convert_to_pdf(src: Path, dst: Path, force: bool = False, backend: str | None = None) -> Path:
     """Konvertiert eine Office-Datei zu PDF.
 
     Args:
@@ -235,8 +240,7 @@ def convert_to_pdf(src: Path, dst: Path,
     return dst
 
 
-def find_office_files(base_dir: Path,
-                      project_filter: str | None = None) -> list[Path]:
+def find_office_files(base_dir: Path, project_filter: str | None = None) -> list[Path]:
     """Sucht alle Office-Dateien rekursiv unter base_dir.
 
     Args:

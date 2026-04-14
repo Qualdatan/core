@@ -11,3 +11,10 @@ improvement/
 
 # MkDocs build
 site/
+
+# Coverage / mypy
+.coverage
+.coverage.*
+coverage.xml
+.mypy_cache/
+.ruff_cache/

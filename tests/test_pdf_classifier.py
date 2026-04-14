@@ -4,20 +4,20 @@ import fitz
 import pytest
 
 from qualdatan_core.coding.classifier import (
-    _compute_page_metrics,
-    _classify_page_local,
-    _detect_title_block,
+    DocumentClassification,
+    PageClassification,
     _aggregate_document_type,
+    _classify_page_local,
+    _compute_page_metrics,
+    _detect_title_block,
     classify_document,
     split_by_type,
-    PageClassification,
-    DocumentClassification,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers: Test-PDFs erzeugen
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def text_pdf(tmp_path):
@@ -35,7 +35,8 @@ def text_pdf(tmp_path):
                 f"Dies ist Zeile {line_idx + 1} auf Seite {page_idx + 1}. "
                 f"Das Bauvorhaben umfasst den Neubau eines Einfamilienhauses "
                 f"mit insgesamt 150 Quadratmetern Wohnflaeche.",
-                fontsize=11, fontname="helv",
+                fontsize=11,
+                fontname="helv",
             )
             y += 20
     doc.save(str(pdf_path))
@@ -113,6 +114,7 @@ def empty_pdf(tmp_path):
 # Seitenmetriken Tests
 # ---------------------------------------------------------------------------
 
+
 class TestPageMetrics:
     def test_text_pdf_metrics(self, text_pdf):
         doc = fitz.open(str(text_pdf))
@@ -157,6 +159,7 @@ class TestPageMetrics:
 # Schriftfeld-Erkennung Tests
 # ---------------------------------------------------------------------------
 
+
 class TestTitleBlock:
     def test_detect_title_block_in_plan(self, plan_pdf):
         doc = fitz.open(str(plan_pdf))
@@ -195,6 +198,7 @@ class TestTitleBlock:
 # ---------------------------------------------------------------------------
 # Lokale Klassifikation Tests
 # ---------------------------------------------------------------------------
+
 
 class TestLocalClassification:
     def test_text_page(self):
@@ -279,21 +283,16 @@ class TestLocalClassification:
 # Dokument-Level Aggregation Tests
 # ---------------------------------------------------------------------------
 
+
 class TestDocumentAggregation:
     def test_all_text_pages(self):
-        pages = [
-            PageClassification(page=i, page_type="text", confidence=0.9)
-            for i in range(1, 6)
-        ]
+        pages = [PageClassification(page=i, page_type="text", confidence=0.9) for i in range(1, 6)]
         doc_type, conf = _aggregate_document_type(pages)
         assert doc_type == "text"
         assert conf >= 0.8
 
     def test_all_plan_pages(self):
-        pages = [
-            PageClassification(page=i, page_type="plan", confidence=0.85)
-            for i in range(1, 4)
-        ]
+        pages = [PageClassification(page=i, page_type="plan", confidence=0.85) for i in range(1, 4)]
         doc_type, conf = _aggregate_document_type(pages)
         assert doc_type == "plan"
 
@@ -325,6 +324,7 @@ class TestDocumentAggregation:
 # ---------------------------------------------------------------------------
 # End-to-End Klassifikation Tests
 # ---------------------------------------------------------------------------
+
 
 class TestClassifyDocument:
     def test_classify_text_document(self, text_pdf):
@@ -361,6 +361,7 @@ class TestClassifyDocument:
 # split_by_type Tests
 # ---------------------------------------------------------------------------
 
+
 class TestSplitByType:
     def test_split_groups_correctly(self):
         pdfs = [
@@ -370,16 +371,22 @@ class TestSplitByType:
         ]
         classifications = {
             "P/a.pdf": DocumentClassification(
-                file="a.pdf", document_type="text",
-                confidence=0.9, page_count=1,
+                file="a.pdf",
+                document_type="text",
+                confidence=0.9,
+                page_count=1,
             ),
             "P/b.pdf": DocumentClassification(
-                file="b.pdf", document_type="plan",
-                confidence=0.8, page_count=1,
+                file="b.pdf",
+                document_type="plan",
+                confidence=0.8,
+                page_count=1,
             ),
             "P/c.pdf": DocumentClassification(
-                file="c.pdf", document_type="photo",
-                confidence=0.7, page_count=1,
+                file="c.pdf",
+                document_type="photo",
+                confidence=0.7,
+                page_count=1,
             ),
         }
         groups = split_by_type(pdfs, classifications)
@@ -397,16 +404,19 @@ class TestSplitByType:
 # Caching Tests
 # ---------------------------------------------------------------------------
 
+
 class TestClassificationCache:
     def test_cache_write_and_read(self, text_pdf, tmp_path):
-        from src.pdf_classifier import classify_project_pdfs
+        from qualdatan_core.coding.classifier import classify_project_pdfs
 
-        pdfs = [{
-            "path": str(text_pdf),
-            "relative_path": "Testprojekt/aufgabenstellung.pdf",
-            "project": "Testprojekt",
-            "filename": "aufgabenstellung.pdf",
-        }]
+        pdfs = [
+            {
+                "path": str(text_pdf),
+                "relative_path": "Testprojekt/aufgabenstellung.pdf",
+                "project": "Testprojekt",
+                "filename": "aufgabenstellung.pdf",
+            }
+        ]
 
         cache_dir = tmp_path / ".cache"
 

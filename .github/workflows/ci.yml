@@ -6,6 +6,43 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+      - name: Ruff check
+        run: uv run ruff check .
+      - name: Ruff format (check)
+        run: uv run ruff format --check .
+
+  typecheck:
+    runs-on: ubuntu-latest
+    # Non-blocking: mypy is informational while we raise docstring/type
+    # coverage. Flip `continue-on-error` to false once the baseline is clean.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+      - name: Install mypy
+        run: uv pip install mypy
+      - name: Mypy
+        run: uv run mypy src/qualdatan_core
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -22,5 +59,10 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
         run: uv sync --all-extras --dev
-      - name: Run tests
-        run: uv run pytest -v
+      - name: Run tests (with coverage)
+        run: >-
+          uv run pytest -v
+          --cov=src/qualdatan_core
+          --cov-report=term-missing
+          --cov-report=xml
+          --cov-fail-under=60

@@ -32,16 +32,16 @@ def _path(env_var: str, default: Path) -> Path:
 
 
 # === Statische Daten (ueber Runs hinweg geteilt) ===
-METHODS_DIR     = _path("METHODS_DIR",     PROJECT_ROOT / "input" / "methods")
-CODEBASES_DIR   = _path("CODEBASES_DIR",   PROJECT_ROOT / "input" / "codebases")
+METHODS_DIR = _path("METHODS_DIR", PROJECT_ROOT / "input" / "methods")
+CODEBASES_DIR = _path("CODEBASES_DIR", PROJECT_ROOT / "input" / "codebases")
 
 # === Run-spezifische Daten ===
-COMPANIES_DIR   = _path("COMPANIES_DIR",   PROJECT_ROOT / "input" / "companies")
+COMPANIES_DIR = _path("COMPANIES_DIR", PROJECT_ROOT / "input" / "companies")
 TRANSCRIPTS_DIR = _path("TRANSCRIPTS_DIR", PROJECT_ROOT / "input" / "transcripts")
-PROJECTS_DIR    = _path("PROJECTS_DIR",    PROJECT_ROOT / "input" / "projects")
+PROJECTS_DIR = _path("PROJECTS_DIR", PROJECT_ROOT / "input" / "projects")
 
 # === Output ===
-OUTPUT_ROOT     = _path("OUTPUT_DIR",      PROJECT_ROOT / "output")
+OUTPUT_ROOT = _path("OUTPUT_DIR", PROJECT_ROOT / "output")
 
 # Backward-Compat alias (alter Name fuer den Methods-Ordner)
 RECIPES_DIR = METHODS_DIR
@@ -65,5 +65,5 @@ for _d in (TRANSCRIPTS_DIR, CODEBASES_DIR, PROJECTS_DIR, COMPANIES_DIR):
 
 # Defaults (ueberschreibbar via .env)
 DEFAULT_RECIPE = os.getenv("DEFAULT_RECIPE", "mayring")
-ENV_CLAUDE_MODEL = os.getenv("CLAUDE_MODEL")          # None = Recipe-Default
-ENV_CLAUDE_MAX_TOKENS = os.getenv("CLAUDE_MAX_TOKENS") # None = Recipe-Default
+ENV_CLAUDE_MODEL = os.getenv("CLAUDE_MODEL")  # None = Recipe-Default
+ENV_CLAUDE_MAX_TOKENS = os.getenv("CLAUDE_MAX_TOKENS")  # None = Recipe-Default

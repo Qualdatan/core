@@ -3,8 +3,12 @@
 import dataclasses
 
 import pytest
+
 from qualdatan_core.recipe import (
-    list_recipes, load_recipe, _strategy_instruction, CODING_STRATEGIES,
+    CODING_STRATEGIES,
+    _strategy_instruction,
+    list_recipes,
+    load_recipe,
 )
 
 
@@ -105,9 +109,7 @@ class TestRecipeBuildPromptStrategy:
     def test_strict_with_codebase_forbids_new_codes(self):
         recipe = load_recipe("mayring")
         strict = dataclasses.replace(recipe, coding_strategy="strict")
-        prompt = strict.build_prompt(
-            "Text", "t.docx", codebase="A-01: Testcode"
-        )
+        prompt = strict.build_prompt("Text", "t.docx", codebase="A-01: Testcode")
         assert "STRICT" in prompt
         assert "AUSSCHLIESSLICH" in prompt
         # Das Original-Codebase-Template-Snippet bleibt erhalten

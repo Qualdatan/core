@@ -1,6 +1,7 @@
 """Tests fuer die Farb-Palette (src/code_colors.py)."""
 
 import colorsys
+
 import pytest
 import yaml
 
@@ -10,10 +11,10 @@ from qualdatan_core.coding.colors import (
     _rgb_to_hex,
 )
 
-
 # ---------------------------------------------------------------------------
 # Hex/RGB Helpers
 # ---------------------------------------------------------------------------
+
 
 class TestHexRgbHelpers:
     def test_rgb_to_hex_basic(self):
@@ -34,13 +35,13 @@ class TestHexRgbHelpers:
 
     def test_hex_invalid_format_raises(self):
         with pytest.raises(ValueError):
-            _hex_to_rgb("FF0000")       # kein '#'
+            _hex_to_rgb("FF0000")  # kein '#'
         with pytest.raises(ValueError):
-            _hex_to_rgb("#FFF")          # zu kurz
+            _hex_to_rgb("#FFF")  # zu kurz
         with pytest.raises(ValueError):
-            _hex_to_rgb("#GGGGGG")       # ungueltige Zeichen
+            _hex_to_rgb("#GGGGGG")  # ungueltige Zeichen
         with pytest.raises(ValueError):
-            _hex_to_rgb("#FF00000")      # zu lang
+            _hex_to_rgb("#FF00000")  # zu lang
 
     def test_hex_non_string_raises(self):
         with pytest.raises(ValueError):
@@ -55,6 +56,7 @@ class TestHexRgbHelpers:
 # ---------------------------------------------------------------------------
 # HSV-Palette: Kategorien und Subcodes
 # ---------------------------------------------------------------------------
+
 
 class TestHsvPalette:
     def test_same_category_similar_hue(self):
@@ -129,6 +131,7 @@ class TestHsvPalette:
 # Determinismus + Order-Unabhaengigkeit
 # ---------------------------------------------------------------------------
 
+
 class TestDeterminism:
     def test_same_input_twice(self):
         codes = ["A-01", "B-02", "L-03", "O-01"]
@@ -162,6 +165,7 @@ class TestDeterminism:
 # ---------------------------------------------------------------------------
 # YAML Overrides
 # ---------------------------------------------------------------------------
+
 
 class TestYamlOverrides:
     def test_from_yaml_override_wins(self, tmp_path):
@@ -220,6 +224,7 @@ class TestYamlOverrides:
 # Fallback fuer unbekannte Codes
 # ---------------------------------------------------------------------------
 
+
 class TestFallback:
     def test_unknown_code_no_exception(self):
         cmap = CodeColorMap(["A-01"])
@@ -243,6 +248,7 @@ class TestFallback:
 # ---------------------------------------------------------------------------
 # Serialisierung: to_dict / to_markdown
 # ---------------------------------------------------------------------------
+
 
 class TestSerialization:
     def test_to_dict_shape(self):
@@ -295,6 +301,7 @@ class TestSerialization:
 # ---------------------------------------------------------------------------
 # Konsistenz get_hex <-> get_rgb
 # ---------------------------------------------------------------------------
+
 
 class TestConsistency:
     def test_hex_matches_rgb(self):

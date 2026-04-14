@@ -15,13 +15,13 @@ Der Loader sucht rekursiv. Die Subdir-Struktur ist organisatorisch und
 wird in `Recipe.category` exponiert (= Name des direkten Eltern-Ordners).
 """
 
-from pathlib import Path
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
+
 import yaml
 
-from .config import METHODS_DIR, CODEBASES_DIR, ENV_CLAUDE_MODEL, ENV_CLAUDE_MAX_TOKENS
-
+from .config import CODEBASES_DIR, ENV_CLAUDE_MAX_TOKENS, ENV_CLAUDE_MODEL, METHODS_DIR
 
 # Erlaubte Coding-Strategien fuer Recipe + CLI
 CODING_STRATEGIES = ("strict", "hybrid", "inductive")
@@ -29,6 +29,7 @@ CODING_STRATEGIES = ("strict", "hybrid", "inductive")
 
 class _SafeFormatDict(dict):
     """Dict, das bei fehlenden Keys den Platzhalter leer laesst statt zu crashen."""
+
     def __missing__(self, key):
         return ""
 
@@ -97,6 +98,7 @@ class Recipe:
         category: 'interviewanalysis' | 'documentanalysis' | ... — abgeleitet
             aus dem Subdirectory unter METHODS_DIR. Nur informativ.
     """
+
     id: str
     name: str
     description: str
@@ -108,8 +110,9 @@ class Recipe:
     coding_strategy: str = "hybrid"
     category: str = ""
 
-    def build_prompt(self, text: str, filename: str, codebase: str = "",
-                     content: str = "", **extra) -> str:
+    def build_prompt(
+        self, text: str, filename: str, codebase: str = "", content: str = "", **extra
+    ) -> str:
         """Baut den Analyse-Prompt für ein Transkript oder Dokument.
 
         Args:
@@ -133,13 +136,9 @@ class Recipe:
         has_codebase = bool(codebase)
         codebase_section_parts: list[str] = []
         if has_codebase and self.codebase_prompt:
-            codebase_section_parts.append(
-                self.codebase_prompt.format(codebase=codebase)
-            )
+            codebase_section_parts.append(self.codebase_prompt.format(codebase=codebase))
 
-        strategy_block = _strategy_instruction(
-            self.coding_strategy, has_codebase
-        )
+        strategy_block = _strategy_instruction(self.coding_strategy, has_codebase)
         if strategy_block:
             codebase_section_parts.append(strategy_block)
 
@@ -154,9 +153,7 @@ class Recipe:
             content=content or text,
             **extra,
         )
-        return self.prompt_template.format_map(
-            _SafeFormatDict(fmt)
-        )
+        return self.prompt_template.format_map(_SafeFormatDict(fmt))
 
 
 def _iter_recipe_files() -> list[Path]:
@@ -183,13 +180,15 @@ def list_recipes() -> list[dict]:
     for f in _iter_recipe_files():
         with open(f, encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
-        recipes.append({
-            "id": data["id"],
-            "name": data["name"],
-            "description": data.get("description", ""),
-            "category": _category_for(f),
-            "path": f,
-        })
+        recipes.append(
+            {
+                "id": data["id"],
+                "name": data["name"],
+                "description": data.get("description", ""),
+                "category": _category_for(f),
+                "path": f,
+            }
+        )
     return recipes
 
 
@@ -202,7 +201,11 @@ def load_recipe(recipe_id: str) -> Recipe:
         if data["id"] == recipe_id:
             # .env ueberschreibt Recipe-Defaults
             model = ENV_CLAUDE_MODEL or data.get("model", "claude-sonnet-4-20250514")
-            max_tokens = int(ENV_CLAUDE_MAX_TOKENS) if ENV_CLAUDE_MAX_TOKENS else data.get("max_tokens", 16384)
+            max_tokens = (
+                int(ENV_CLAUDE_MAX_TOKENS)
+                if ENV_CLAUDE_MAX_TOKENS
+                else data.get("max_tokens", 16384)
+            )
             coding_strategy = data.get("coding_strategy", "hybrid")
             if coding_strategy not in CODING_STRATEGIES:
                 raise ValueError(
@@ -222,9 +225,7 @@ def load_recipe(recipe_id: str) -> Recipe:
                 category=_category_for(f),
             )
     available = [r["id"] for r in list_recipes()]
-    raise FileNotFoundError(
-        f"Recipe '{recipe_id}' nicht gefunden. Verfügbar: {available}"
-    )
+    raise FileNotFoundError(f"Recipe '{recipe_id}' nicht gefunden. Verfügbar: {available}")
 
 
 def load_codebase(name: str) -> str:
@@ -317,38 +318,47 @@ def parse_codebase_yaml(name: str) -> dict[str, dict]:
                 continue
             kat_id = kat.get("id")
             kat_name = kat.get("name", kat_id or "")
-            _add(kat_id, {
-                "name": kat_name,
-                "description": _desc(kat),
-                "category": kat_id,
-                "subcategory": "",
-                "ankerbeispiel": kat.get("ankerbeispiel", ""),
-                "abgrenzungsregel": kat.get("abgrenzungsregel", ""),
-            })
+            _add(
+                kat_id,
+                {
+                    "name": kat_name,
+                    "description": _desc(kat),
+                    "category": kat_id,
+                    "subcategory": "",
+                    "ankerbeispiel": kat.get("ankerbeispiel", ""),
+                    "abgrenzungsregel": kat.get("abgrenzungsregel", ""),
+                },
+            )
             for code in kat.get("codes", []) or []:
                 if not isinstance(code, dict):
                     continue
                 code_id = code.get("id")
-                _add(code_id, {
-                    "name": code.get("name", code_id or ""),
-                    "description": _desc(code),
-                    "category": kat_id,
-                    "subcategory": code_id,
-                    "ankerbeispiel": code.get("ankerbeispiel", ""),
-                    "abgrenzungsregel": code.get("abgrenzungsregel", ""),
-                })
+                _add(
+                    code_id,
+                    {
+                        "name": code.get("name", code_id or ""),
+                        "description": _desc(code),
+                        "category": kat_id,
+                        "subcategory": code_id,
+                        "ankerbeispiel": code.get("ankerbeispiel", ""),
+                        "abgrenzungsregel": code.get("abgrenzungsregel", ""),
+                    },
+                )
                 for sub in code.get("subcodes", []) or []:
                     if not isinstance(sub, dict):
                         continue
                     sub_id = sub.get("id")
-                    _add(sub_id, {
-                        "name": sub.get("name", sub_id or ""),
-                        "description": _desc(sub),
-                        "category": kat_id,
-                        "subcategory": code_id,
-                        "ankerbeispiel": sub.get("ankerbeispiel", ""),
-                        "abgrenzungsregel": sub.get("abgrenzungsregel", ""),
-                    })
+                    _add(
+                        sub_id,
+                        {
+                            "name": sub.get("name", sub_id or ""),
+                            "description": _desc(sub),
+                            "category": kat_id,
+                            "subcategory": code_id,
+                            "ankerbeispiel": sub.get("ankerbeispiel", ""),
+                            "abgrenzungsregel": sub.get("abgrenzungsregel", ""),
+                        },
+                    )
         if flat:
             return flat
 
@@ -358,26 +368,32 @@ def parse_codebase_yaml(name: str) -> dict[str, dict]:
         for code_id, info in codes.items():
             if not isinstance(info, dict):
                 continue
-            _add(code_id, {
-                "name": info.get("name", code_id),
-                "description": _desc(info),
-                "category": info.get("hauptkategorie") or info.get("category", ""),
-                "subcategory": info.get("subcategory", ""),
-                "ankerbeispiel": info.get("ankerbeispiel", ""),
-                "abgrenzungsregel": info.get("abgrenzungsregel", ""),
-            })
+            _add(
+                code_id,
+                {
+                    "name": info.get("name", code_id),
+                    "description": _desc(info),
+                    "category": info.get("hauptkategorie") or info.get("category", ""),
+                    "subcategory": info.get("subcategory", ""),
+                    "ankerbeispiel": info.get("ankerbeispiel", ""),
+                    "abgrenzungsregel": info.get("abgrenzungsregel", ""),
+                },
+            )
     elif isinstance(codes, list):
         for info in codes:
             if not isinstance(info, dict):
                 continue
-            _add(info.get("id"), {
-                "name": info.get("name", info.get("id", "")),
-                "description": _desc(info),
-                "category": info.get("hauptkategorie") or info.get("category", ""),
-                "subcategory": info.get("subcategory", ""),
-                "ankerbeispiel": info.get("ankerbeispiel", ""),
-                "abgrenzungsregel": info.get("abgrenzungsregel", ""),
-            })
+            _add(
+                info.get("id"),
+                {
+                    "name": info.get("name", info.get("id", "")),
+                    "description": _desc(info),
+                    "category": info.get("hauptkategorie") or info.get("category", ""),
+                    "subcategory": info.get("subcategory", ""),
+                    "ankerbeispiel": info.get("ankerbeispiel", ""),
+                    "abgrenzungsregel": info.get("abgrenzungsregel", ""),
+                },
+            )
 
     # Hauptkategorien aus `categories:` ergaenzen (nicht ueberschreiben)
     cats = data.get("categories")
@@ -386,23 +402,29 @@ def parse_codebase_yaml(name: str) -> dict[str, dict]:
             if cat_id in flat:
                 continue
             if isinstance(cat_info, dict):
-                _add(cat_id, {
-                    "name": cat_info.get("name", cat_id),
-                    "description": _desc(cat_info),
-                    "category": cat_id,
-                    "subcategory": "",
-                    "ankerbeispiel": cat_info.get("ankerbeispiel", ""),
-                    "abgrenzungsregel": cat_info.get("abgrenzungsregel", ""),
-                })
+                _add(
+                    cat_id,
+                    {
+                        "name": cat_info.get("name", cat_id),
+                        "description": _desc(cat_info),
+                        "category": cat_id,
+                        "subcategory": "",
+                        "ankerbeispiel": cat_info.get("ankerbeispiel", ""),
+                        "abgrenzungsregel": cat_info.get("abgrenzungsregel", ""),
+                    },
+                )
             elif isinstance(cat_info, str):
-                _add(cat_id, {
-                    "name": cat_info,
-                    "description": "",
-                    "category": cat_id,
-                    "subcategory": "",
-                    "ankerbeispiel": "",
-                    "abgrenzungsregel": "",
-                })
+                _add(
+                    cat_id,
+                    {
+                        "name": cat_info,
+                        "description": "",
+                        "category": cat_id,
+                        "subcategory": "",
+                        "ankerbeispiel": "",
+                        "abgrenzungsregel": "",
+                    },
+                )
 
     return flat
 

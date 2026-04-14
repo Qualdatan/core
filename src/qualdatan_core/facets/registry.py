@@ -18,9 +18,8 @@ Drei Quellen werden unterstuetzt:
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from importlib.metadata import entry_points
-from typing import Callable
 
 from .base import Facet
 
@@ -101,8 +100,7 @@ def discovered_facet_types() -> dict[str, Callable[..., Facet]]:
             # bricht; loggen ohne logger-Setup waere zu invasiv hier — die
             # GUI/TUI kann diese Funktion in einen try/except wickeln.
             raise RuntimeError(
-                f"Konnte Facet-Typ '{ep.name}' aus Entry-Point '{ep.value}' "
-                f"nicht laden: {exc}"
+                f"Konnte Facet-Typ '{ep.name}' aus Entry-Point '{ep.value}' nicht laden: {exc}"
             ) from exc
     return types
 

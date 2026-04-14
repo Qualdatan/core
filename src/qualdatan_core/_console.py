@@ -25,12 +25,12 @@ console = Console()
 
 
 PHASE_STYLES = {
-    "input":    ("\U0001f4e5", "blue"),
-    "scan":     ("\U0001f50d", "sky_blue1"),
-    "ai":       ("\U0001f916", "purple"),
+    "input": ("\U0001f4e5", "blue"),
+    "scan": ("\U0001f50d", "sky_blue1"),
+    "ai": ("\U0001f916", "purple"),
     "annotate": ("\u270f\ufe0f", "dark_orange"),
-    "output":   ("\U0001f4e6", "green"),
-    "tri":      ("\U0001f517", "medium_purple"),
+    "output": ("\U0001f4e6", "green"),
+    "tri": ("\U0001f517", "medium_purple"),
 }
 
 
@@ -39,9 +39,7 @@ def print_header(title: str, subtitle: str = "") -> None:
     if subtitle:
         content += f"\n[dim]{subtitle}[/dim]"
     console.print()
-    console.print(
-        Panel(content, box=box.ROUNDED, border_style="cyan", padding=(1, 2))
-    )
+    console.print(Panel(content, box=box.ROUNDED, border_style="cyan", padding=(1, 2)))
 
 
 def print_step(step: str, detail: str = "", phase: str = "ai") -> None:

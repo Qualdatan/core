@@ -10,11 +10,16 @@ import pytest
 
 from qualdatan_core.app_db import AppDB, default_app_db_path, open_app_db
 
-
 EXPECTED_TABLES = {
-    "projects", "runs", "run_materials", "run_facets",
-    "codings", "codebook_entries",
-    "cache_llm", "cache_pdf", "app_state",
+    "projects",
+    "runs",
+    "run_materials",
+    "run_facets",
+    "codings",
+    "codebook_entries",
+    "cache_llm",
+    "cache_pdf",
+    "app_state",
 }
 
 
@@ -47,9 +52,7 @@ class TestSchema:
     def test_tables_exist(self):
         with open_app_db(":memory:") as db:
             with db.connection() as conn:
-                rows = conn.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table'"
-                ).fetchall()
+                rows = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
             names = {r[0] for r in rows}
         assert EXPECTED_TABLES.issubset(names)
 
@@ -65,9 +68,7 @@ class TestSchema:
     def test_indexes_exist(self):
         with open_app_db(":memory:") as db:
             with db.connection() as conn:
-                rows = conn.execute(
-                    "SELECT name FROM sqlite_master WHERE type='index'"
-                ).fetchall()
+                rows = conn.execute("SELECT name FROM sqlite_master WHERE type='index'").fetchall()
             names = {r[0] for r in rows}
         assert "idx_runs_project_status" in names
         assert "idx_codings_project_code" in names

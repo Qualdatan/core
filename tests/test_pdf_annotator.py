@@ -11,7 +11,6 @@ import pytest
 
 from qualdatan_core.pdf.annotator import annotate_text_pdf, annotate_visual_pdf
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -273,7 +272,12 @@ def test_missing_block_is_skipped_and_logged(tmp_path, two_page_pdf, color_map_s
     ]
 
     stats = annotate_text_pdf(
-        pdf, dst, codings, extraction, color_map_stub, log_callback=lambda lvl, m: logs.append((lvl, m))
+        pdf,
+        dst,
+        codings,
+        extraction,
+        color_map_stub,
+        log_callback=lambda lvl, m: logs.append((lvl, m)),
     )
 
     assert stats["annotations_added"] == 1

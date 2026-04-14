@@ -80,7 +80,8 @@ class TestBuildPrompt:
     def test_visual_taxonomy_prompt_mentions_codes_and_image(self):
         f = _ifc()
         ctx = FacetContext(
-            material=b"(png-bytes)", material_kind=Material.PDF_VISUAL,
+            material=b"(png-bytes)",
+            material_kind=Material.PDF_VISUAL,
             source_label="plan.pdf#page=3",
         )
         prompt = f.build_prompt(ctx)
@@ -92,7 +93,8 @@ class TestBuildPrompt:
     def test_visual_evidence_prompt_shows_scale(self):
         f = _log()
         ctx = FacetContext(
-            material=b"(png-bytes)", material_kind=Material.PDF_VISUAL,
+            material=b"(png-bytes)",
+            material_kind=Material.PDF_VISUAL,
         )
         prompt = f.build_prompt(ctx)
         assert prompt.index("LOG-01") < prompt.index("LOG-02") < prompt.index("LOG-03")
@@ -105,13 +107,16 @@ class TestParseResponse:
     def test_visual_taxonomy_parses_strict(self):
         f = _ifc()
         ctx = FacetContext(
-            material=b"...", material_kind=Material.PDF_VISUAL,
+            material=b"...",
+            material_kind=Material.PDF_VISUAL,
             source_label="plan.pdf#p3",
         )
-        raw = json.dumps([
-            {"code_id": "IFC-WALL", "bbox": [0.1, 0.2, 0.3, 0.4], "confidence": 0.9},
-            {"code_id": "IFC-COLUMN", "bbox": [0.5, 0.1, 0.05, 0.5], "confidence": 0.7},
-        ])
+        raw = json.dumps(
+            [
+                {"code_id": "IFC-WALL", "bbox": [0.1, 0.2, 0.3, 0.4], "confidence": 0.9},
+                {"code_id": "IFC-COLUMN", "bbox": [0.5, 0.1, 0.05, 0.5], "confidence": 0.7},
+            ]
+        )
         out = f.parse_response(raw, ctx)
         assert [s.code_id for s in out] == ["IFC-WALL", "IFC-COLUMN"]
         assert out[0].document == "plan.pdf#p3"
@@ -169,8 +174,11 @@ class TestYamlLoader:
         # oder Umbrella-Zielpfad fuer direkte Entwicklung.
         here = Path(__file__).resolve()
         candidates = [
-            here.parents[3] / "bundles" / "bim-basic" / "facets",         # Umbrella/repos/core/tests -> Umbrella
-            here.parents[4] / "bundles" / "bim-basic" / "facets",         # tiefere Nesting-Variante
+            here.parents[3]
+            / "bundles"
+            / "bim-basic"
+            / "facets",  # Umbrella/repos/core/tests -> Umbrella
+            here.parents[4] / "bundles" / "bim-basic" / "facets",  # tiefere Nesting-Variante
             Path("/mnt/d/ai/transcript/bundles/bim-basic/facets"),
         ]
         facets_dir = next((p for p in candidates if p.exists()), None)
@@ -186,4 +194,4 @@ class TestYamlLoader:
         assert isinstance(ifc, VisualTaxonomyFacet)
         assert isinstance(log, VisualEvidenceFacet)
         assert len(ifc.codebook_contribution) == 15  # 15 IFC-Klassen im Bundle
-        assert len(log.codebook_contribution) == 5   # LOG-01..05
+        assert len(log.codebook_contribution) == 5  # LOG-01..05

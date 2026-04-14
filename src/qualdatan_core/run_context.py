@@ -10,6 +10,7 @@ Projekt-/Run-Katalog sowie Materialien/Facets fuer das Multi-Repo-Setup.
 """
 
 import json
+import logging
 import sqlite3
 from datetime import datetime
 from enum import Enum
@@ -19,11 +20,19 @@ from typing import TYPE_CHECKING
 from .config import OUTPUT_ROOT
 from .db import PipelineDB
 
+logger = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
     from .app_db import AppDB
 
 
 class RunStatus(str, Enum):
+    """Lebenszyklus-Status eines Run-Verzeichnisses.
+
+    Die Werte werden 1:1 in ``PipelineDB.state.status`` persistiert und von
+    :func:`find_interrupted_runs` genutzt, um abgebrochene Runs zu erkennen.
+    """
+
     RUNNING = "running"
     COMPLETED = "completed"
     INTERRUPTED = "interrupted"
@@ -46,10 +55,23 @@ class RunContext:
         └── analysis_results.json
     """
 
-    def __init__(self, run_dir: Path,
-                 app_db: "AppDB | None" = None,
-                 app_project_id: int | None = None,
-                 app_run_id: int | None = None):
+    def __init__(
+        self,
+        run_dir: Path,
+        app_db: "AppDB | None" = None,
+        app_project_id: int | None = None,
+        app_run_id: int | None = None,
+    ):
+        """Legt Pfade fest und oeffnet die per-Run ``pipeline.db``.
+
+        Args:
+            run_dir: Basis-Verzeichnis fuer diesen Run; wird erst bei
+                :meth:`ensure_dirs` angelegt.
+            app_db: Optionale offene :class:`AppDB` fuer Phase-D-Anbindung.
+            app_project_id: Vorhandene Project-ID in der App-DB (sonst wird
+                spaeter via :meth:`attach_to_app_db` angelegt).
+            app_run_id: Vorhandene Run-ID in der App-DB.
+        """
         self.run_dir = run_dir
         self.cache_dir = run_dir / ".cache"  # Legacy-Kompatibilitaet
         self.prompts_dir = run_dir / "prompts"
@@ -68,7 +90,7 @@ class RunContext:
         self.db = PipelineDB(run_dir / "pipeline.db")
 
         # Optionale Anbindung an globale App-DB (Phase D.2)
-        self.app_db: "AppDB | None" = app_db
+        self.app_db: AppDB | None = app_db
         self.app_project_id: int | None = app_project_id
         self.app_run_id: int | None = app_run_id
 
@@ -76,10 +98,15 @@ class RunContext:
     # App-DB Anbindung (Phase D.2)
     # ------------------------------------------------------------------
 
-    def attach_to_app_db(self, app_db: "AppDB", project_name: str, *,
-                         preset_id: str = "",
-                         config: dict | None = None,
-                         description: str = "") -> int:
+    def attach_to_app_db(
+        self,
+        app_db: "AppDB",
+        project_name: str,
+        *,
+        preset_id: str = "",
+        config: dict | None = None,
+        description: str = "",
+    ) -> int:
         """Verbindet diesen RunContext idempotent mit der App-DB.
 
         Holt das Projekt per :func:`get_project_by_name` oder legt es via
@@ -100,8 +127,10 @@ class RunContext:
         """
         from .app_db import (
             create_project,
-            create_run as _app_db_create_run,
             get_project_by_name,
+        )
+        from .app_db import (
+            create_run as _app_db_create_run,
         )
 
         project = get_project_by_name(app_db, project_name)
@@ -139,9 +168,9 @@ class RunContext:
         self.app_run_id = run_id
         return run_id
 
-    def register_material(self, material_kind: str, path: str, *,
-                          relative_path: str = "",
-                          source_label: str = "") -> int | None:
+    def register_material(
+        self, material_kind: str, path: str, *, relative_path: str = "", source_label: str = ""
+    ) -> int | None:
         """Registriert ein Material in der App-DB (falls angebunden).
 
         Args:
@@ -158,6 +187,7 @@ class RunContext:
             return None
         try:
             from .app_db import add_run_material
+
             material = add_run_material(
                 self.app_db,
                 self.app_run_id,
@@ -168,10 +198,13 @@ class RunContext:
             )
             return material.id
         except Exception:
+            # Best-effort Mirror — App-DB-Sync ist fuer den Run nicht kritisch.
+            logger.debug("register_material (app_db) failed", exc_info=True)
             return None
 
-    def register_facet(self, facet_id: str, *, bundle_id: str = "",
-                       params: dict | None = None) -> int | None:
+    def register_facet(
+        self, facet_id: str, *, bundle_id: str = "", params: dict | None = None
+    ) -> int | None:
         """Aktiviert eine Facet fuer diesen Run in der App-DB.
 
         Args:
@@ -187,6 +220,7 @@ class RunContext:
             return None
         try:
             from .app_db import add_run_facet
+
             facet = add_run_facet(
                 self.app_db,
                 self.app_run_id,
@@ -196,6 +230,8 @@ class RunContext:
             )
             return facet.id
         except Exception:
+            # Best-effort Mirror — App-DB-Sync ist fuer den Run nicht kritisch.
+            logger.debug("register_facet (app_db) failed", exc_info=True)
             return None
 
     def mark_failed(self, reason: str = ""):
@@ -216,6 +252,7 @@ class RunContext:
         if self.app_db is not None and self.app_run_id is not None:
             try:
                 from .app_db import update_run_status
+
                 update_run_status(
                     self.app_db,
                     self.app_run_id,
@@ -223,7 +260,8 @@ class RunContext:
                     finished_at=datetime.now().isoformat(),
                 )
             except Exception:
-                pass
+                # Best-effort — Run-Abort darf nicht an App-DB-Sync scheitern.
+                logger.debug("mark_failed (app_db) failed", exc_info=True)
 
     # ------------------------------------------------------------------
     # Annotator-Pfade (Phase 5)
@@ -273,8 +311,7 @@ class RunContext:
         d.mkdir(parents=True, exist_ok=True)
         return d
 
-    def company_qdpx_path(self, company_name: str,
-                          name: str = "interviews.qdpx") -> Path:
+    def company_qdpx_path(self, company_name: str, name: str = "interviews.qdpx") -> Path:
         """Liefert ``<run>/<company>/qda/<name>`` und legt den Parent an."""
         target = self.company_dir(company_name) / "qda" / name
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -330,12 +367,15 @@ class RunContext:
     # Run State (via DB)
     # ------------------------------------------------------------------
 
-    def init_state(self, recipe_id: str | None = None,
-                   codebase_name: str | None = None,
-                   transcripts: list[str] | None = None,
-                   mode: str | None = None,
-                   companies: list[str] | None = None,
-                   **extra):
+    def init_state(
+        self,
+        recipe_id: str | None = None,
+        codebase_name: str | None = None,
+        transcripts: list[str] | None = None,
+        mode: str | None = None,
+        companies: list[str] | None = None,
+        **extra,
+    ):
         """Initialisiert den Run-State beim Start.
 
         Alle Parameter sind optional, damit die Funktion sowohl vom
@@ -364,9 +404,11 @@ class RunContext:
         if self.app_db is not None and self.app_run_id is not None:
             try:
                 from .app_db import update_run_status
+
                 update_run_status(self.app_db, self.app_run_id, "running")
             except Exception:
-                pass
+                # Best-effort — Run-Start darf nicht an App-DB-Sync scheitern.
+                logger.debug("init_state->running (app_db) failed", exc_info=True)
 
     def mark_transcript_done(self, filename: str):
         """Markiert ein Transkript als fertig analysiert."""
@@ -394,6 +436,7 @@ class RunContext:
         if self.app_db is not None and self.app_run_id is not None:
             try:
                 from .app_db import update_run_status
+
                 update_run_status(
                     self.app_db,
                     self.app_run_id,
@@ -401,9 +444,11 @@ class RunContext:
                     finished_at=datetime.now().isoformat(),
                 )
             except Exception:
-                pass
+                # Best-effort — Completion darf nicht an App-DB-Sync scheitern.
+                logger.debug("mark_completed (app_db) failed", exc_info=True)
 
     def get_state(self) -> dict:
+        """Liefert den kompletten ``state``-Dictionary der ``PipelineDB``."""
         return self.db.get_all_state()
 
     def get_pending_transcripts(self) -> list[str]:
@@ -413,6 +458,7 @@ class RunContext:
         return [t for t in all_t if t not in done_t]
 
     def is_step_done(self, step: int) -> bool:
+        """Liefert ``True``, wenn ``step`` bereits in ``steps_completed`` steht."""
         steps = self.db.get_state("steps_completed", [])
         return step in steps
 
@@ -424,8 +470,7 @@ class RunContext:
         """Macht Dateinamen sicher."""
         return name.replace("/", "_").replace("\\", "_").replace(" ", "_")
 
-    def cache_prompt(self, filename: str, prompt: str,
-                     prompts_dir: Path | None = None):
+    def cache_prompt(self, filename: str, prompt: str, prompts_dir: Path | None = None):
         """Speichert den gesendeten Prompt.
 
         ``prompts_dir`` erlaubt es, einen alternativen Ablageort zu
@@ -437,8 +482,7 @@ class RunContext:
         path = target_dir / f"{safe}.txt"
         path.write_text(prompt, encoding="utf-8")
 
-    def cache_response(self, filename: str, response_text: str,
-                       responses_dir: Path | None = None):
+    def cache_response(self, filename: str, response_text: str, responses_dir: Path | None = None):
         """Speichert die rohe API-Antwort.
 
         ``responses_dir`` erlaubt es, einen alternativen Ablageort zu
@@ -455,9 +499,7 @@ class RunContext:
         safe = self._safe_filename(filename)
         # Weiterhin als Datei fuer Debugging
         path = self.parsed_dir / f"{safe}.json"
-        path.write_text(
-            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def get_cached_parsed(self, filename: str) -> dict | None:
         """Liest gecachtes Parse-Ergebnis, falls vorhanden."""
@@ -475,10 +517,14 @@ class RunContext:
 # Run-Verwaltung: Erstellen, Finden, Resume
 # ======================================================================
 
-def create_run(*, app_db: "AppDB | None" = None,
-               project_name: str | None = None,
-               preset_id: str = "",
-               config: dict | None = None) -> RunContext:
+
+def create_run(
+    *,
+    app_db: "AppDB | None" = None,
+    project_name: str | None = None,
+    preset_id: str = "",
+    config: dict | None = None,
+) -> RunContext:
     """Erstellt einen neuen Run mit Datetime-Verzeichnis.
 
     Args:
@@ -535,6 +581,8 @@ def find_interrupted_runs() -> list[RunContext]:
                 if status != RunStatus.COMPLETED:
                     interrupted.append(ctx)
             except Exception:
+                # Kaputte/unlesbare Run-DB uebersprinten, keine Fehlerbremse.
+                logger.debug("find_interrupted_runs: skip %s", d, exc_info=True)
                 continue
         elif state_file.exists():
             # Legacy: JSON-basierter State

@@ -11,12 +11,11 @@ erzeugt und 0 zurueckgegeben.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from ..models import AnalysisResult
 from ..run_context import RunContext
-
 
 # ---------------------------------------------------------------------------
 # Spalten-Definition
@@ -93,6 +92,7 @@ def _code_name_from_sources(
 # Interview-Rows
 # ---------------------------------------------------------------------------
 
+
 def _interview_rows_from_result(
     result: AnalysisResult,
     run_name: str,
@@ -103,27 +103,26 @@ def _interview_rows_from_result(
     interview_codes = result.codes if isinstance(result.codes, dict) else {}
     for seg in result.segments:
         code_id = seg.code_id or ""
-        code_name = (
-            seg.code_name
-            or _code_name_from_sources(code_id, codebase_codes, interview_codes)
+        code_name = seg.code_name or _code_name_from_sources(
+            code_id, codebase_codes, interview_codes
         )
         haupt = seg.hauptkategorie or _hauptkategorie_from_code(code_id)
         yield [
             run_name,
             "Interview",
             company,
-            "",                        # Projekt
-            seg.document or "",        # Datei
-            seg.document or "",        # Pfad (kein zusaetzlicher Pfad bekannt)
-            "",                        # Seite (Interviews haben keine Seiten)
+            "",  # Projekt
+            seg.document or "",  # Datei
+            seg.document or "",  # Pfad (kein zusaetzlicher Pfad bekannt)
+            "",  # Seite (Interviews haben keine Seiten)
             code_id,
             haupt,
             code_name,
             _truncate(seg.text or ""),
-            "",                        # Begruendung — Mayring-Result hat keine
+            "",  # Begruendung — Mayring-Result hat keine
             int(seg.char_start or 0),
             int(seg.char_end or 0),
-            "",                        # Confidence
+            "",  # Confidence
         ]
 
 
@@ -140,9 +139,7 @@ def _collect_interview_rows(
     if ctx.analysis_json.exists():
         try:
             result = AnalysisResult.load(ctx.analysis_json)
-            rows.extend(
-                _interview_rows_from_result(result, run_name, "", codebase_codes)
-            )
+            rows.extend(_interview_rows_from_result(result, run_name, "", codebase_codes))
         except Exception as e:
             print(f"  WARN: pivot_export: konnte {ctx.analysis_json} nicht laden: {e}")
 
@@ -152,8 +149,14 @@ def _collect_interview_rows(
             if not company_dir.is_dir():
                 continue
             if company_dir.name in (
-                "annotated", "mapping", "qda", "evaluation",
-                "prompts", "responses", ".cache", "_interview_sample",
+                "annotated",
+                "mapping",
+                "qda",
+                "evaluation",
+                "prompts",
+                "responses",
+                ".cache",
+                "_interview_sample",
                 "_sample_input",
             ):
                 continue
@@ -164,7 +167,10 @@ def _collect_interview_rows(
                 result = AnalysisResult.load(candidate)
                 rows.extend(
                     _interview_rows_from_result(
-                        result, run_name, company_dir.name, codebase_codes,
+                        result,
+                        run_name,
+                        company_dir.name,
+                        codebase_codes,
                     )
                 )
             except Exception as e:
@@ -176,6 +182,7 @@ def _collect_interview_rows(
 # ---------------------------------------------------------------------------
 # PDF-Rows
 # ---------------------------------------------------------------------------
+
 
 def _block_text_lookup(extraction: dict | None) -> dict[str, tuple[str, int, int]]:
     """Erzeugt ``{block_id: (text, char_start, char_end)}`` aus Extraktionsdaten."""
@@ -223,8 +230,7 @@ def _collect_pdf_rows(
     try:
         conn = db._get_conn()
         company_names = {
-            row["id"]: row["name"]
-            for row in conn.execute("SELECT id, name FROM companies")
+            row["id"]: row["name"] for row in conn.execute("SELECT id, name FROM companies")
         }
     except Exception:
         company_names = {}
@@ -265,23 +271,25 @@ def _collect_pdf_rows(
                     continue
                 code_name = _code_name_from_sources(code_id, codebase_codes, None)
                 haupt = _hauptkategorie_from_code(code_id)
-                rows.append([
-                    run_name,
-                    "Dokument",
-                    company_name,
-                    project,
-                    filename,
-                    rel_path,
-                    int(page or 0),
-                    code_id,
-                    haupt,
-                    code_name,
-                    _truncate(text),
-                    _truncate(begruendung, 500),
-                    int(char_start or 0),
-                    int(char_end or 0),
-                    confidence if confidence != "" else "",
-                ])
+                rows.append(
+                    [
+                        run_name,
+                        "Dokument",
+                        company_name,
+                        project,
+                        filename,
+                        rel_path,
+                        int(page or 0),
+                        code_id,
+                        haupt,
+                        code_name,
+                        _truncate(text),
+                        _truncate(begruendung, 500),
+                        int(char_start or 0),
+                        int(char_end or 0),
+                        confidence if confidence != "" else "",
+                    ]
+                )
 
     return rows
 
@@ -290,10 +298,11 @@ def _collect_pdf_rows(
 # Excel-Schreiber
 # ---------------------------------------------------------------------------
 
+
 def _write_excel(rows: list[list], output_path: Path) -> None:
     """Schreibt die Rows als wide-format Sheet ``Codierungen``."""
     from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.styles import Alignment, Font, PatternFill
 
     wb = Workbook()
     ws = wb.active
@@ -338,6 +347,7 @@ def _write_excel(rows: list[list], output_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def build_pivot_excel(
     ctx: RunContext,

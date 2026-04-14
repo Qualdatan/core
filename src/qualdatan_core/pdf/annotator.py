@@ -21,11 +21,11 @@ Signatur, wird aber nicht mehr ausgewertet. Du kannst ``None`` uebergeben.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import fitz  # pymupdf
-
 
 LogCallback = Callable[[str, str], None] | None
 
@@ -216,8 +216,7 @@ def annotate_text_pdf(
                         _log(
                             log_callback,
                             "info",
-                            f"refinement fallback for {block_id}/{code_id} "
-                            "(invalid offsets)",
+                            f"refinement fallback for {block_id}/{code_id} (invalid offsets)",
                         )
                         stats["refinements_fallback"] += 1
                         highlight_target = _rect_from_bbox(block_bbox)
@@ -226,9 +225,7 @@ def annotate_text_pdf(
 
                 annot = page.add_highlight_annot(highlight_target)
                 if annot is None:
-                    msg = (
-                        f"failed to create highlight for {block_id}/{code_id}"
-                    )
+                    msg = f"failed to create highlight for {block_id}/{code_id}"
                     stats["errors"].append(msg)
                     _log(log_callback, "warn", msg)
                     continue
@@ -298,10 +295,7 @@ def annotate_visual_pdf(
         for coding in visual_codings:
             page_num = coding.get("page")
             if not isinstance(page_num, int) or page_num < 1 or page_num > len(doc):
-                msg = (
-                    f"visual coding {coding.get('block_id', '?')} "
-                    f"has invalid page {page_num}"
-                )
+                msg = f"visual coding {coding.get('block_id', '?')} has invalid page {page_num}"
                 stats["errors"].append(msg)
                 _log(log_callback, "warn", msg)
                 continue
@@ -315,8 +309,7 @@ def annotate_visual_pdf(
                 _log(
                     log_callback,
                     "info",
-                    f"visual coding {coding.get('block_id', '?')} "
-                    "has no bbox, using whole page",
+                    f"visual coding {coding.get('block_id', '?')} has no bbox, using whole page",
                 )
 
             stats["blocks_processed"] += 1
@@ -325,10 +318,7 @@ def annotate_visual_pdf(
             for code_id in coding.get("codes", []):
                 annot = page.add_rect_annot(rect)
                 if annot is None:
-                    msg = (
-                        f"failed to create rect annot for "
-                        f"{coding.get('block_id', '?')}/{code_id}"
-                    )
+                    msg = f"failed to create rect annot for {coding.get('block_id', '?')}/{code_id}"
                     stats["errors"].append(msg)
                     _log(log_callback, "warn", msg)
                     continue

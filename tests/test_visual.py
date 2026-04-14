@@ -7,24 +7,24 @@ import fitz
 import pytest
 
 from qualdatan_core.coding.visual import (
-    TriageResult,
     DetailResult,
     ElementDetail,
+    TriageResult,
     VisualAnalysisResult,
-    render_page_thumbnail,
-    estimate_image_tokens,
-    run_localisation,
-    _element_to_codes,
-    _triage_to_codes,
-    _triage_from_dict,
     _detail_from_dict,
+    _element_to_codes,
     _is_valid_bbox,
+    _triage_from_dict,
+    _triage_to_codes,
+    estimate_image_tokens,
+    render_page_thumbnail,
+    run_localisation,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures: Test-PDFs
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def plan_pdf(tmp_path):
@@ -61,7 +61,7 @@ def multi_page_pdf(tmp_path):
     # Seite 1: Text
     page = doc.new_page(width=595, height=842)
     for i in range(20):
-        page.insert_text((72, 72 + i * 30), f"Textzeile {i+1}", fontsize=11)
+        page.insert_text((72, 72 + i * 30), f"Textzeile {i + 1}", fontsize=11)
 
     # Seite 2: Plan (Querformat)
     page = doc.new_page(width=1190, height=842)
@@ -87,6 +87,7 @@ def multi_page_pdf(tmp_path):
 # Thumbnail-Rendering Tests
 # ---------------------------------------------------------------------------
 
+
 class TestThumbnailRendering:
     def test_render_thumbnail_returns_base64(self, plan_pdf):
         doc = fitz.open(str(plan_pdf))
@@ -97,6 +98,7 @@ class TestThumbnailRendering:
         assert len(b64) > 100
         # Sollte valides Base64 sein
         import base64
+
         raw = base64.b64decode(b64)
         # PNG Header
         assert raw[:4] == b"\x89PNG"
@@ -124,6 +126,7 @@ class TestThumbnailRendering:
 # ---------------------------------------------------------------------------
 # Code-Mapping Tests
 # ---------------------------------------------------------------------------
+
 
 class TestCodeMapping:
     def test_element_to_codes_wall(self):
@@ -177,10 +180,10 @@ class TestCodeMapping:
             estimated_log="LOG-03",
         )
         codes = _triage_to_codes(triage)
-        assert "P-01" in codes   # Grundriss
-        assert "O-01" in codes   # Waende
-        assert "O-03" in codes   # Tueren/Fenster
-        assert "Q-01" in codes   # LOG
+        assert "P-01" in codes  # Grundriss
+        assert "O-01" in codes  # Waende
+        assert "O-03" in codes  # Tueren/Fenster
+        assert "Q-01" in codes  # LOG
 
     def test_triage_to_codes_section(self):
         triage = TriageResult(page=1, page_type="section")
@@ -203,13 +206,17 @@ class TestCodeMapping:
 # Datenstruktur Tests
 # ---------------------------------------------------------------------------
 
+
 class TestDataStructures:
     def test_triage_result_to_dict(self):
         t = TriageResult(
-            page=1, page_type="floor_plan",
+            page=1,
+            page_type="floor_plan",
             building_elements=["Waende", "Tueren"],
-            estimated_log="LOG-03", priority="high",
-            description="EG Grundriss", confidence=0.9,
+            estimated_log="LOG-03",
+            priority="high",
+            description="EG Grundriss",
+            confidence=0.9,
         )
         d = t.to_dict()
         assert d["page"] == 1
@@ -222,7 +229,8 @@ class TestDataStructures:
             page=1,
             building_elements=[
                 ElementDetail(
-                    element_type="Wand", ifc_class="IfcWall",
+                    element_type="Wand",
+                    ifc_class="IfcWall",
                     log_achieved="LOG-03",
                 )
             ],
@@ -235,7 +243,9 @@ class TestDataStructures:
 
     def test_visual_analysis_result_to_dict(self):
         result = VisualAnalysisResult(
-            file="test.pdf", project="P", page_count=2,
+            file="test.pdf",
+            project="P",
+            page_count=2,
             triage=[TriageResult(page=1, page_type="floor_plan", priority="high")],
             details=[DetailResult(page=1)],
             token_usage=5000,
@@ -249,10 +259,13 @@ class TestDataStructures:
 
     def test_triage_from_dict_roundtrip(self):
         original = TriageResult(
-            page=3, page_type="section",
+            page=3,
+            page_type="section",
             building_elements=["Decken", "Waende"],
-            estimated_log="LOG-02", priority="medium",
-            description="Laengsschnitt", confidence=0.85,
+            estimated_log="LOG-02",
+            priority="medium",
+            description="Laengsschnitt",
+            confidence=0.85,
         )
         d = original.to_dict()
         restored = _triage_from_dict(d)
@@ -266,9 +279,12 @@ class TestDataStructures:
             page=2,
             building_elements=[
                 ElementDetail(
-                    element_type="Fenster", ifc_class="IfcWindow",
-                    log_achieved="LOG-02", log_evidence="Vereinfacht",
-                    visible_parameters=["Breite"], region="top-left",
+                    element_type="Fenster",
+                    ifc_class="IfcWindow",
+                    log_achieved="LOG-02",
+                    log_evidence="Vereinfacht",
+                    visible_parameters=["Breite"],
+                    region="top-left",
                 )
             ],
             annotations=["Raumstempel"],
@@ -287,26 +303,33 @@ class TestDataStructures:
 # visual_codings() Tests
 # ---------------------------------------------------------------------------
 
+
 class TestVisualCodings:
     def test_visual_codings_from_detail(self):
         result = VisualAnalysisResult(
-            file="plan.pdf", project="P", page_count=1,
+            file="plan.pdf",
+            project="P",
+            page_count=1,
             triage=[TriageResult(page=1, page_type="floor_plan", priority="high")],
-            details=[DetailResult(
-                page=1,
-                building_elements=[
-                    ElementDetail(
-                        element_type="Tragende Wand", ifc_class="IfcWall",
-                        log_achieved="LOG-03",
-                        log_evidence="Mehrschichtiger Wandaufbau",
-                        visible_parameters=["Wanddicke"],
-                    ),
-                    ElementDetail(
-                        element_type="Tuer", ifc_class="IfcDoor",
-                        log_achieved="LOG-02",
-                    ),
-                ],
-            )],
+            details=[
+                DetailResult(
+                    page=1,
+                    building_elements=[
+                        ElementDetail(
+                            element_type="Tragende Wand",
+                            ifc_class="IfcWall",
+                            log_achieved="LOG-03",
+                            log_evidence="Mehrschichtiger Wandaufbau",
+                            visible_parameters=["Wanddicke"],
+                        ),
+                        ElementDetail(
+                            element_type="Tuer",
+                            ifc_class="IfcDoor",
+                            log_achieved="LOG-02",
+                        ),
+                    ],
+                )
+            ],
         )
         codings = result.visual_codings()
         assert len(codings) == 2
@@ -320,13 +343,19 @@ class TestVisualCodings:
 
     def test_visual_codings_from_triage_only(self):
         result = VisualAnalysisResult(
-            file="plan.pdf", project="P", page_count=1,
-            triage=[TriageResult(
-                page=1, page_type="floor_plan", priority="medium",
-                building_elements=["Waende", "Fenster"],
-                estimated_log="LOG-02",
-                description="Grundriss EG",
-            )],
+            file="plan.pdf",
+            project="P",
+            page_count=1,
+            triage=[
+                TriageResult(
+                    page=1,
+                    page_type="floor_plan",
+                    priority="medium",
+                    building_elements=["Waende", "Fenster"],
+                    estimated_log="LOG-02",
+                    description="Grundriss EG",
+                )
+            ],
             details=[],  # Kein Detail-Pass
         )
         codings = result.visual_codings()
@@ -337,7 +366,9 @@ class TestVisualCodings:
 
     def test_visual_codings_skip_priority(self):
         result = VisualAnalysisResult(
-            file="plan.pdf", project="P", page_count=1,
+            file="plan.pdf",
+            project="P",
+            page_count=1,
             triage=[TriageResult(page=1, page_type="text", priority="skip")],
         )
         codings = result.visual_codings()
@@ -345,20 +376,30 @@ class TestVisualCodings:
 
     def test_visual_codings_block_ids_unique(self):
         result = VisualAnalysisResult(
-            file="plan.pdf", project="P", page_count=2,
+            file="plan.pdf",
+            project="P",
+            page_count=2,
             triage=[
-                TriageResult(page=1, page_type="floor_plan", priority="high",
-                             building_elements=["Waende"]),
-                TriageResult(page=2, page_type="section", priority="high",
-                             building_elements=["Decken"]),
+                TriageResult(
+                    page=1, page_type="floor_plan", priority="high", building_elements=["Waende"]
+                ),
+                TriageResult(
+                    page=2, page_type="section", priority="high", building_elements=["Decken"]
+                ),
             ],
             details=[
-                DetailResult(page=1, building_elements=[
-                    ElementDetail(element_type="Wand", log_achieved="LOG-03"),
-                ]),
-                DetailResult(page=2, building_elements=[
-                    ElementDetail(element_type="Decke", log_achieved="LOG-02"),
-                ]),
+                DetailResult(
+                    page=1,
+                    building_elements=[
+                        ElementDetail(element_type="Wand", log_achieved="LOG-03"),
+                    ],
+                ),
+                DetailResult(
+                    page=2,
+                    building_elements=[
+                        ElementDetail(element_type="Decke", log_achieved="LOG-02"),
+                    ],
+                ),
             ],
         )
         codings = result.visual_codings()
@@ -371,26 +412,33 @@ class TestVisualCodings:
 # ---------------------------------------------------------------------------
 
 from qualdatan_core.qdpx.merger import (
-    create_new_project, add_visual_sources, extract_codesystem,
-    write_qdpx, read_qdpx,
+    add_visual_sources,
+    create_new_project,
+    extract_codesystem,
+    read_qdpx,
+    write_qdpx,
 )
 
 
 class TestQdpxVisualSelections:
     def test_add_visual_sources_creates_codes(self):
         project = create_new_project()
-        visual_results = [{
-            "file": "eg_grundriss.pdf",
-            "project": "Testprojekt",
-            "page_dimensions": {1: (1190, 842)},
-            "description": "Grundriss EG, 1:100",
-            "visual_codings": [{
-                "block_id": "p1_v0",
-                "page": 1,
-                "codes": ["O-01", "P-01", "Q-01"],
-                "description": "Tragende Waende, LOG-03",
-            }],
-        }]
+        visual_results = [
+            {
+                "file": "eg_grundriss.pdf",
+                "project": "Testprojekt",
+                "page_dimensions": {1: (1190, 842)},
+                "description": "Grundriss EG, 1:100",
+                "visual_codings": [
+                    {
+                        "block_id": "p1_v0",
+                        "page": 1,
+                        "codes": ["O-01", "P-01", "Q-01"],
+                        "description": "Tragende Waende, LOG-03",
+                    }
+                ],
+            }
+        ]
 
         code_guids = add_visual_sources(project, visual_results)
 
@@ -401,17 +449,21 @@ class TestQdpxVisualSelections:
 
     def test_add_visual_sources_creates_pdf_source(self):
         project = create_new_project()
-        visual_results = [{
-            "file": "schnitt.pdf",
-            "project": "P",
-            "page_dimensions": {1: (595, 842)},
-            "visual_codings": [{
-                "block_id": "p1_v0",
-                "page": 1,
-                "codes": ["P-02"],
-                "description": "Laengsschnitt durch Gebaeude",
-            }],
-        }]
+        visual_results = [
+            {
+                "file": "schnitt.pdf",
+                "project": "P",
+                "page_dimensions": {1: (595, 842)},
+                "visual_codings": [
+                    {
+                        "block_id": "p1_v0",
+                        "page": 1,
+                        "codes": ["P-02"],
+                        "description": "Laengsschnitt durch Gebaeude",
+                    }
+                ],
+            }
+        ]
 
         add_visual_sources(project, visual_results)
 
@@ -424,17 +476,21 @@ class TestQdpxVisualSelections:
 
     def test_visual_selection_has_full_page_bbox(self):
         project = create_new_project()
-        visual_results = [{
-            "file": "plan.pdf",
-            "project": "P",
-            "page_dimensions": {1: (1190, 842)},
-            "visual_codings": [{
-                "block_id": "p1_v0",
-                "page": 1,
-                "codes": ["O-01"],
-                "description": "Wand",
-            }],
-        }]
+        visual_results = [
+            {
+                "file": "plan.pdf",
+                "project": "P",
+                "page_dimensions": {1: (1190, 842)},
+                "visual_codings": [
+                    {
+                        "block_id": "p1_v0",
+                        "page": 1,
+                        "codes": ["O-01"],
+                        "description": "Wand",
+                    }
+                ],
+            }
+        ]
 
         add_visual_sources(project, visual_results)
 
@@ -453,17 +509,21 @@ class TestQdpxVisualSelections:
 
     def test_visual_selection_has_description(self):
         project = create_new_project()
-        visual_results = [{
-            "file": "plan.pdf",
-            "project": "P",
-            "page_dimensions": {1: (595, 842)},
-            "visual_codings": [{
-                "block_id": "p1_v0",
-                "page": 1,
-                "codes": ["O-03"],
-                "description": "Fenster LOG-02, vereinfachte Darstellung",
-            }],
-        }]
+        visual_results = [
+            {
+                "file": "plan.pdf",
+                "project": "P",
+                "page_dimensions": {1: (595, 842)},
+                "visual_codings": [
+                    {
+                        "block_id": "p1_v0",
+                        "page": 1,
+                        "codes": ["O-03"],
+                        "description": "Fenster LOG-02, vereinfachte Darstellung",
+                    }
+                ],
+            }
+        ]
 
         add_visual_sources(project, visual_results)
 
@@ -478,17 +538,21 @@ class TestQdpxVisualSelections:
 
     def test_visual_selection_has_coding_with_code_ref(self):
         project = create_new_project()
-        visual_results = [{
-            "file": "plan.pdf",
-            "project": "P",
-            "page_dimensions": {1: (595, 842)},
-            "visual_codings": [{
-                "block_id": "p1_v0",
-                "page": 1,
-                "codes": ["O-01"],
-                "description": "Wand",
-            }],
-        }]
+        visual_results = [
+            {
+                "file": "plan.pdf",
+                "project": "P",
+                "page_dimensions": {1: (595, 842)},
+                "visual_codings": [
+                    {
+                        "block_id": "p1_v0",
+                        "page": 1,
+                        "codes": ["O-01"],
+                        "description": "Wand",
+                    }
+                ],
+            }
+        ]
 
         code_guids = add_visual_sources(project, visual_results)
 
@@ -501,17 +565,21 @@ class TestQdpxVisualSelections:
 
     def test_multiple_codes_per_selection(self):
         project = create_new_project()
-        visual_results = [{
-            "file": "plan.pdf",
-            "project": "P",
-            "page_dimensions": {1: (595, 842)},
-            "visual_codings": [{
-                "block_id": "p1_v0",
-                "page": 1,
-                "codes": ["O-01", "Q-01"],
-                "description": "Wand mit LOG-03",
-            }],
-        }]
+        visual_results = [
+            {
+                "file": "plan.pdf",
+                "project": "P",
+                "page_dimensions": {1: (595, 842)},
+                "visual_codings": [
+                    {
+                        "block_id": "p1_v0",
+                        "page": 1,
+                        "codes": ["O-01", "Q-01"],
+                        "description": "Wand mit LOG-03",
+                    }
+                ],
+            }
+        ]
 
         add_visual_sources(project, visual_results)
 
@@ -522,26 +590,28 @@ class TestQdpxVisualSelections:
 
     def test_write_and_read_qdpx_with_visual(self, tmp_path):
         project = create_new_project()
-        visual_results = [{
-            "file": "eg.pdf",
-            "project": "P",
-            "page_dimensions": {1: (1190, 842)},
-            "description": "EG Grundriss",
-            "visual_codings": [
-                {
-                    "block_id": "p1_v0",
-                    "page": 1,
-                    "codes": ["O-01", "P-01", "Q-01"],
-                    "description": "Waende LOG-03",
-                },
-                {
-                    "block_id": "p1_v1",
-                    "page": 1,
-                    "codes": ["O-03"],
-                    "description": "Tueren",
-                },
-            ],
-        }]
+        visual_results = [
+            {
+                "file": "eg.pdf",
+                "project": "P",
+                "page_dimensions": {1: (1190, 842)},
+                "description": "EG Grundriss",
+                "visual_codings": [
+                    {
+                        "block_id": "p1_v0",
+                        "page": 1,
+                        "codes": ["O-01", "P-01", "Q-01"],
+                        "description": "Waende LOG-03",
+                    },
+                    {
+                        "block_id": "p1_v1",
+                        "page": 1,
+                        "codes": ["O-03"],
+                        "description": "Tueren",
+                    },
+                ],
+            }
+        ]
 
         add_visual_sources(project, visual_results)
 
@@ -564,12 +634,14 @@ class TestQdpxVisualSelections:
 
     def test_empty_visual_codings_skipped(self):
         project = create_new_project()
-        visual_results = [{
-            "file": "empty.pdf",
-            "project": "P",
-            "page_dimensions": {},
-            "visual_codings": [],
-        }]
+        visual_results = [
+            {
+                "file": "empty.pdf",
+                "project": "P",
+                "page_dimensions": {},
+                "visual_codings": [],
+            }
+        ]
 
         add_visual_sources(project, visual_results)
 
@@ -582,20 +654,30 @@ class TestQdpxVisualSelections:
         project = create_new_project()
 
         # Erste Runde: Codes anlegen
-        result1 = [{
-            "file": "a.pdf", "project": "P",
-            "page_dimensions": {1: (595, 842)},
-            "visual_codings": [{"block_id": "p1_v0", "page": 1, "codes": ["O-01"], "description": ""}],
-        }]
+        result1 = [
+            {
+                "file": "a.pdf",
+                "project": "P",
+                "page_dimensions": {1: (595, 842)},
+                "visual_codings": [
+                    {"block_id": "p1_v0", "page": 1, "codes": ["O-01"], "description": ""}
+                ],
+            }
+        ]
         guids1 = add_visual_sources(project, result1)
 
         # Zweite Runde: gleiche Codes wiederverwenden
         _, existing_codes = extract_codesystem(project)
-        result2 = [{
-            "file": "b.pdf", "project": "P",
-            "page_dimensions": {1: (595, 842)},
-            "visual_codings": [{"block_id": "p1_v0", "page": 1, "codes": ["O-01"], "description": ""}],
-        }]
+        result2 = [
+            {
+                "file": "b.pdf",
+                "project": "P",
+                "page_dimensions": {1: (595, 842)},
+                "visual_codings": [
+                    {"block_id": "p1_v0", "page": 1, "codes": ["O-01"], "description": ""}
+                ],
+            }
+        ]
         guids2 = add_visual_sources(project, result2, existing_codes)
 
         # GUID sollte identisch sein (Code wiederverwendet)
@@ -605,6 +687,7 @@ class TestQdpxVisualSelections:
 # ---------------------------------------------------------------------------
 # Pass 3 (Localisation) Tests
 # ---------------------------------------------------------------------------
+
 
 class TestElementDetailBbox:
     def test_element_detail_has_bbox_field(self):
@@ -687,18 +770,22 @@ class TestVisualCodingsWithBbox:
     def test_visual_codings_with_bbox_no_dims(self):
         """Ohne page_dimensions bleibt die bestehende Ausgabe unveraendert."""
         result = VisualAnalysisResult(
-            file="plan.pdf", project="P", page_count=1,
+            file="plan.pdf",
+            project="P",
+            page_count=1,
             triage=[TriageResult(page=1, page_type="floor_plan", priority="high")],
-            details=[DetailResult(
-                page=1,
-                building_elements=[
-                    ElementDetail(
-                        element_type="Tragende Wand",
-                        log_achieved="LOG-03",
-                        bbox=[0.1, 0.2, 0.5, 0.6],
-                    ),
-                ],
-            )],
+            details=[
+                DetailResult(
+                    page=1,
+                    building_elements=[
+                        ElementDetail(
+                            element_type="Tragende Wand",
+                            log_achieved="LOG-03",
+                            bbox=[0.1, 0.2, 0.5, 0.6],
+                        ),
+                    ],
+                )
+            ],
         )
         codings = result.visual_codings()  # kein page_dimensions
         assert len(codings) == 1
@@ -707,18 +794,22 @@ class TestVisualCodingsWithBbox:
     def test_visual_codings_with_bbox_and_dims(self):
         """Mit bbox und Dimensionen werden PDF-Punkte berechnet."""
         result = VisualAnalysisResult(
-            file="plan.pdf", project="P", page_count=1,
+            file="plan.pdf",
+            project="P",
+            page_count=1,
             triage=[TriageResult(page=1, page_type="floor_plan", priority="high")],
-            details=[DetailResult(
-                page=1,
-                building_elements=[
-                    ElementDetail(
-                        element_type="Tragende Wand",
-                        log_achieved="LOG-03",
-                        bbox=[0.1, 0.2, 0.5, 0.6],
-                    ),
-                ],
-            )],
+            details=[
+                DetailResult(
+                    page=1,
+                    building_elements=[
+                        ElementDetail(
+                            element_type="Tragende Wand",
+                            log_achieved="LOG-03",
+                            bbox=[0.1, 0.2, 0.5, 0.6],
+                        ),
+                    ],
+                )
+            ],
         )
         codings = result.visual_codings(page_dimensions={1: (1000, 800)})
         assert len(codings) == 1
@@ -727,28 +818,32 @@ class TestVisualCodingsWithBbox:
     def test_visual_codings_mixed(self):
         """Einige Elemente mit bbox, einige ohne - nur erstere bekommen bbox."""
         result = VisualAnalysisResult(
-            file="plan.pdf", project="P", page_count=1,
+            file="plan.pdf",
+            project="P",
+            page_count=1,
             triage=[TriageResult(page=1, page_type="floor_plan", priority="high")],
-            details=[DetailResult(
-                page=1,
-                building_elements=[
-                    ElementDetail(
-                        element_type="Tragende Wand",
-                        log_achieved="LOG-03",
-                        bbox=[0.1, 0.2, 0.5, 0.6],
-                    ),
-                    ElementDetail(
-                        element_type="Tuer",
-                        log_achieved="LOG-02",
-                        # keine bbox
-                    ),
-                    ElementDetail(
-                        element_type="Fenster",
-                        log_achieved="LOG-02",
-                        bbox=[0.7, 0.1, 0.9, 0.3],
-                    ),
-                ],
-            )],
+            details=[
+                DetailResult(
+                    page=1,
+                    building_elements=[
+                        ElementDetail(
+                            element_type="Tragende Wand",
+                            log_achieved="LOG-03",
+                            bbox=[0.1, 0.2, 0.5, 0.6],
+                        ),
+                        ElementDetail(
+                            element_type="Tuer",
+                            log_achieved="LOG-02",
+                            # keine bbox
+                        ),
+                        ElementDetail(
+                            element_type="Fenster",
+                            log_achieved="LOG-02",
+                            bbox=[0.7, 0.1, 0.9, 0.3],
+                        ),
+                    ],
+                )
+            ],
         )
         codings = result.visual_codings(page_dimensions={1: (1000, 800)})
         assert len(codings) == 3
@@ -759,18 +854,22 @@ class TestVisualCodingsWithBbox:
     def test_visual_codings_invalid_bbox_skipped(self):
         """Ungueltige bbox-Werte landen nicht in der Ausgabe."""
         result = VisualAnalysisResult(
-            file="plan.pdf", project="P", page_count=1,
+            file="plan.pdf",
+            project="P",
+            page_count=1,
             triage=[TriageResult(page=1, page_type="floor_plan", priority="high")],
-            details=[DetailResult(
-                page=1,
-                building_elements=[
-                    ElementDetail(
-                        element_type="Wand",
-                        log_achieved="LOG-03",
-                        bbox=[0.5, 0.6, 0.1, 0.2],  # invertiert
-                    ),
-                ],
-            )],
+            details=[
+                DetailResult(
+                    page=1,
+                    building_elements=[
+                        ElementDetail(
+                            element_type="Wand",
+                            log_achieved="LOG-03",
+                            bbox=[0.5, 0.6, 0.1, 0.2],  # invertiert
+                        ),
+                    ],
+                )
+            ],
         )
         codings = result.visual_codings(page_dimensions={1: (1000, 800)})
         assert len(codings) == 1
@@ -779,7 +878,7 @@ class TestVisualCodingsWithBbox:
 
 class TestDbVisualDetailBboxRoundtrip:
     def test_db_visual_detail_roundtrip_preserves_bbox(self, tmp_path):
-        from src.db import PipelineDB
+        from qualdatan_core.db import PipelineDB
 
         db = PipelineDB(tmp_path / "test.db")
         pid = db.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
@@ -803,13 +902,15 @@ class TestDbVisualDetailBboxRoundtrip:
         assert loaded_elements[0]["bbox"] == [0.1, 0.2, 0.5, 0.6]
 
         # Auch der _detail_from_dict-Pfad (Cache) muss die bbox rekonstruieren
-        restored = _detail_from_dict({
-            "page": 1,
-            "building_elements": loaded_elements,
-            "annotations": results[0]["annotations"],
-            "cross_references": results[0]["cross_references"],
-            "description": results[0]["description"],
-        })
+        restored = _detail_from_dict(
+            {
+                "page": 1,
+                "building_elements": loaded_elements,
+                "annotations": results[0]["annotations"],
+                "cross_references": results[0]["cross_references"],
+                "description": results[0]["description"],
+            }
+        )
         assert restored.building_elements[0].bbox == [0.1, 0.2, 0.5, 0.6]
 
 
@@ -819,13 +920,15 @@ class TestRunLocalisation:
         # Fake client: antwortet mit einem JSON-Objekt wie im Prompt beschrieben.
         fake_response = MagicMock()
         fake_response.content = [MagicMock()]
-        fake_response.content[0].text = json.dumps({
-            "page": 1,
-            "elements": [
-                {"index": 0, "bbox": [0.1, 0.05, 0.9, 0.4]},
-                # Index 1 bewusst weggelassen -> bleibt None
-            ],
-        })
+        fake_response.content[0].text = json.dumps(
+            {
+                "page": 1,
+                "elements": [
+                    {"index": 0, "bbox": [0.1, 0.05, 0.9, 0.4]},
+                    # Index 1 bewusst weggelassen -> bleibt None
+                ],
+            }
+        )
         fake_response.usage = MagicMock(input_tokens=100, output_tokens=50)
 
         client = MagicMock()
@@ -841,7 +944,10 @@ class TestRunLocalisation:
         )
 
         results, tokens = run_localisation(
-            doc, [detail], client=client, model="claude-sonnet-4-20250514",
+            doc,
+            [detail],
+            client=client,
+            model="claude-sonnet-4-20250514",
             max_tokens_budget=100000,
         )
         doc.close()
@@ -857,15 +963,17 @@ class TestRunLocalisation:
         """Ungueltige bbox-Koordinaten im Response werden ignoriert."""
         fake_response = MagicMock()
         fake_response.content = [MagicMock()]
-        fake_response.content[0].text = json.dumps({
-            "page": 1,
-            "elements": [
-                # Inverted: x0 > x1
-                {"index": 0, "bbox": [0.9, 0.05, 0.1, 0.4]},
-                # Out of range
-                {"index": 1, "bbox": [0.1, 0.05, 1.5, 0.4]},
-            ],
-        })
+        fake_response.content[0].text = json.dumps(
+            {
+                "page": 1,
+                "elements": [
+                    # Inverted: x0 > x1
+                    {"index": 0, "bbox": [0.9, 0.05, 0.1, 0.4]},
+                    # Out of range
+                    {"index": 1, "bbox": [0.1, 0.05, 1.5, 0.4]},
+                ],
+            }
+        )
         fake_response.usage = MagicMock(input_tokens=100, output_tokens=50)
 
         client = MagicMock()
@@ -881,7 +989,10 @@ class TestRunLocalisation:
         )
 
         results, _ = run_localisation(
-            doc, [detail], client=client, max_tokens_budget=100000,
+            doc,
+            [detail],
+            client=client,
+            max_tokens_budget=100000,
         )
         doc.close()
 
@@ -896,7 +1007,10 @@ class TestRunLocalisation:
         detail = DetailResult(page=1, building_elements=[])
 
         results, tokens = run_localisation(
-            doc, [detail], client=client, max_tokens_budget=100000,
+            doc,
+            [detail],
+            client=client,
+            max_tokens_budget=100000,
         )
         doc.close()
 
@@ -908,10 +1022,12 @@ class TestRunLocalisation:
         """Cache-Miss schreibt bboxes, Cache-Hit laedt sie wieder."""
         fake_response = MagicMock()
         fake_response.content = [MagicMock()]
-        fake_response.content[0].text = json.dumps({
-            "page": 1,
-            "elements": [{"index": 0, "bbox": [0.2, 0.3, 0.6, 0.7]}],
-        })
+        fake_response.content[0].text = json.dumps(
+            {
+                "page": 1,
+                "elements": [{"index": 0, "bbox": [0.2, 0.3, 0.6, 0.7]}],
+            }
+        )
         fake_response.usage = MagicMock(input_tokens=100, output_tokens=50)
 
         client = MagicMock()
@@ -928,8 +1044,12 @@ class TestRunLocalisation:
 
         # Erster Aufruf: API wird benutzt
         results1, tokens1 = run_localisation(
-            doc, [detail], client=client, max_tokens_budget=100000,
-            cache_dir=cache_dir, cache_key=cache_key,
+            doc,
+            [detail],
+            client=client,
+            max_tokens_budget=100000,
+            cache_dir=cache_dir,
+            cache_key=cache_key,
         )
         assert tokens1 == 150
         assert results1[0].building_elements[0].bbox == [0.2, 0.3, 0.6, 0.7]
@@ -941,8 +1061,12 @@ class TestRunLocalisation:
             building_elements=[ElementDetail(element_type="Wand")],
         )
         results2, tokens2 = run_localisation(
-            doc, [detail2], client=client, max_tokens_budget=100000,
-            cache_dir=cache_dir, cache_key=cache_key,
+            doc,
+            [detail2],
+            client=client,
+            max_tokens_budget=100000,
+            cache_dir=cache_dir,
+            cache_key=cache_key,
         )
         doc.close()
 

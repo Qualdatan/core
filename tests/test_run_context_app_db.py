@@ -141,9 +141,7 @@ class TestRegister:
     def test_register_facet_stores_params_json(self, app_db, run_dir):
         ctx = RunContext(run_dir)
         ctx.attach_to_app_db(app_db, "facetproj")
-        fid = ctx.register_facet(
-            "facet.code", bundle_id="bundle.core", params={"k": 1}
-        )
+        fid = ctx.register_facet("facet.code", bundle_id="bundle.core", params={"k": 1})
         assert isinstance(fid, int)
         facets = list_run_facets(app_db, ctx.app_run_id)
         assert len(facets) == 1
@@ -176,9 +174,7 @@ class TestStatusMirror:
         assert run.status == "completed"
         assert run.finished_at is not None and run.finished_at != ""
 
-    def test_mark_failed_mirrors_failed_and_interrupts_pipeline(
-        self, app_db, run_dir
-    ):
+    def test_mark_failed_mirrors_failed_and_interrupts_pipeline(self, app_db, run_dir):
         ctx = RunContext(run_dir)
         ctx.attach_to_app_db(app_db, "failproj")
         ctx.init_state(recipe_id="r1")
@@ -189,9 +185,7 @@ class TestStatusMirror:
         assert ctx.db.get_state("status") == RunStatus.INTERRUPTED
         assert ctx.db.get_state("error_reason") == "boom"
 
-    def test_mark_completed_is_best_effort_when_db_closed(
-        self, app_db, run_dir
-    ):
+    def test_mark_completed_is_best_effort_when_db_closed(self, app_db, run_dir):
         ctx = RunContext(run_dir)
         ctx.attach_to_app_db(app_db, "besteffort")
         ctx.init_state(recipe_id="r1")
@@ -221,24 +215,16 @@ class TestStatusMirror:
 # TestCreateRunWithAppDB
 # ---------------------------------------------------------------------------
 class TestCreateRunWithAppDB:
-    def test_create_run_without_params_keeps_legacy_behavior(
-        self, monkeypatch, tmp_path
-    ):
-        monkeypatch.setattr(
-            "qualdatan_core.run_context.OUTPUT_ROOT", tmp_path
-        )
+    def test_create_run_without_params_keeps_legacy_behavior(self, monkeypatch, tmp_path):
+        monkeypatch.setattr("qualdatan_core.run_context.OUTPUT_ROOT", tmp_path)
         ctx = create_run()
         assert ctx.app_db is None
         assert ctx.app_project_id is None
         assert ctx.app_run_id is None
         assert ctx.run_dir.parent == tmp_path
 
-    def test_create_run_with_app_db_attaches(
-        self, monkeypatch, tmp_path, app_db
-    ):
-        monkeypatch.setattr(
-            "qualdatan_core.run_context.OUTPUT_ROOT", tmp_path
-        )
+    def test_create_run_with_app_db_attaches(self, monkeypatch, tmp_path, app_db):
+        monkeypatch.setattr("qualdatan_core.run_context.OUTPUT_ROOT", tmp_path)
         ctx = create_run(
             app_db=app_db,
             project_name="demo",

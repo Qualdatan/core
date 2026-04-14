@@ -6,19 +6,22 @@ das LLM (Token-Ersparnis), und mappt die Ergebnisse zurueck auf exakte
 Zeichenpositionen.
 """
 
+import concurrent.futures
 import json
 import re
-import concurrent.futures
 from pathlib import Path
+
 from anthropic import Anthropic
 
 from ..config import TRANSCRIPTS_DIR
 from ..models import AnalysisResult, CodedSegment
+from ..pdf.extractor import (
+    build_fulltext_and_positions,
+    extract_document,
+    extraction_to_text_summary,
+)
 from ..recipe import Recipe
 from ..run_context import RunContext
-from ..pdf.extractor import (
-    extract_document, extraction_to_text_summary, build_fulltext_and_positions,
-)
 
 
 def _mirror_transcripts(ctx: RunContext) -> int:
@@ -88,14 +91,14 @@ def extract_transcripts(folder: Path = TRANSCRIPTS_DIR) -> dict[str, dict]:
         }
 
         total_blocks = sum(len(p["blocks"]) for p in data["pages"])
-        print(f"  Extrahiert: {f.name} ({total_blocks} Blöcke, "
-              f"{len(fulltext)} Zeichen)")
+        print(f"  Extrahiert: {f.name} ({total_blocks} Blöcke, {len(fulltext)} Zeichen)")
     return results
 
 
 # ---------------------------------------------------------------------------
 # JSON-Parsing
 # ---------------------------------------------------------------------------
+
 
 def extract_json(response_text: str) -> dict | list:
     """Extrahiert JSON aus der API-Antwort, auch bei abgeschnittenem Output.
@@ -132,7 +135,7 @@ def extract_json(response_text: str) -> dict | list:
         except json.JSONDecodeError:
             last_good = repaired.rfind("},")
             if last_good > 0:
-                truncated = repaired[:last_good + 1]
+                truncated = repaired[: last_good + 1]
                 open_brackets = truncated.count("[") - truncated.count("]")
                 open_braces = truncated.count("{") - truncated.count("}")
                 truncated += "]" * open_brackets
@@ -144,6 +147,7 @@ def extract_json(response_text: str) -> dict | list:
 # ---------------------------------------------------------------------------
 # Positionsvalidierung (Legacy, fuer altes Format mit char_start/char_end)
 # ---------------------------------------------------------------------------
+
 
 def validate_positions(segments: list[dict], full_text: str) -> list[dict]:
     """Korrigiert Zeichenpositionen durch Textsuche im Originaldokument.
@@ -177,9 +181,10 @@ def validate_positions(segments: list[dict], full_text: str) -> list[dict]:
 # Block-ID → Zeichenposition Mapping
 # ---------------------------------------------------------------------------
 
-def resolve_block_codings(codings: list[dict],
-                          positions: dict[str, tuple[int, int]],
-                          block_index: dict[str, dict]) -> list[dict]:
+
+def resolve_block_codings(
+    codings: list[dict], positions: dict[str, tuple[int, int]], block_index: dict[str, dict]
+) -> list[dict]:
     """Wandelt Block-basierte Codings in Segmente mit Zeichenpositionen um.
 
     Args:
@@ -200,17 +205,19 @@ def resolve_block_codings(codings: list[dict],
         block = block_index.get(block_id, {})
         text = block.get("text", "")
 
-        segments.append({
-            "code_id": coding["code_id"],
-            "code_name": coding.get("code_name", ""),
-            "hauptkategorie": coding.get("hauptkategorie", ""),
-            "text": text,
-            "char_start": char_start,
-            "char_end": char_end,
-            "kodierdefinition": coding.get("kodierdefinition", ""),
-            "ankerbeispiel": coding.get("ankerbeispiel", ""),
-            "abgrenzungsregel": coding.get("abgrenzungsregel", ""),
-        })
+        segments.append(
+            {
+                "code_id": coding["code_id"],
+                "code_name": coding.get("code_name", ""),
+                "hauptkategorie": coding.get("hauptkategorie", ""),
+                "text": text,
+                "char_start": char_start,
+                "char_end": char_end,
+                "kodierdefinition": coding.get("kodierdefinition", ""),
+                "ankerbeispiel": coding.get("ankerbeispiel", ""),
+                "abgrenzungsregel": coding.get("abgrenzungsregel", ""),
+            }
+        )
 
     return segments
 
@@ -219,8 +226,8 @@ def resolve_block_codings(codings: list[dict],
 # Analyse
 # ---------------------------------------------------------------------------
 
-def enforce_strict_strategy(data: dict, recipe: Recipe,
-                            filename: str = "") -> dict:
+
+def enforce_strict_strategy(data: dict, recipe: Recipe, filename: str = "") -> dict:
     """Filtert ``neue_codes`` bei ``coding_strategy == 'strict'`` raus.
 
     Gibt das gleiche Dict zurueck (mutiert in-place). Wenn der LLM trotz
@@ -248,11 +255,16 @@ def enforce_strict_strategy(data: dict, recipe: Recipe,
     return data
 
 
-def analyze_transcript(client: Anthropic, recipe: Recipe, content: str,
-                       filename: str, codebase: str = "",
-                       ctx: RunContext | None = None,
-                       prompts_dir_override: Path | None = None,
-                       responses_dir_override: Path | None = None) -> dict:
+def analyze_transcript(
+    client: Anthropic,
+    recipe: Recipe,
+    content: str,
+    filename: str,
+    codebase: str = "",
+    ctx: RunContext | None = None,
+    prompts_dir_override: Path | None = None,
+    responses_dir_override: Path | None = None,
+) -> dict:
     """Analysiert ein einzelnes Transkript via Claude API (mit Cache).
 
     Args:
@@ -279,8 +291,10 @@ def analyze_transcript(client: Anthropic, recipe: Recipe, content: str,
     # Dynamische max_tokens: kürzere Transkripte brauchen weniger Output
     # ~1 Coding pro 500 Zeichen Input, ~150 Token pro Coding
     dynamic_max = min(recipe.max_tokens, max(4096, len(content) // 3 + 2000))
-    print(f"  Sende an Claude API ({len(content)} Zeichen, "
-          f"max_tokens={dynamic_max}, Methode: {recipe.id})...")
+    print(
+        f"  Sende an Claude API ({len(content)} Zeichen, "
+        f"max_tokens={dynamic_max}, Methode: {recipe.id})..."
+    )
 
     response = client.messages.create(
         model=recipe.model,
@@ -289,14 +303,15 @@ def analyze_transcript(client: Anthropic, recipe: Recipe, content: str,
     )
 
     if response.stop_reason == "max_tokens":
-        print(f"  WARNUNG: Antwort abgeschnitten (max_tokens={recipe.max_tokens}). Versuche Reparatur...")
+        print(
+            f"  WARNUNG: Antwort abgeschnitten (max_tokens={recipe.max_tokens}). Versuche Reparatur..."
+        )
 
     response_text = response.content[0].text
 
     # Rohe Antwort cachen
     if ctx:
-        ctx.cache_response(filename, response_text,
-                           responses_dir=responses_dir_override)
+        ctx.cache_response(filename, response_text, responses_dir=responses_dir_override)
 
     data = extract_json(response_text)
 
@@ -310,8 +325,9 @@ def analyze_transcript(client: Anthropic, recipe: Recipe, content: str,
     return data
 
 
-def _process_single_result(filename: str, data: dict,
-                           tdata: dict) -> tuple[list[CodedSegment], list, dict]:
+def _process_single_result(
+    filename: str, data: dict, tdata: dict
+) -> tuple[list[CodedSegment], list, dict]:
     """Verarbeitet das LLM-Ergebnis eines Transkripts.
 
     Returns:
@@ -323,26 +339,26 @@ def _process_single_result(filename: str, data: dict,
     if not codings and "segments" in data:
         raw_segments = validate_positions(data["segments"], tdata["fulltext"])
     else:
-        raw_segments = resolve_block_codings(
-            codings, tdata["positions"], tdata["block_index"]
-        )
+        raw_segments = resolve_block_codings(codings, tdata["positions"], tdata["block_index"])
 
     segments = []
     code_entries = {}
     for seg in raw_segments:
         code_id = seg["code_id"]
-        segments.append(CodedSegment(
-            code_id=code_id,
-            code_name=seg["code_name"],
-            hauptkategorie=seg["hauptkategorie"],
-            text=seg["text"],
-            char_start=seg["char_start"],
-            char_end=seg["char_end"],
-            document=filename,
-            kodierdefinition=seg.get("kodierdefinition", ""),
-            ankerbeispiel=seg.get("ankerbeispiel", ""),
-            abgrenzungsregel=seg.get("abgrenzungsregel", ""),
-        ))
+        segments.append(
+            CodedSegment(
+                code_id=code_id,
+                code_name=seg["code_name"],
+                hauptkategorie=seg["hauptkategorie"],
+                text=seg["text"],
+                char_start=seg["char_start"],
+                char_end=seg["char_end"],
+                document=filename,
+                kodierdefinition=seg.get("kodierdefinition", ""),
+                ankerbeispiel=seg.get("ankerbeispiel", ""),
+                abgrenzungsregel=seg.get("abgrenzungsregel", ""),
+            )
+        )
 
         if code_id not in code_entries:
             code_entries[code_id] = {
@@ -358,13 +374,16 @@ def _process_single_result(filename: str, data: dict,
     return segments, data.get("kernergebnisse", []), code_entries
 
 
-def run_analysis(recipe: Recipe, ctx: RunContext,
-                 transcripts_dir: Path = TRANSCRIPTS_DIR,
-                 codebase: str = "",
-                 max_workers: int = 4,
-                 analysis_json_override: Path | None = None,
-                 prompts_dir_override: Path | None = None,
-                 responses_dir_override: Path | None = None) -> AnalysisResult:
+def run_analysis(
+    recipe: Recipe,
+    ctx: RunContext,
+    transcripts_dir: Path = TRANSCRIPTS_DIR,
+    codebase: str = "",
+    max_workers: int = 4,
+    analysis_json_override: Path | None = None,
+    prompts_dir_override: Path | None = None,
+    responses_dir_override: Path | None = None,
+) -> AnalysisResult:
     """Fuehrt die komplette Analyse aller Transkripte durch (parallel).
 
     Args:
@@ -388,9 +407,7 @@ def run_analysis(recipe: Recipe, ctx: RunContext,
         raise FileNotFoundError(f"Keine .docx-Dateien in {transcripts_dir} gefunden.")
 
     # Volltexte für QDPX-Export speichern
-    result.documents = {
-        fname: tdata["fulltext"] for fname, tdata in transcript_data.items()
-    }
+    result.documents = {fname: tdata["fulltext"] for fname, tdata in transcript_data.items()}
 
     # D.3: Materials in App-DB spiegeln (no-op wenn nicht attached)
     _mirror_transcripts(ctx)
@@ -404,8 +421,10 @@ def run_analysis(recipe: Recipe, ctx: RunContext,
     # --- Parallele API-Calls ---
     n_total = len(transcript_data)
     if n_total > 1:
-        print(f"\n  Starte {min(max_workers, n_total)} parallele API-Calls "
-              f"für {n_total} Transkripte...")
+        print(
+            f"\n  Starte {min(max_workers, n_total)} parallele API-Calls "
+            f"für {n_total} Transkripte..."
+        )
 
     # Für jedes Transkript: Content vorbereiten und API-Call abschicken
     futures = {}
@@ -413,9 +432,15 @@ def run_analysis(recipe: Recipe, ctx: RunContext,
         for filename, tdata in transcript_data.items():
             content = extraction_to_text_summary(tdata["extraction"])
             future = pool.submit(
-                analyze_transcript, client, recipe, content,
-                filename, codebase, ctx,
-                prompts_dir_override, responses_dir_override,
+                analyze_transcript,
+                client,
+                recipe,
+                content,
+                filename,
+                codebase,
+                ctx,
+                prompts_dir_override,
+                responses_dir_override,
             )
             futures[future] = filename
 
@@ -429,8 +454,7 @@ def run_analysis(recipe: Recipe, ctx: RunContext,
                 data = future.result()
                 api_results[filename] = data
                 n_codings = len(data.get("codings", data.get("segments", [])))
-                print(f"  [{completed}/{n_total}] Fertig: {filename} "
-                      f"({n_codings} Kodierungen)")
+                print(f"  [{completed}/{n_total}] Fertig: {filename} ({n_codings} Kodierungen)")
             except Exception as e:
                 print(f"  [{completed}/{n_total}] FEHLER: {filename}: {e}")
 
@@ -445,9 +469,7 @@ def run_analysis(recipe: Recipe, ctx: RunContext,
         tdata = transcript_data[filename]
         data = api_results[filename]
 
-        segments, kernergebnisse, code_entries = _process_single_result(
-            filename, data, tdata
-        )
+        segments, kernergebnisse, code_entries = _process_single_result(filename, data, tdata)
 
         result.segments.extend(segments)
         all_kernergebnisse.extend(kernergebnisse)

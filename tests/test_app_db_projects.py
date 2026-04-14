@@ -9,11 +9,11 @@ import pytest
 
 from qualdatan_core.app_db import open_app_db
 from qualdatan_core.app_db.projects import (
+    VALID_RUN_STATUSES,
     Project,
     Run,
     RunFacet,
     RunMaterial,
-    VALID_RUN_STATUSES,
     add_run_facet,
     add_run_material,
     create_project,
@@ -47,9 +47,7 @@ def db():
 # ---------------------------------------------------------------------------
 class TestProjects:
     def test_create_and_get_roundtrip(self, db):
-        p = create_project(
-            db, name="HKS", description="BIM-capable", preset_id="bim.v1"
-        )
+        p = create_project(db, name="HKS", description="BIM-capable", preset_id="bim.v1")
         assert isinstance(p, Project)
         assert p.id > 0
         assert p.name == "HKS"
@@ -150,10 +148,7 @@ class TestRuns:
 
     def test_list_runs_limit_and_order(self, db):
         p = create_project(db, name="HKS")
-        ids = [
-            create_run(db, project_id=p.id, run_dir=f"/r{i}").id
-            for i in range(5)
-        ]
+        ids = [create_run(db, project_id=p.id, run_dir=f"/r{i}").id for i in range(5)]
         rows = list_runs(db, project_id=p.id, limit=3)
         assert [r.id for r in rows] == list(reversed(ids))[:3]
 
@@ -187,9 +182,7 @@ class TestRuns:
     def test_update_status_explicit_finished_at(self, db):
         p = create_project(db, name="HKS")
         r = create_run(db, project_id=p.id, run_dir="/r")
-        upd = update_run_status(
-            db, r.id, "completed", finished_at="2026-04-13T10:00:00"
-        )
+        upd = update_run_status(db, r.id, "completed", finished_at="2026-04-13T10:00:00")
         assert upd.finished_at == "2026-04-13T10:00:00"
 
     def test_update_status_invalid_raises(self, db):
@@ -224,9 +217,7 @@ class TestMaterialsFacets:
     def test_materials_roundtrip_and_order(self, db):
         p = create_project(db, name="HKS")
         r = create_run(db, project_id=p.id, run_dir="/r")
-        m1 = add_run_material(
-            db, r.id, material_kind="transcript", path="/t/1.txt"
-        )
+        m1 = add_run_material(db, r.id, material_kind="transcript", path="/t/1.txt")
         m2 = add_run_material(
             db,
             r.id,
@@ -249,9 +240,7 @@ class TestMaterialsFacets:
         p = create_project(db, name="HKS")
         r = create_run(db, project_id=p.id, run_dir="/r")
         f1 = add_run_facet(db, r.id, facet_id="mayring", bundle_id="b.v1")
-        f2 = add_run_facet(
-            db, r.id, facet_id="prisma", params_json='{"k":1}'
-        )
+        f2 = add_run_facet(db, r.id, facet_id="prisma", params_json='{"k":1}')
         assert isinstance(f1, RunFacet)
         rows = list_run_facets(db, r.id)
         assert [f.id for f in rows] == [f1.id, f2.id]
@@ -288,6 +277,4 @@ class TestCascades:
 
 
 def test_valid_statuses_exposed():
-    assert VALID_RUN_STATUSES == frozenset(
-        {"pending", "running", "completed", "failed"}
-    )
+    assert VALID_RUN_STATUSES == frozenset({"pending", "running", "completed", "failed"})

@@ -32,7 +32,6 @@ from ..config import CODEBASES_DIR
 from ..recipe import Recipe
 from ..run_context import RunContext
 
-
 # ---------------------------------------------------------------------------
 # Aggregation
 # ---------------------------------------------------------------------------
@@ -52,9 +51,14 @@ class _CodeAgg:
     source: str = "inductive"  # 'provided' | 'inductive'
     first_seen: str = ""
 
-    def add_occurrence(self, example: str = "", reason: str = "",
-                       name: str = "", definition: str = "",
-                       hauptkategorie: str = "") -> None:
+    def add_occurrence(
+        self,
+        example: str = "",
+        reason: str = "",
+        name: str = "",
+        definition: str = "",
+        hauptkategorie: str = "",
+    ) -> None:
         self.frequency += 1
         if name and not self.name:
             self.name = name
@@ -65,10 +69,7 @@ class _CodeAgg:
         # Kuerzestes sinnvolles Beispielzitat gewinnt (aber nicht leer).
         if example:
             example = example.strip()
-            if example and (
-                not self.shortest_example
-                or len(example) < len(self.shortest_example)
-            ):
+            if example and (not self.shortest_example or len(example) < len(self.shortest_example)):
                 self.shortest_example = example
         if reason and not self.first_reason:
             self.first_reason = reason.strip()
@@ -120,12 +121,10 @@ def _load_seed_codebook(name: str) -> dict[str, Any]:
     ]
     for path in candidates:
         if path.exists() and path.is_file():
-            with open(path, "r", encoding="utf-8") as fh:
+            with open(path, encoding="utf-8") as fh:
                 data = yaml.safe_load(fh) or {}
             if not isinstance(data, dict):
-                raise ValueError(
-                    f"Seed-Codebase {path} muss ein YAML-Mapping sein."
-                )
+                raise ValueError(f"Seed-Codebase {path} muss ein YAML-Mapping sein.")
             return data
     raise FileNotFoundError(
         f"Seed-Codebase '{name}' nicht gefunden in {CODEBASES_DIR} "
@@ -196,12 +195,11 @@ def _ingest_interview_codes(agg: _Aggregate, analysis_result) -> int:
         entry = agg.get_or_create(code_id)
         entry.name = entry.name or str(meta.get("name", ""))
         entry.hauptkategorie = (
-            entry.hauptkategorie or str(meta.get("hauptkategorie", ""))
+            entry.hauptkategorie
+            or str(meta.get("hauptkategorie", ""))
             or _hauptkategorie_from(code_id)
         )
-        entry.definition = (
-            entry.definition or str(meta.get("kodierdefinition", ""))
-        )
+        entry.definition = entry.definition or str(meta.get("kodierdefinition", ""))
         if not entry.shortest_example:
             entry.shortest_example = str(meta.get("ankerbeispiel", "") or "")
 
@@ -211,9 +209,7 @@ def _ingest_interview_codes(agg: _Aggregate, analysis_result) -> int:
         )
         if not code_id:
             continue
-        text = getattr(seg, "text", "") or (
-            seg.get("text", "") if isinstance(seg, dict) else ""
-        )
+        text = getattr(seg, "text", "") or (seg.get("text", "") if isinstance(seg, dict) else "")
         reason = getattr(seg, "abgrenzungsregel", "") or (
             seg.get("abgrenzungsregel", "") if isinstance(seg, dict) else ""
         )
@@ -287,9 +283,7 @@ def _ingest_db_codes(agg: _Aggregate, ctx: RunContext) -> int:
             reason=reason,
             name=meta.get("name", ""),
             definition=meta.get("definition", ""),
-            hauptkategorie=(
-                meta.get("hauptkategorie", "") or _hauptkategorie_from(code_id)
-            ),
+            hauptkategorie=(meta.get("hauptkategorie", "") or _hauptkategorie_from(code_id)),
         )
         n += 1
 
@@ -301,9 +295,7 @@ def _ingest_db_codes(agg: _Aggregate, ctx: RunContext) -> int:
         if not entry.definition and meta.get("definition"):
             entry.definition = meta["definition"]
         if not entry.hauptkategorie:
-            entry.hauptkategorie = (
-                meta.get("hauptkategorie") or _hauptkategorie_from(code_id)
-            )
+            entry.hauptkategorie = meta.get("hauptkategorie") or _hauptkategorie_from(code_id)
 
     return n
 
@@ -313,8 +305,7 @@ def _ingest_db_codes(agg: _Aggregate, ctx: RunContext) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _build_yaml_struct(agg: _Aggregate,
-                       category_names: dict[str, str] | None = None) -> dict:
+def _build_yaml_struct(agg: _Aggregate, category_names: dict[str, str] | None = None) -> dict:
     """Baut das codebook.yml-kompatible Dict aus dem Aggregat."""
     category_names = category_names or {}
 
@@ -333,9 +324,7 @@ def _build_yaml_struct(agg: _Aggregate,
         codes = sorted(by_cat[cat_id], key=lambda e: e.code_id)
         kat_entry: dict[str, Any] = {
             "id": cat_id,
-            "name": category_names.get(cat_id, "") or (
-                "Sonstiges" if cat_id == "Z" else cat_id
-            ),
+            "name": category_names.get(cat_id, "") or ("Sonstiges" if cat_id == "Z" else cat_id),
             "codes": [],
         }
         for code in codes:
@@ -343,8 +332,7 @@ def _build_yaml_struct(agg: _Aggregate,
                 "id": code.code_id,
                 "name": code.name or code.code_id,
                 "definition": code.definition or "",
-                "ankerbeispiel": code.shortest_example
-                or code.first_reason or "",
+                "ankerbeispiel": code.shortest_example or code.first_reason or "",
                 "_meta": {
                     "frequency": code.frequency,
                     "source": code.source,
@@ -365,9 +353,7 @@ def _write_draft_yaml(path: Path, struct: dict) -> None:
         "# Review + manuell editieren, dann nach input/codebases/ kopieren.\n"
         "# =============================================================\n"
     )
-    body = yaml.safe_dump(
-        struct, allow_unicode=True, sort_keys=False, width=100
-    )
+    body = yaml.safe_dump(struct, allow_unicode=True, sort_keys=False, width=100)
     path.write_text(header + body, encoding="utf-8")
 
 
@@ -388,16 +374,12 @@ class CurationStats:
     path: Path | None = None
 
     @classmethod
-    def from_aggregate(cls, agg: _Aggregate, path: Path) -> "CurationStats":
+    def from_aggregate(cls, agg: _Aggregate, path: Path) -> CurationStats:
         total = len(agg.codes)
         provided = sum(1 for c in agg.codes.values() if c.source == "provided")
-        inductive = sum(
-            1 for c in agg.codes.values() if c.source == "inductive"
-        )
+        inductive = sum(1 for c in agg.codes.values() if c.source == "inductive")
         unused_provided = sum(
-            1
-            for c in agg.codes.values()
-            if c.source == "provided" and c.frequency == 0
+            1 for c in agg.codes.values() if c.source == "provided" and c.frequency == 0
         )
         single_use = sum(1 for c in agg.codes.values() if c.frequency == 1)
         return cls(
@@ -517,8 +499,5 @@ def bootstrap_codebook(
     _sample_names = ", ".join(f.name for f in sample_files[:4])
     if len(sample_files) > 4:
         _sample_names += f", ... (+{len(sample_files) - 4})"
-    print(
-        f"  Sample ({len(sample_files)}): "
-        f"{_sample_names or '(keine Dateien)'}"
-    )
+    print(f"  Sample ({len(sample_files)}): {_sample_names or '(keine Dateien)'}")
     return out_path, stats

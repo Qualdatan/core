@@ -196,13 +196,18 @@ class AppDB:
     """
 
     def __init__(self, path: Path) -> None:
+        """Oeffnet die App-DB direkt; bevorzugt :meth:`open` fuer Defaults.
+
+        Args:
+            path: Ziel-Datei oder ``":memory:"``.
+        """
         self._path = Path(path)
         self._local = threading.local()
         self._closed = False
         self._ensure_schema()
 
     @classmethod
-    def open(cls, path: Path | str | None = None) -> "AppDB":
+    def open(cls, path: Path | str | None = None) -> AppDB:
         """Oeffnet die App-DB unter ``path`` (Default: :func:`default_app_db_path`).
 
         Legt fehlende Verzeichnisse an. Akzeptiert ``":memory:"`` fuer Tests.
@@ -217,18 +222,18 @@ class AppDB:
     # ------------------------------------------------------------------
     @property
     def path(self) -> Path:
+        """Pfad der DB-Datei (``:memory:`` fuer In-Memory-Instanzen)."""
         return self._path
 
     @property
     def schema_version(self) -> int:
+        """Aktuelle ``PRAGMA user_version`` der DB (Migrations-Marker)."""
         with self.connection() as conn:
             return conn.execute("PRAGMA user_version").fetchone()[0]
 
     # ------------------------------------------------------------------
     def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(
-            str(self._path), isolation_level=None, check_same_thread=False
-        )
+        conn = sqlite3.connect(str(self._path), isolation_level=None, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
         if str(self._path) != ":memory:":
@@ -270,13 +275,14 @@ class AppDB:
             conn.execute("COMMIT")
 
     def close(self) -> None:
+        """Schliesst die thread-lokale Connection; nach Aufruf nicht wiederverwendbar."""
         conn = getattr(self._local, "conn", None)
         if conn is not None:
             conn.close()
             self._local.conn = None
         self._closed = True
 
-    def __enter__(self) -> "AppDB":
+    def __enter__(self) -> AppDB:
         return self
 
     def __exit__(self, *exc) -> None:
@@ -351,29 +357,65 @@ from .projects import (
 
 __all__ = [
     # foundation
-    "AppDB", "open_app_db", "default_app_db_path",
+    "AppDB",
+    "open_app_db",
+    "default_app_db_path",
     # projects
-    "Project", "Run", "RunMaterial", "RunFacet", "VALID_RUN_STATUSES",
-    "create_project", "get_project", "get_project_by_name", "list_projects",
-    "update_project", "delete_project",
-    "create_run", "get_run", "list_runs", "update_run_status",
-    "get_latest_run", "delete_run",
-    "add_run_material", "list_run_materials",
-    "add_run_facet", "list_run_facets",
+    "Project",
+    "Run",
+    "RunMaterial",
+    "RunFacet",
+    "VALID_RUN_STATUSES",
+    "create_project",
+    "get_project",
+    "get_project_by_name",
+    "list_projects",
+    "update_project",
+    "delete_project",
+    "create_run",
+    "get_run",
+    "list_runs",
+    "update_run_status",
+    "get_latest_run",
+    "delete_run",
+    "add_run_material",
+    "list_run_materials",
+    "add_run_facet",
+    "list_run_facets",
     # caches
-    "LLMCacheEntry", "PDFCacheEntry",
-    "llm_cache_key", "prompt_hash", "pdf_cache_key",
-    "llm_cache_get", "llm_cache_put", "llm_cache_invalidate", "llm_cache_clear",
-    "pdf_cache_get", "pdf_cache_get_by_key", "pdf_cache_put", "pdf_cache_clear",
+    "LLMCacheEntry",
+    "PDFCacheEntry",
+    "llm_cache_key",
+    "prompt_hash",
+    "pdf_cache_key",
+    "llm_cache_get",
+    "llm_cache_put",
+    "llm_cache_invalidate",
+    "llm_cache_clear",
+    "pdf_cache_get",
+    "pdf_cache_get_by_key",
+    "pdf_cache_put",
+    "pdf_cache_clear",
     # codings
-    "CodingRecord", "CodeFrequency",
-    "add_coding", "add_coded_segment", "add_codings_bulk",
-    "get_coding", "list_codings", "count_codings", "delete_codings_for_run",
-    "code_frequencies", "codings_by_document", "unique_codes_for_project",
+    "CodingRecord",
+    "CodeFrequency",
+    "add_coding",
+    "add_coded_segment",
+    "add_codings_bulk",
+    "get_coding",
+    "list_codings",
+    "count_codings",
+    "delete_codings_for_run",
+    "code_frequencies",
+    "codings_by_document",
+    "unique_codes_for_project",
     # codebook overrides
     "CodebookEntry",
-    "upsert_codebook_entry", "get_codebook_entry",
-    "list_codebook_entries", "reset_codebook_entry",
+    "upsert_codebook_entry",
+    "get_codebook_entry",
+    "list_codebook_entries",
+    "reset_codebook_entry",
     # migrate
-    "MigrationReport", "migrate_legacy_output",
+    "MigrationReport",
+    "migrate_legacy_output",
 ]

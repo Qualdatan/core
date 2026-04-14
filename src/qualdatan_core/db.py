@@ -13,7 +13,6 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
-
 # ---------------------------------------------------------------------------
 # Schema
 # ---------------------------------------------------------------------------
@@ -181,6 +180,7 @@ CREATE INDEX IF NOT EXISTS idx_visual_triage_priority ON visual_triage(priority)
 # Connection Pool (Thread-safe)
 # ---------------------------------------------------------------------------
 
+
 class PipelineDB:
     """SQLite-Datenbank fuer die Pipeline.
 
@@ -189,6 +189,11 @@ class PipelineDB:
     """
 
     def __init__(self, db_path: Path):
+        """Oeffnet/erstellt die SQLite unter ``db_path`` und migriert das Schema.
+
+        Args:
+            db_path: Pfad zur DB-Datei; Parent-Verzeichnisse werden angelegt.
+        """
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._local = threading.local()
@@ -212,15 +217,18 @@ class PipelineDB:
         conn.commit()
         # Additive ALTERs (SQLite ADD COLUMN ist nicht idempotent)
         self._ensure_column(
-            "pdf_documents", "project_id",
+            "pdf_documents",
+            "project_id",
             "project_id INTEGER REFERENCES projects(id)",
         )
         self._ensure_column(
-            "pdf_documents", "company_id",
+            "pdf_documents",
+            "company_id",
             "company_id INTEGER REFERENCES companies(id)",
         )
         self._ensure_column(
-            "pdf_documents", "source_kind",
+            "pdf_documents",
+            "source_kind",
             "source_kind TEXT",
         )
         conn.commit()
@@ -307,14 +315,12 @@ class PipelineDB:
                 "INSERT OR IGNORE INTO companies (name, source_dir) VALUES (?, ?)",
                 (name, source_dir),
             )
-            row = conn.execute(
-                "SELECT id FROM companies WHERE name = ?", (name,)
-            ).fetchone()
+            row = conn.execute("SELECT id FROM companies WHERE name = ?", (name,)).fetchone()
             return row["id"]
 
-    def upsert_project(self, company_id: int, folder_name: str,
-                       code: str | None, name: str,
-                       source_dir: str = "") -> int:
+    def upsert_project(
+        self, company_id: int, folder_name: str, code: str | None, name: str, source_dir: str = ""
+    ) -> int:
         """Insert-or-get fuer ein Projekt innerhalb einer Company.
 
         Unique-Key ist ``(company_id, folder_name)`` — d.h. ein
@@ -335,8 +341,7 @@ class PipelineDB:
             ).fetchone()
             return row["id"]
 
-    def upsert_interview_doc(self, company_id: int, filename: str,
-                             path: str) -> int:
+    def upsert_interview_doc(self, company_id: int, filename: str, path: str) -> int:
         """Insert-or-get fuer ein Interview-Dokument.
 
         Unique-Key ist ``(company_id, filename)`` — mehrere Interviews
@@ -377,18 +382,28 @@ class PipelineDB:
     # PDF Documents
     # ------------------------------------------------------------------
 
-    def upsert_pdf(self, project: str, filename: str, relative_path: str,
-                   path: str, file_size_kb: int = 0, page_count: int = 0) -> int:
+    def upsert_pdf(
+        self,
+        project: str,
+        filename: str,
+        relative_path: str,
+        path: str,
+        file_size_kb: int = 0,
+        page_count: int = 0,
+    ) -> int:
         """Fuegt ein PDF ein oder aktualisiert es. Gibt die ID zurueck."""
         with self.transaction() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO pdf_documents (project, filename, relative_path, path, file_size_kb, page_count)
                 VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(relative_path) DO UPDATE SET
                     path = excluded.path,
                     file_size_kb = excluded.file_size_kb,
                     page_count = CASE WHEN excluded.page_count > 0 THEN excluded.page_count ELSE pdf_documents.page_count END
-            """, (project, filename, relative_path, path, file_size_kb, page_count))
+            """,
+                (project, filename, relative_path, path, file_size_kb, page_count),
+            )
             row = conn.execute(
                 "SELECT id FROM pdf_documents WHERE relative_path = ?",
                 (relative_path,),
@@ -428,12 +443,12 @@ class PipelineDB:
     # Pipeline Status
     # ------------------------------------------------------------------
 
-    def set_step_status(self, pdf_id: int, step: str, status: str,
-                        error_msg: str = ""):
+    def set_step_status(self, pdf_id: int, step: str, status: str, error_msg: str = ""):
         """Setzt den Status eines Pipeline-Schritts."""
         now = datetime.now().isoformat()
         with self.transaction() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO pipeline_status (pdf_id, step, status, started_at)
                 VALUES (?, ?, ?, ?)
                 ON CONFLICT(pdf_id, step) DO UPDATE SET
@@ -447,7 +462,9 @@ class PipelineDB:
                         ELSE NULL
                     END,
                     error_msg = ?
-            """, (pdf_id, step, status, now, now, error_msg))
+            """,
+                (pdf_id, step, status, now, now, error_msg),
+            )
 
     def is_step_done(self, pdf_id: int, step: str) -> bool:
         """Prueft ob ein Schritt abgeschlossen ist."""
@@ -461,12 +478,15 @@ class PipelineDB:
     def get_pending_pdfs(self, step: str) -> list[int]:
         """Gibt PDF-IDs zurueck die einen bestimmten Schritt noch nicht haben."""
         conn = self._get_conn()
-        rows = conn.execute("""
+        rows = conn.execute(
+            """
             SELECT d.id FROM pdf_documents d
             LEFT JOIN pipeline_status ps ON d.id = ps.pdf_id AND ps.step = ?
             WHERE ps.status IS NULL OR ps.status NOT IN ('done')
             ORDER BY d.id
-        """, (step,)).fetchall()
+        """,
+            (step,),
+        ).fetchall()
         return [r["id"] for r in rows]
 
     def get_step_summary(self) -> dict:
@@ -493,10 +513,13 @@ class PipelineDB:
         n_blocks = sum(len(p.get("blocks", [])) for p in data.get("pages", []))
         data_json = json.dumps(data, ensure_ascii=False)
         with self.transaction() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO extractions (pdf_id, data, n_pages, n_blocks)
                 VALUES (?, ?, ?, ?)
-            """, (pdf_id, data_json, n_pages, n_blocks))
+            """,
+                (pdf_id, data_json, n_pages, n_blocks),
+            )
 
     def load_extraction(self, pdf_id: int) -> dict | None:
         """Laedt Extraktionsdaten."""
@@ -507,6 +530,7 @@ class PipelineDB:
         return None
 
     def has_extraction(self, pdf_id: int) -> bool:
+        """``True`` wenn fuer ``pdf_id`` bereits eine Extraction-Zeile existiert."""
         conn = self._get_conn()
         row = conn.execute("SELECT 1 FROM extractions WHERE pdf_id = ?", (pdf_id,)).fetchone()
         return row is not None
@@ -518,39 +542,58 @@ class PipelineDB:
     def save_page_metrics(self, pdf_id: int, page: int, metrics: dict):
         """Speichert Seitenmetriken."""
         with self.transaction() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO page_metrics
                     (pdf_id, page, text_coverage, image_coverage, text_char_count,
                      drawing_count, aspect_ratio, is_landscape, page_format, page_width, page_height)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                pdf_id, page,
-                metrics.get("text_coverage", 0.0),
-                metrics.get("image_coverage", 0.0),
-                metrics.get("text_char_count", 0),
-                metrics.get("drawing_count", 0),
-                metrics.get("aspect_ratio", 1.0),
-                1 if metrics.get("is_landscape") else 0,
-                metrics.get("page_format", ""),
-                metrics.get("page_width", 0.0),
-                metrics.get("page_height", 0.0),
-            ))
+            """,
+                (
+                    pdf_id,
+                    page,
+                    metrics.get("text_coverage", 0.0),
+                    metrics.get("image_coverage", 0.0),
+                    metrics.get("text_char_count", 0),
+                    metrics.get("drawing_count", 0),
+                    metrics.get("aspect_ratio", 1.0),
+                    1 if metrics.get("is_landscape") else 0,
+                    metrics.get("page_format", ""),
+                    metrics.get("page_width", 0.0),
+                    metrics.get("page_height", 0.0),
+                ),
+            )
 
-    def save_classification(self, pdf_id: int, page: int,
-                            page_type: str, confidence: float,
-                            plan_subtype: str = "",
-                            has_title_block: bool = False,
-                            title_block: dict = None):
+    def save_classification(
+        self,
+        pdf_id: int,
+        page: int,
+        page_type: str,
+        confidence: float,
+        plan_subtype: str = "",
+        has_title_block: bool = False,
+        title_block: dict = None,
+    ):
         """Speichert Seitenklassifikation."""
         tb_json = json.dumps(title_block or {}, ensure_ascii=False)
         with self.transaction() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO classifications
                     (pdf_id, page, page_type, confidence, plan_subtype,
                      has_title_block, title_block_json)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (pdf_id, page, page_type, confidence, plan_subtype,
-                  1 if has_title_block else 0, tb_json))
+            """,
+                (
+                    pdf_id,
+                    page,
+                    page_type,
+                    confidence,
+                    plan_subtype,
+                    1 if has_title_block else 0,
+                    tb_json,
+                ),
+            )
 
     def get_classifications(self, pdf_id: int) -> list[dict]:
         """Laedt alle Klassifikationen fuer ein PDF."""
@@ -565,17 +608,34 @@ class PipelineDB:
     # Codings (Text + Visual)
     # ------------------------------------------------------------------
 
-    def save_coding(self, pdf_id: int, page: int, block_id: str,
-                    codes: list[str], source: str = "text",
-                    description: str = "", ganzer_block: bool = True,
-                    begruendung: str = "") -> int:
+    def save_coding(
+        self,
+        pdf_id: int,
+        page: int,
+        block_id: str,
+        codes: list[str],
+        source: str = "text",
+        description: str = "",
+        ganzer_block: bool = True,
+        begruendung: str = "",
+    ) -> int:
         """Speichert eine Kodierung. Gibt die coding_id zurueck."""
         with self.transaction() as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 INSERT INTO codings (pdf_id, page, block_id, source, description, ganzer_block, begruendung)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (pdf_id, page, block_id, source, description,
-                  1 if ganzer_block else 0, begruendung))
+            """,
+                (
+                    pdf_id,
+                    page,
+                    block_id,
+                    source,
+                    description,
+                    1 if ganzer_block else 0,
+                    begruendung,
+                ),
+            )
             coding_id = cursor.lastrowid
             for code_id in codes:
                 conn.execute(
@@ -588,28 +648,35 @@ class PipelineDB:
         """Speichert neu vorgeschlagene Codes."""
         with self.transaction() as conn:
             for nc in neue_codes:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT OR IGNORE INTO neue_codes
                         (code_id, code_name, hauptkategorie, kodierdefinition, pdf_id)
                     VALUES (?, ?, ?, ?, ?)
-                """, (
-                    nc["code_id"], nc["code_name"],
-                    nc.get("hauptkategorie", ""),
-                    nc.get("kodierdefinition", ""),
-                    pdf_id,
-                ))
+                """,
+                    (
+                        nc["code_id"],
+                        nc["code_name"],
+                        nc.get("hauptkategorie", ""),
+                        nc.get("kodierdefinition", ""),
+                        pdf_id,
+                    ),
+                )
 
     def get_codings_for_pdf(self, pdf_id: int) -> list[dict]:
         """Laedt alle Kodierungen fuer ein PDF."""
         conn = self._get_conn()
-        rows = conn.execute("""
+        rows = conn.execute(
+            """
             SELECT c.*, GROUP_CONCAT(cc.code_id) as code_ids
             FROM codings c
             JOIN coding_codes cc ON c.id = cc.coding_id
             WHERE c.pdf_id = ?
             GROUP BY c.id
             ORDER BY c.page, c.block_id
-        """, (pdf_id,)).fetchall()
+        """,
+            (pdf_id,),
+        ).fetchall()
         results = []
         for r in rows:
             d = dict(r)
@@ -620,14 +687,17 @@ class PipelineDB:
     def get_all_codings_by_code(self, code_id: str) -> list[dict]:
         """Findet alle Kodierungen fuer einen bestimmten Code (Toolkit-Export)."""
         conn = self._get_conn()
-        rows = conn.execute("""
+        rows = conn.execute(
+            """
             SELECT c.*, d.project, d.filename, d.relative_path
             FROM codings c
             JOIN coding_codes cc ON c.id = cc.coding_id
             JOIN pdf_documents d ON c.pdf_id = d.id
             WHERE cc.code_id = ?
             ORDER BY d.project, d.filename, c.page
-        """, (code_id,)).fetchall()
+        """,
+            (code_id,),
+        ).fetchall()
         return [dict(r) for r in rows]
 
     def get_coding_summary(self) -> dict:
@@ -653,21 +723,25 @@ class PipelineDB:
         """Speichert Triage-Ergebnis."""
         elements = json.dumps(triage.get("building_elements", []), ensure_ascii=False)
         with self.transaction() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO visual_triage
                     (pdf_id, page, page_type, priority, estimated_log, lph_evidence,
                      confidence, description, building_elements)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                pdf_id, page,
-                triage.get("page_type", ""),
-                triage.get("priority", "skip"),
-                triage.get("estimated_log", ""),
-                triage.get("lph_evidence", ""),
-                triage.get("confidence", 0.0),
-                triage.get("description", ""),
-                elements,
-            ))
+            """,
+                (
+                    pdf_id,
+                    page,
+                    triage.get("page_type", ""),
+                    triage.get("priority", "skip"),
+                    triage.get("estimated_log", ""),
+                    triage.get("lph_evidence", ""),
+                    triage.get("confidence", 0.0),
+                    triage.get("description", ""),
+                    elements,
+                ),
+            )
 
     def save_visual_detail(self, pdf_id: int, page: int, detail: dict):
         """Speichert Detail-Ergebnis.
@@ -679,17 +753,21 @@ class PipelineDB:
         gespeichert - keine Schemaaenderung noetig.
         """
         with self.transaction() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO visual_detail
                     (pdf_id, page, description, elements_json, annotations_json, cross_refs_json)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                pdf_id, page,
-                detail.get("description", ""),
-                json.dumps(detail.get("building_elements", []), ensure_ascii=False),
-                json.dumps(detail.get("annotations", []), ensure_ascii=False),
-                json.dumps(detail.get("cross_references", []), ensure_ascii=False),
-            ))
+            """,
+                (
+                    pdf_id,
+                    page,
+                    detail.get("description", ""),
+                    json.dumps(detail.get("building_elements", []), ensure_ascii=False),
+                    json.dumps(detail.get("annotations", []), ensure_ascii=False),
+                    json.dumps(detail.get("cross_references", []), ensure_ascii=False),
+                ),
+            )
 
     def get_visual_triage(self, pdf_id: int) -> list[dict]:
         """Laedt alle Triage-Ergebnisse fuer ein PDF."""
@@ -722,13 +800,19 @@ class PipelineDB:
         return results
 
     def has_visual_triage(self, pdf_id: int) -> bool:
+        """``True`` wenn Visual-Triage-Ergebnisse fuer ``pdf_id`` vorliegen."""
         conn = self._get_conn()
-        row = conn.execute("SELECT 1 FROM visual_triage WHERE pdf_id = ? LIMIT 1", (pdf_id,)).fetchone()
+        row = conn.execute(
+            "SELECT 1 FROM visual_triage WHERE pdf_id = ? LIMIT 1", (pdf_id,)
+        ).fetchone()
         return row is not None
 
     def has_visual_detail(self, pdf_id: int) -> bool:
+        """``True`` wenn Visual-Detail-Eintraege fuer ``pdf_id`` vorliegen."""
         conn = self._get_conn()
-        row = conn.execute("SELECT 1 FROM visual_detail WHERE pdf_id = ? LIMIT 1", (pdf_id,)).fetchone()
+        row = conn.execute(
+            "SELECT 1 FROM visual_detail WHERE pdf_id = ? LIMIT 1", (pdf_id,)
+        ).fetchone()
         return row is not None
 
     # ------------------------------------------------------------------

@@ -8,24 +8,29 @@ from xml.etree.ElementTree import fromstring
 import fitz
 import pytest
 
-from qualdatan_core.pdf.scanner import scan_projects, build_manifest
-from qualdatan_core.pdf.extractor import (
-    extract_pdf, extraction_to_text_summary, _is_boilerplate, _smart_truncate,
-)
+from qualdatan_core import pdf_coder
 from qualdatan_core.coding.analyzer import build_coding_prompt, format_codesystem
+from qualdatan_core.pdf.extractor import (
+    _is_boilerplate,
+    _smart_truncate,
+    extract_pdf,
+    extraction_to_text_summary,
+)
+from qualdatan_core.pdf.scanner import build_manifest, scan_projects
 from qualdatan_core.qdpx.merger import (
-    create_new_project, add_pdf_sources, write_qdpx,
-    extract_codesystem, read_qdpx,
+    add_pdf_sources,
+    create_new_project,
+    extract_codesystem,
+    read_qdpx,
+    write_qdpx,
 )
 from qualdatan_core.recipe import load_recipe
 from qualdatan_core.run_context import RunContext
 
-from qualdatan_core import pdf_coder
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def test_pdf(tmp_path):
@@ -35,14 +40,11 @@ def test_pdf(tmp_path):
 
     doc = fitz.open()
     page = doc.new_page(width=595, height=842)
-    page.insert_text((72, 80), "Aufgabenstellung Testprojekt",
-                     fontsize=14, fontname="helv")
-    page.insert_text((72, 120), "Das Bauvorhaben umfasst den Neubau.",
-                     fontsize=11, fontname="helv")
+    page.insert_text((72, 80), "Aufgabenstellung Testprojekt", fontsize=14, fontname="helv")
+    page.insert_text((72, 120), "Das Bauvorhaben umfasst den Neubau.", fontsize=11, fontname="helv")
 
     page2 = doc.new_page(width=595, height=842)
-    page2.insert_text((72, 80), "Flaeche EG: 85.4 m2",
-                      fontsize=11, fontname="helv")
+    page2.insert_text((72, 80), "Flaeche EG: 85.4 m2", fontsize=11, fontname="helv")
     doc.save(str(pdf_path))
     doc.close()
 
@@ -52,6 +54,7 @@ def test_pdf(tmp_path):
 # ---------------------------------------------------------------------------
 # Scanner Tests
 # ---------------------------------------------------------------------------
+
 
 class TestPdfScanner:
     def test_scan_finds_pdfs(self, test_pdf):
@@ -98,6 +101,7 @@ class TestPdfScanner:
 # Extractor Tests
 # ---------------------------------------------------------------------------
 
+
 class TestPdfExtractor:
     def test_extract_pdf(self, test_pdf):
         pdf_path, _ = test_pdf
@@ -142,6 +146,7 @@ class TestPdfExtractor:
 # Analyzer Tests (ohne API-Calls)
 # ---------------------------------------------------------------------------
 
+
 class TestPdfAnalyzer:
     def test_build_coding_prompt(self, test_pdf):
         pdf_path, _ = test_pdf
@@ -159,17 +164,18 @@ class TestPdfAnalyzer:
         recipe = load_recipe("pdf_analyse")
 
         codesystem = "A: Projektakquise\n  A-01: Ausschreibung"
-        prompt = build_coding_prompt(data, recipe, "Test",
-                                      codesystem=codesystem)
+        prompt = build_coding_prompt(data, recipe, "Test", codesystem=codesystem)
         assert "A-01" in prompt
 
     def test_format_codesystem(self):
         categories = {"A": "Projektakquise", "B": "Planung"}
         codes = {
-            "A-01": {"name": "Ausschreibung", "hauptkategorie": "A",
-                     "kodierdefinition": "Öffentliche Vergabe"},
-            "B-01": {"name": "Entwurf", "hauptkategorie": "B",
-                     "kodierdefinition": ""},
+            "A-01": {
+                "name": "Ausschreibung",
+                "hauptkategorie": "A",
+                "kodierdefinition": "Öffentliche Vergabe",
+            },
+            "B-01": {"name": "Entwurf", "hauptkategorie": "B", "kodierdefinition": ""},
         }
         result = format_codesystem(categories, codes)
         assert "A: Projektakquise" in result
@@ -181,6 +187,7 @@ class TestPdfAnalyzer:
 # ---------------------------------------------------------------------------
 # QDPX-Merger Tests
 # ---------------------------------------------------------------------------
+
 
 class TestQdpxMerger:
     def test_create_new_project(self):
@@ -196,27 +203,29 @@ class TestQdpxMerger:
         project = create_new_project()
         data = extract_pdf(pdf_path)
 
-        pdf_results = [{
-            "file": "aufgabe.pdf",
-            "project": "Testprojekt",
-            "extraction": data,
-            "document_type": "Aufgabenstellung",
-            "codings": [
-                {
-                    "block_id": "p1_b0",
-                    "codes": ["NEW-01"],
-                    "ganzer_block": True,
-                }
-            ],
-            "neue_codes": [
-                {
-                    "code_id": "NEW-01",
-                    "code_name": "Testcode",
-                    "hauptkategorie": "Z",
-                    "kodierdefinition": "Test",
-                }
-            ],
-        }]
+        pdf_results = [
+            {
+                "file": "aufgabe.pdf",
+                "project": "Testprojekt",
+                "extraction": data,
+                "document_type": "Aufgabenstellung",
+                "codings": [
+                    {
+                        "block_id": "p1_b0",
+                        "codes": ["NEW-01"],
+                        "ganzer_block": True,
+                    }
+                ],
+                "neue_codes": [
+                    {
+                        "code_id": "NEW-01",
+                        "code_name": "Testcode",
+                        "hauptkategorie": "Z",
+                        "kodierdefinition": "Test",
+                    }
+                ],
+            }
+        ]
 
         code_guids = add_pdf_sources(project, pdf_results)
         assert "NEW-01" in code_guids
@@ -233,21 +242,27 @@ class TestQdpxMerger:
         project = create_new_project("Roundtrip-Test")
         data = extract_pdf(pdf_path)
 
-        pdf_results = [{
-            "file": "aufgabe.pdf",
-            "project": "Testprojekt",
-            "extraction": data,
-            "document_type": "Test",
-            "codings": [],
-            "neue_codes": [],
-        }]
+        pdf_results = [
+            {
+                "file": "aufgabe.pdf",
+                "project": "Testprojekt",
+                "extraction": data,
+                "document_type": "Test",
+                "codings": [],
+                "neue_codes": [],
+            }
+        ]
 
         add_pdf_sources(project, pdf_results)
 
         out_path = tmp_path / "test.qdpx"
-        write_qdpx(project, out_path, pdf_files={
-            "Testprojekt/aufgabe.pdf": pdf_path,
-        })
+        write_qdpx(
+            project,
+            out_path,
+            pdf_files={
+                "Testprojekt/aufgabe.pdf": pdf_path,
+            },
+        )
 
         assert out_path.exists()
 
@@ -260,21 +275,23 @@ class TestQdpxMerger:
         project = create_new_project()
 
         # Manuell Codes hinzufügen
-        pdf_results = [{
-            "file": "test.pdf",
-            "project": "Test",
-            "extraction": {"pages": []},
-            "document_type": "Test",
-            "codings": [],
-            "neue_codes": [
-                {
-                    "code_id": "X-01",
-                    "code_name": "Testcode",
-                    "hauptkategorie": "X",
-                    "kodierdefinition": "Definition",
-                }
-            ],
-        }]
+        pdf_results = [
+            {
+                "file": "test.pdf",
+                "project": "Test",
+                "extraction": {"pages": []},
+                "document_type": "Test",
+                "codings": [],
+                "neue_codes": [
+                    {
+                        "code_id": "X-01",
+                        "code_name": "Testcode",
+                        "hauptkategorie": "X",
+                        "kodierdefinition": "Definition",
+                    }
+                ],
+            }
+        ]
 
         add_pdf_sources(project, pdf_results)
         categories, codes = extract_codesystem(project)
@@ -289,24 +306,44 @@ class TestQdpxMerger:
         project = create_new_project()
 
         # Erste Runde: Code A-01
-        results1 = [{
-            "file": "a.pdf", "project": "P",
-            "extraction": {"pages": []},
-            "document_type": "T", "codings": [],
-            "neue_codes": [{"code_id": "A-01", "code_name": "Erster",
-                            "hauptkategorie": "A", "kodierdefinition": ""}],
-        }]
+        results1 = [
+            {
+                "file": "a.pdf",
+                "project": "P",
+                "extraction": {"pages": []},
+                "document_type": "T",
+                "codings": [],
+                "neue_codes": [
+                    {
+                        "code_id": "A-01",
+                        "code_name": "Erster",
+                        "hauptkategorie": "A",
+                        "kodierdefinition": "",
+                    }
+                ],
+            }
+        ]
         guids1 = add_pdf_sources(project, results1)
 
         # Zweite Runde: Code B-01 (A-01 schon vorhanden)
         _, existing = extract_codesystem(project)
-        results2 = [{
-            "file": "b.pdf", "project": "P",
-            "extraction": {"pages": []},
-            "document_type": "T", "codings": [],
-            "neue_codes": [{"code_id": "B-01", "code_name": "Zweiter",
-                            "hauptkategorie": "B", "kodierdefinition": ""}],
-        }]
+        results2 = [
+            {
+                "file": "b.pdf",
+                "project": "P",
+                "extraction": {"pages": []},
+                "document_type": "T",
+                "codings": [],
+                "neue_codes": [
+                    {
+                        "code_id": "B-01",
+                        "code_name": "Zweiter",
+                        "hauptkategorie": "B",
+                        "kodierdefinition": "",
+                    }
+                ],
+            }
+        ]
         guids2 = add_pdf_sources(project, results2, existing)
 
         # Beide Codes vorhanden
@@ -318,6 +355,7 @@ class TestQdpxMerger:
 # ---------------------------------------------------------------------------
 # Boilerplate-Filter und Smart-Truncation Tests
 # ---------------------------------------------------------------------------
+
 
 class TestBoilerplateFilter:
     def test_page_numbers_filtered(self):
@@ -380,13 +418,14 @@ class TestAdaptiveTruncation:
     def test_small_doc_gets_more_chars(self):
         """Kleine Dokumente (<10 Blöcke) bekommen 800 Zeichen pro Block."""
         data = {
-            "pages": [{
-                "page": 1,
-                "blocks": [
-                    {"id": "p1_b0", "type": "text",
-                     "text": "A" * 700}  # 700 Zeichen
-                ],
-            }]
+            "pages": [
+                {
+                    "page": 1,
+                    "blocks": [
+                        {"id": "p1_b0", "type": "text", "text": "A" * 700}  # 700 Zeichen
+                    ],
+                }
+            ]
         }
         summary = extraction_to_text_summary(data)
         # Bei <=10 Blöcken: max 800 Zeichen → 700 passt komplett rein
@@ -395,8 +434,7 @@ class TestAdaptiveTruncation:
     def test_large_doc_truncates_more(self):
         """Große Dokumente (>50 Blöcke) kürzen auf 300 Zeichen."""
         blocks = [
-            {"id": f"p1_b{i}", "type": "text", "text": f"Block {i}. " * 50}
-            for i in range(60)
+            {"id": f"p1_b{i}", "type": "text", "text": f"Block {i}. " * 50} for i in range(60)
         ]
         data = {"pages": [{"page": 1, "blocks": blocks}]}
         summary = extraction_to_text_summary(data)
@@ -407,6 +445,7 @@ class TestAdaptiveTruncation:
 # ---------------------------------------------------------------------------
 # run_annotation (Phase 5)
 # ---------------------------------------------------------------------------
+
 
 def _make_simple_pdf(path: Path, text: str = "Hallo Welt, dies ist ein Testblock.") -> None:
     """Kleines PDF mit einer Text-Seite."""
@@ -422,7 +461,7 @@ def _count_annots(pdf_path: Path) -> int:
     doc = fitz.open(str(pdf_path))
     count = 0
     for page in doc:
-        for _ in (page.annots() or []):
+        for _ in page.annots() or []:
             count += 1
     doc.close()
     return count
@@ -505,6 +544,7 @@ def test_run_annotation_writes_code_into_comment(annotation_ctx):
     fixe Farbe und der Code-Praefix im Comment ersetzen die Farb-Kodierung.
     """
     import fitz
+
     ctx, _, _ = annotation_ctx
     pdf_coder.run_annotation(ctx, recipe=None)
 
@@ -596,15 +636,23 @@ def test_run_annotation_text_and_visual_combined(tmp_path):
     first_block_id = extraction["pages"][0]["blocks"][0]["id"]
     # Text-Coding
     ctx.db.save_coding(
-        pdf_id=pdf_id, page=1, block_id=first_block_id,
-        codes=["A-01"], source="text",
-        begruendung="Text-Kodierung", ganzer_block=True,
+        pdf_id=pdf_id,
+        page=1,
+        block_id=first_block_id,
+        codes=["A-01"],
+        source="text",
+        begruendung="Text-Kodierung",
+        ganzer_block=True,
     )
     # Visuelle Coding (Rechteck auf ganzer Seite)
     ctx.db.save_coding(
-        pdf_id=pdf_id, page=1, block_id="p1_v0",
-        codes=["O-01"], source="visual_triage",
-        begruendung="Visuelle Kodierung", ganzer_block=True,
+        pdf_id=pdf_id,
+        page=1,
+        block_id="p1_v0",
+        codes=["O-01"],
+        source="visual_triage",
+        begruendung="Visuelle Kodierung",
+        ganzer_block=True,
     )
 
     stats = pdf_coder.run_annotation(ctx, recipe=None)

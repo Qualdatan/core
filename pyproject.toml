@@ -86,7 +86,45 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]
-ignore = ["E501", "B008"]
+# E501: line length handled by formatter; B008: function-call default args are fine;
+# UP042: `class X(str, Enum)` is intentional — StrEnum changes __str__ semantics.
+ignore = ["E501", "B008", "UP042"]
+
+# ---------------------------------------------------------------------------
+# Mypy — lauft vorerst non-blocking im CI (`continue-on-error: true`),
+# damit die Baseline sichtbar wird, ohne den Build zu blockieren.
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+files = ["src/qualdatan_core"]
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+no_implicit_optional = true
+# Schrittweise verschaerfen; vorerst keine `disallow_untyped_defs`.
+
+[[tool.mypy.overrides]]
+module = [
+    "anthropic.*",
+    "fitz.*",
+    "pymupdf.*",
+    "docx.*",
+    "openpyxl.*",
+    "yaml.*",
+    "rich.*",
+    "dotenv.*",
+]
+ignore_missing_imports = true
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["B", "F401"]
+# Tests: unused imports are part of fixture wiring; module-level imports at
+# the bottom are a documented test pattern (setup before import).
+"tests/*" = ["B", "F401", "F841", "E402"]
+# pdf_coder calls warnings.filterwarnings before the anthropic import, which
+# is necessary to suppress a pymupdf deprecation warning at import time.
+"src/qualdatan_core/pdf_coder.py" = ["E402"]
+# app_db/__init__.py re-exports submodules after defining AppDB to avoid
+# circular imports between AppDB and its DAOs.
+"src/qualdatan_core/app_db/__init__.py" = ["E402"]

@@ -13,9 +13,10 @@ oder "BPMN-Akteursrollen".
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from ..models import CodedSegment
 
@@ -23,10 +24,10 @@ from ..models import CodedSegment
 class Material(str, Enum):
     """Materialart, die ein Facet konsumieren kann."""
 
-    TEXT = "text"             # Roher Text (z.B. Interview-Transkript)
-    PDF_TEXT = "pdf_text"     # Aus PDF extrahierter Text + Block-Koordinaten
-    PDF_VISUAL = "pdf_visual" # PDF-Seite als Bild (Vision-Modelle)
-    IMAGE = "image"           # Standalone Bild
+    TEXT = "text"  # Roher Text (z.B. Interview-Transkript)
+    PDF_TEXT = "pdf_text"  # Aus PDF extrahierter Text + Block-Koordinaten
+    PDF_VISUAL = "pdf_visual"  # PDF-Seite als Bild (Vision-Modelle)
+    IMAGE = "image"  # Standalone Bild
 
 
 @dataclass(frozen=True)
@@ -47,9 +48,9 @@ class CodeContribution:
 class FacetContext:
     """Kontext, den der Orchestrator beim Aufruf eines Facets liefert."""
 
-    material: Any                                 # Roh-Material (str / dict / bytes)
+    material: Any  # Roh-Material (str / dict / bytes)
     material_kind: Material
-    source_label: str = ""                        # Anzeigetext (Dateiname, Page-Spec)
+    source_label: str = ""  # Anzeigetext (Dateiname, Page-Spec)
     metadata: Mapping[str, Any] = field(default_factory=dict)
     # Modell-/Token-Defaults; ein Facet kann eigene Werte vorschlagen.
     model: str | None = None

@@ -1,12 +1,20 @@
 """Tests fuer step1_analyze (JSON-Parsing, Position-Validierung, Block-ID-Mapping)."""
 
 import json
+
 import pytest
-from qualdatan_core.steps.step1_analyze import extract_json, validate_positions, resolve_block_codings
+
 from qualdatan_core.pdf.extractor import (
-    build_fulltext_and_positions, extract_docx, extract_document,
+    build_fulltext_and_positions,
+    extract_document,
+    extract_docx,
 )
 from qualdatan_core.run_context import RunContext
+from qualdatan_core.steps.step1_analyze import (
+    extract_json,
+    resolve_block_codings,
+    validate_positions,
+)
 
 
 class TestExtractJson:
@@ -26,7 +34,9 @@ class TestExtractJson:
         assert "segments" in result
 
     def test_truncated_json_repaired(self):
-        text = '{"segments": [{"code_id": "A-01", "text": "test"}, {"code_id": "B-01", "text": "halb'
+        text = (
+            '{"segments": [{"code_id": "A-01", "text": "test"}, {"code_id": "B-01", "text": "halb'
+        )
         result = extract_json(text)
         assert len(result["segments"]) >= 1
         assert result["segments"][0]["code_id"] == "A-01"
@@ -65,11 +75,16 @@ class TestValidatePositions:
         assert result[0]["char_end"] == 13 + len("Testtext mit Inhalt")
 
     def test_partial_match_via_prefix(self):
-        full_text = "Einleitung. Hier beginnt der relevante Abschnitt mit viel Text und Kontext. Ende."
-        segments = [{
-            "text": "Hier beginnt der relevante Abschnitt mit viel Text und Kontext. Ende. Plus extra.",
-            "char_start": 0, "char_end": 50,
-        }]
+        full_text = (
+            "Einleitung. Hier beginnt der relevante Abschnitt mit viel Text und Kontext. Ende."
+        )
+        segments = [
+            {
+                "text": "Hier beginnt der relevante Abschnitt mit viel Text und Kontext. Ende. Plus extra.",
+                "char_start": 0,
+                "char_end": 50,
+            }
+        ]
         result = validate_positions(segments, full_text)
         assert result[0]["char_start"] == 12
 
@@ -90,17 +105,29 @@ class TestBlockIdMapping:
                 {
                     "page": 1,
                     "blocks": [
-                        {"id": "p1_b0", "type": "text", "text": "Erster Block",
-                         "bbox": [0, 0, 100, 20]},
-                        {"id": "p1_b1", "type": "text", "text": "Zweiter Block",
-                         "bbox": [0, 30, 100, 50]},
+                        {
+                            "id": "p1_b0",
+                            "type": "text",
+                            "text": "Erster Block",
+                            "bbox": [0, 0, 100, 20],
+                        },
+                        {
+                            "id": "p1_b1",
+                            "type": "text",
+                            "text": "Zweiter Block",
+                            "bbox": [0, 30, 100, 50],
+                        },
                     ],
                 },
                 {
                     "page": 2,
                     "blocks": [
-                        {"id": "p2_b0", "type": "text", "text": "Dritter Block",
-                         "bbox": [0, 0, 100, 20]},
+                        {
+                            "id": "p2_b0",
+                            "type": "text",
+                            "text": "Dritter Block",
+                            "bbox": [0, 0, 100, 20],
+                        },
                     ],
                 },
             ],
@@ -122,7 +149,7 @@ class TestBlockIdMapping:
 
         # p1_b0 startet bei 0
         assert positions["p1_b0"][0] == 0
-        assert fulltext[positions["p1_b0"][0]:positions["p1_b0"][1]] == "Erster Block"
+        assert fulltext[positions["p1_b0"][0] : positions["p1_b0"][1]] == "Erster Block"
 
     def test_resolve_block_codings(self):
         data = self._make_extraction()
@@ -168,8 +195,9 @@ class TestBlockIdMapping:
             for block in page["blocks"]:
                 block_index[block["id"]] = block
 
-        codings = [{"block_id": "p99_b0", "code_id": "X-01",
-                     "code_name": "?", "hauptkategorie": "X"}]
+        codings = [
+            {"block_id": "p99_b0", "code_id": "X-01", "code_name": "?", "hauptkategorie": "X"}
+        ]
         segments = resolve_block_codings(codings, positions, block_index)
         assert len(segments) == 0
 
@@ -183,10 +211,8 @@ class TestBlockIdMapping:
 
         # Gleicher Block, zwei Codes
         codings = [
-            {"block_id": "p1_b0", "code_id": "A-01",
-             "code_name": "Code A", "hauptkategorie": "A"},
-            {"block_id": "p1_b0", "code_id": "B-01",
-             "code_name": "Code B", "hauptkategorie": "B"},
+            {"block_id": "p1_b0", "code_id": "A-01", "code_name": "Code A", "hauptkategorie": "A"},
+            {"block_id": "p1_b0", "code_id": "B-01", "code_name": "Code B", "hauptkategorie": "B"},
         ]
         segments = resolve_block_codings(codings, positions, block_index)
         assert len(segments) == 2
@@ -202,9 +228,11 @@ class TestExtractDocx:
         from docx import Document
 
         doc = Document()
-        doc.add_paragraph("S1: Erster Sprecher-Turn mit langem Text, "
-                          "der ueber mehrere Zeilen umgebrochen wird "
-                          "wenn man ihn rendered. [0:00:04.3]")
+        doc.add_paragraph(
+            "S1: Erster Sprecher-Turn mit langem Text, "
+            "der ueber mehrere Zeilen umgebrochen wird "
+            "wenn man ihn rendered. [0:00:04.3]"
+        )
         doc.add_paragraph("S2: Zweiter Turn. [0:00:10.5]")
         doc.add_paragraph("S1: Dritter Turn. [0:00:15.0]")
         docx_path = tmp_path / "test_interview.docx"
@@ -313,7 +341,8 @@ class TestRunContextCache:
         assert not ctx.is_step_done(2)
 
     def test_interrupted_detection(self, tmp_path, monkeypatch):
-        from src import run_context
+        from qualdatan_core import run_context
+
         monkeypatch.setattr(run_context, "OUTPUT_ROOT", tmp_path)
 
         # Erstelle einen "unterbrochenen" run
@@ -322,7 +351,8 @@ class TestRunContextCache:
         ctx.ensure_dirs()
         ctx.init_state("mayring", None, ["test.docx"])
 
-        from src.run_context import find_interrupted_runs
+        from qualdatan_core.run_context import find_interrupted_runs
+
         interrupted = find_interrupted_runs()
         assert len(interrupted) == 1
         assert interrupted[0].run_dir == run_dir

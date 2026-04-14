@@ -1,0 +1,26 @@
+# Pre-Commit-Hooks fuer qualdatan-core.
+#
+# Lokal installieren:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Einmalig ueber das ganze Repo laufen lassen:
+#   pre-commit run --all-files
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.10
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format

@@ -75,6 +75,7 @@ _CODE_RE = re.compile(r"^([A-Za-z])(?:-(\d+))?$")
 # Hex/RGB Helpers
 # ---------------------------------------------------------------------------
 
+
 def _rgb_to_hex(rgb: tuple[float, float, float]) -> str:
     """Konvertiert (r, g, b) im Bereich 0..1 zu '#RRGGBB'."""
     r, g, b = rgb
@@ -102,6 +103,7 @@ def _hex_to_rgb(hex_str: str) -> tuple[float, float, float]:
 # ---------------------------------------------------------------------------
 # Code-Parsing
 # ---------------------------------------------------------------------------
+
 
 def _parse_code(code_id: str) -> tuple[str, int] | None:
     """Zerlegt einen Code in (Kategorie, Subcode-Nummer).
@@ -137,14 +139,15 @@ def _fallback_rgb(code_id: str) -> tuple[float, float, float]:
     """Deterministischer Fallback fuer unbekannte/ungueltige Codes (Hash-basiert)."""
     h = hashlib.sha1(code_id.encode("utf-8")).digest()
     hue = h[0] / 255.0
-    sat = 0.55 + (h[1] / 255.0) * 0.35   # 0.55..0.90
-    val = 0.65 + (h[2] / 255.0) * 0.30   # 0.65..0.95
+    sat = 0.55 + (h[1] / 255.0) * 0.35  # 0.55..0.90
+    val = 0.65 + (h[2] / 255.0) * 0.30  # 0.65..0.95
     return colorsys.hsv_to_rgb(hue, sat, val)
 
 
 # ---------------------------------------------------------------------------
 # CodeColorMap
 # ---------------------------------------------------------------------------
+
 
 class CodeColorMap:
     """Weist qualitativen Codes deterministische Farben zu.
@@ -161,6 +164,15 @@ class CodeColorMap:
         code_names: dict[str, str] | None = None,
         category_names: dict[str, str] | None = None,
     ):
+        """Erzeugt eine deterministische Farbzuordnung fuer ``codes``.
+
+        Args:
+            codes: Liste von Code-IDs (Duplikate und Nicht-Strings werden
+                ignoriert).
+            overrides: Optionale expliziter ``code_id -> "#RRGGBB"``-Map.
+            code_names: Anzeige-Namen fuer Codes (nur fuer UI-Export).
+            category_names: Anzeige-Namen fuer Kategorien.
+        """
         self.code_names: dict[str, str] = dict(code_names or {})
         self.category_names: dict[str, str] = dict(category_names or {})
         self._overrides_raw: dict[str, str] = dict(overrides or {})
@@ -179,6 +191,7 @@ class CodeColorMap:
 
         # Deterministische Sortierung: Kategorie, dann Nummer, dann Original.
         def sort_key(c: str) -> tuple[int, str, int, str]:
+            """Sortier-Schluessel: parsebare Codes zuerst, dann nach Kategorie/Nr."""
             parsed = _parse_code(c)
             if parsed is None:
                 return (1, "", 0, c)  # Unparsebar ans Ende
@@ -211,7 +224,7 @@ class CodeColorMap:
             # dann Subcodes aufsteigend.
             entries.sort(key=lambda t: (t[0], t[1]))
             hue = _category_hue(letter)
-            for i, (num, code_id) in enumerate(entries):
+            for i, (_num, code_id) in enumerate(entries):
                 val, sat = _shade_for_index(i)
                 self.colors[code_id] = colorsys.hsv_to_rgb(hue, sat, val)
 
@@ -253,14 +266,16 @@ class CodeColorMap:
             parsed = _parse_code(code_id)
             hauptkategorie = parsed[0] if parsed else ""
             rgb = self.colors.get(code_id, _fallback_rgb(code_id))
-            out_codes.append({
-                "code_id": code_id,
-                "code_name": self.code_names.get(code_id, ""),
-                "hauptkategorie": hauptkategorie,
-                "kategorie_name": self.category_names.get(hauptkategorie, ""),
-                "color_hex": _rgb_to_hex(rgb),
-                "color_rgb": [round(v, 6) for v in rgb],
-            })
+            out_codes.append(
+                {
+                    "code_id": code_id,
+                    "code_name": self.code_names.get(code_id, ""),
+                    "hauptkategorie": hauptkategorie,
+                    "kategorie_name": self.category_names.get(hauptkategorie, ""),
+                    "color_hex": _rgb_to_hex(rgb),
+                    "color_rgb": [round(v, 6) for v in rgb],
+                }
+            )
         return {"codes": out_codes}
 
     def to_markdown(self) -> str:
@@ -274,9 +289,7 @@ class CodeColorMap:
             hauptkategorie = parsed[0] if parsed else ""
             hex_val = self.get_hex(code_id)
             name = self.code_names.get(code_id, "")
-            lines.append(
-                f"| `{hex_val}` | {code_id} | {name} | {hauptkategorie} |"
-            )
+            lines.append(f"| `{hex_val}` | {code_id} | {name} | {hauptkategorie} |")
         return "\n".join(lines)
 
     # --- Factories --------------------------------------------------------
@@ -287,7 +300,7 @@ class CodeColorMap:
         yaml_path: Path,
         codes: list[str],
         **kwargs,
-    ) -> "CodeColorMap":
+    ) -> CodeColorMap:
         """Laedt Overrides aus einer YAML-Datei und erzeugt eine Map.
 
         Das YAML-Schema ist:

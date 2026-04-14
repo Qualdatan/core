@@ -18,14 +18,13 @@ from pathlib import Path
 
 import fitz  # pymupdf
 
-
 # Muster für Boilerplate-Blöcke die nicht ans LLM gesendet werden
 _BOILERPLATE_PATTERNS = [
-    re.compile(r"^\s*\d+\s*$"),                    # Nur Seitenzahl
-    re.compile(r"^\s*-\s*\d+\s*-\s*$"),            # - 5 -
+    re.compile(r"^\s*\d+\s*$"),  # Nur Seitenzahl
+    re.compile(r"^\s*-\s*\d+\s*-\s*$"),  # - 5 -
     re.compile(r"^\s*Seite\s+\d+\s*(von\s+\d+)?\s*$", re.IGNORECASE),  # Seite 3 von 10
-    re.compile(r"^\s*Page\s+\d+\s*(of\s+\d+)?\s*$", re.IGNORECASE),    # Page 3 of 10
-    re.compile(r"^\s*©.*$"),                        # Copyright
+    re.compile(r"^\s*Page\s+\d+\s*(of\s+\d+)?\s*$", re.IGNORECASE),  # Page 3 of 10
+    re.compile(r"^\s*©.*$"),  # Copyright
     re.compile(r"^\s*Confidential\s*$", re.IGNORECASE),
     re.compile(r"^\s*CONFIDENTIAL\s*$"),
 ]
@@ -86,26 +85,30 @@ def extract_pdf(pdf_path: str | Path) -> dict:
                     continue
 
                 bbox = block["bbox"]
-                page_data["blocks"].append({
-                    "id": f"p{page_num}_b{block_idx}",
-                    "type": "text",
-                    "bbox": [round(v, 1) for v in bbox],
-                    "text": text,
-                    "font": font_name,
-                    "size": round(font_size, 1),
-                })
+                page_data["blocks"].append(
+                    {
+                        "id": f"p{page_num}_b{block_idx}",
+                        "type": "text",
+                        "bbox": [round(v, 1) for v in bbox],
+                        "text": text,
+                        "font": font_name,
+                        "size": round(font_size, 1),
+                    }
+                )
                 block_idx += 1
 
             elif block["type"] == 1:  # Bildblock
                 bbox = block["bbox"]
                 w = round(bbox[2] - bbox[0])
                 h = round(bbox[3] - bbox[1])
-                page_data["blocks"].append({
-                    "id": f"p{page_num}_i{block_idx}",
-                    "type": "image",
-                    "bbox": [round(v, 1) for v in bbox],
-                    "description": f"Bild ({w}x{h}px)",
-                })
+                page_data["blocks"].append(
+                    {
+                        "id": f"p{page_num}_i{block_idx}",
+                        "type": "image",
+                        "bbox": [round(v, 1) for v in bbox],
+                        "description": f"Bild ({w}x{h}px)",
+                    }
+                )
                 block_idx += 1
 
         # Tabellen extrahieren (pymupdf built-in)
@@ -120,13 +123,15 @@ def extract_pdf(pdf_path: str | Path) -> dict:
                 rows = [[str(c or "") for c in row] for row in cells[1:]]
                 bbox = list(table.bbox)
 
-                page_data["blocks"].append({
-                    "id": f"p{page_num}_t{t_idx}",
-                    "type": "table",
-                    "bbox": [round(v, 1) for v in bbox],
-                    "headers": headers,
-                    "rows": rows,
-                })
+                page_data["blocks"].append(
+                    {
+                        "id": f"p{page_num}_t{t_idx}",
+                        "type": "table",
+                        "bbox": [round(v, 1) for v in bbox],
+                        "headers": headers,
+                        "rows": rows,
+                    }
+                )
         except Exception:
             pass  # Tabellenerkennung ist optional
 
@@ -174,14 +179,16 @@ def extract_docx(docx_path: str | Path) -> dict:
         text = para.text
         if not text.strip():
             continue
-        blocks.append({
-            "id": f"p1_b{block_idx}",
-            "type": "text",
-            "bbox": [0.0, 0.0, 0.0, 0.0],
-            "text": text,
-            "font": "",
-            "size": 0.0,
-        })
+        blocks.append(
+            {
+                "id": f"p1_b{block_idx}",
+                "type": "text",
+                "bbox": [0.0, 0.0, 0.0, 0.0],
+                "text": text,
+                "font": "",
+                "size": 0.0,
+            }
+        )
         block_idx += 1
 
     page_data = {
@@ -257,9 +264,7 @@ def build_fulltext_and_positions(data: dict) -> tuple[str, dict[str, tuple[int, 
 def save_extraction(data: dict, output_path: Path):
     """Speichert Extraktionsergebnis als JSON."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    output_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def load_extraction(path: Path) -> dict | None:
@@ -285,7 +290,7 @@ def _smart_truncate(text: str, max_len: int) -> str:
         truncated.rfind("? "),
     )
     if last_sentence > max_len * 0.5:
-        return text[:last_sentence + 1] + " [...]"
+        return text[: last_sentence + 1] + " [...]"
     # Fallback: am letzten Leerzeichen kürzen
     last_space = truncated.rfind(" ")
     if last_space > max_len * 0.5:
@@ -329,7 +334,7 @@ def extraction_to_text_summary(data: dict, max_block_chars: int = 0) -> str:
                 # Kompakte Tabellendarstellung
                 headers = block["headers"]
                 if len(headers) > 6:
-                    headers_str = " | ".join(headers[:5]) + f" | (+{len(headers)-5})"
+                    headers_str = " | ".join(headers[:5]) + f" | (+{len(headers) - 5})"
                 else:
                     headers_str = " | ".join(headers)
                 row_preview = ""
@@ -340,7 +345,7 @@ def extraction_to_text_summary(data: dict, max_block_chars: int = 0) -> str:
                     else:
                         row_preview = " | ".join(first_row)
                     if len(block["rows"]) > 1:
-                        row_preview += f" (+{len(block['rows'])-1} Zeilen)"
+                        row_preview += f" (+{len(block['rows']) - 1} Zeilen)"
                 lines.append(f"[{bid}] (Tabelle): {headers_str}\\n{row_preview}")
 
             elif block["type"] == "image":

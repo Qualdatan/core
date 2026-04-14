@@ -21,8 +21,9 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field
-from typing import Any, Callable, Mapping
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from typing import Any
 
 from ..models import CodedSegment
 from .base import CodeContribution, Facet, FacetContext, Material
@@ -89,21 +90,25 @@ class TaxonomyFacet:
         "Erlaubte Codes: {codes_csv}\n\n"
         "Material:\n{material}\n\n"
         "Antworte als JSON-Liste von Objekten "
-        "{{\"code_id\": \"…\", \"text\": \"…\", \"char_start\": int, \"char_end\": int}}."
+        '{{"code_id": "…", "text": "…", "char_start": int, "char_end": int}}.'
     )
 
     @classmethod
-    def from_yaml(cls, data: Mapping[str, Any]) -> "TaxonomyFacet":
+    def from_yaml(cls, data: Mapping[str, Any]) -> TaxonomyFacet:
+        """Baut ein :class:`TaxonomyFacet` aus einer YAML-Map (siehe loader)."""
         return cls(
             id=data["id"],
             label=data.get("label", data["id"]),
             description=data.get("description", ""),
             input_kinds=_normalise_kinds(data.get("input_kinds", ["text"])),
             codebook_contribution=_normalise_codes(data.get("codes", [])),
-            prompt_template=data.get("prompt_template", cls.__dataclass_fields__["prompt_template"].default),
+            prompt_template=data.get(
+                "prompt_template", cls.__dataclass_fields__["prompt_template"].default
+            ),
         )
 
     def build_prompt(self, ctx: FacetContext) -> str:
+        """Formatiert ``prompt_template`` mit Code-IDs und ``ctx.material``."""
         return self.prompt_template.format(
             label=self.label,
             codes_csv=", ".join(c.id for c in self.codebook_contribution),
@@ -111,6 +116,7 @@ class TaxonomyFacet:
         )
 
     def parse_response(self, raw: str | Mapping[str, Any], ctx: FacetContext) -> list[CodedSegment]:
+        """Parst die LLM-Antwort in :class:`CodedSegment` (siehe ``_parse_segments_json``)."""
         return _parse_segments_json(raw, ctx, self.codebook_contribution)
 
 
@@ -124,27 +130,31 @@ class EvidenceFacet:
     id: str
     label: str
     input_kinds: tuple[Material, ...]
-    codebook_contribution: tuple[CodeContribution, ...]   # Reihenfolge = Skala
+    codebook_contribution: tuple[CodeContribution, ...]  # Reihenfolge = Skala
     description: str = ""
     prompt_template: str = (
         "Bewerte Material auf der Skala '{label}'.\n"
         "Stufen (von niedrig nach hoch): {codes_list}\n\n"
         "Material:\n{material}\n\n"
-        "Antworte als JSON: {{\"code_id\": \"…\", \"justification\": \"…\"}}."
+        'Antworte als JSON: {{"code_id": "…", "justification": "…"}}.'
     )
 
     @classmethod
-    def from_yaml(cls, data: Mapping[str, Any]) -> "EvidenceFacet":
+    def from_yaml(cls, data: Mapping[str, Any]) -> EvidenceFacet:
+        """Baut ein :class:`EvidenceFacet` aus einer YAML-Map (siehe loader)."""
         return cls(
             id=data["id"],
             label=data.get("label", data["id"]),
             description=data.get("description", ""),
             input_kinds=_normalise_kinds(data.get("input_kinds", ["text"])),
             codebook_contribution=_normalise_codes(data.get("scale", data.get("codes", []))),
-            prompt_template=data.get("prompt_template", cls.__dataclass_fields__["prompt_template"].default),
+            prompt_template=data.get(
+                "prompt_template", cls.__dataclass_fields__["prompt_template"].default
+            ),
         )
 
     def build_prompt(self, ctx: FacetContext) -> str:
+        """Formatiert ``prompt_template`` mit Code-IDs und ``ctx.material``."""
         return self.prompt_template.format(
             label=self.label,
             codes_list=" -> ".join(c.id for c in self.codebook_contribution),
@@ -152,6 +162,7 @@ class EvidenceFacet:
         )
 
     def parse_response(self, raw: str | Mapping[str, Any], ctx: FacetContext) -> list[CodedSegment]:
+        """Parst die LLM-Antwort in :class:`CodedSegment` (siehe ``_parse_segments_json``)."""
         return _parse_segments_json(raw, ctx, self.codebook_contribution)
 
 
@@ -165,28 +176,32 @@ class ActorRoleFacet:
     id: str
     label: str
     input_kinds: tuple[Material, ...]
-    codebook_contribution: tuple[CodeContribution, ...]   # die moeglichen Rollen
+    codebook_contribution: tuple[CodeContribution, ...]  # die moeglichen Rollen
     description: str = ""
     prompt_template: str = (
         "Identifiziere Akteure und ordne jedem eine Rolle aus '{label}' zu.\n"
         "Verfuegbare Rollen: {codes_csv}\n\n"
         "Material:\n{material}\n\n"
-        "Antworte als JSON-Liste {{\"code_id\": \"<rolle>\", \"text\": \"<akteur>\", "
-        "\"char_start\": int, \"char_end\": int}}."
+        'Antworte als JSON-Liste {{"code_id": "<rolle>", "text": "<akteur>", '
+        '"char_start": int, "char_end": int}}.'
     )
 
     @classmethod
-    def from_yaml(cls, data: Mapping[str, Any]) -> "ActorRoleFacet":
+    def from_yaml(cls, data: Mapping[str, Any]) -> ActorRoleFacet:
+        """Baut ein :class:`ActorRoleFacet` aus einer YAML-Map (siehe loader)."""
         return cls(
             id=data["id"],
             label=data.get("label", data["id"]),
             description=data.get("description", ""),
             input_kinds=_normalise_kinds(data.get("input_kinds", ["text"])),
             codebook_contribution=_normalise_codes(data.get("roles", data.get("codes", []))),
-            prompt_template=data.get("prompt_template", cls.__dataclass_fields__["prompt_template"].default),
+            prompt_template=data.get(
+                "prompt_template", cls.__dataclass_fields__["prompt_template"].default
+            ),
         )
 
     def build_prompt(self, ctx: FacetContext) -> str:
+        """Formatiert ``prompt_template`` mit Code-IDs und ``ctx.material``."""
         return self.prompt_template.format(
             label=self.label,
             codes_csv=", ".join(c.id for c in self.codebook_contribution),
@@ -194,6 +209,7 @@ class ActorRoleFacet:
         )
 
     def parse_response(self, raw: str | Mapping[str, Any], ctx: FacetContext) -> list[CodedSegment]:
+        """Parst die LLM-Antwort in :class:`CodedSegment` (siehe ``_parse_segments_json``)."""
         return _parse_segments_json(raw, ctx, self.codebook_contribution)
 
 
@@ -207,29 +223,33 @@ class ProcessStepFacet:
     id: str
     label: str
     input_kinds: tuple[Material, ...]
-    codebook_contribution: tuple[CodeContribution, ...]   # die moeglichen Schritte
+    codebook_contribution: tuple[CodeContribution, ...]  # die moeglichen Schritte
     description: str = ""
     prompt_template: str = (
         "Identifiziere Prozessschritte aus '{label}' im Material und gib sie "
         "in der Reihenfolge ihres Auftretens zurueck.\n"
         "Erlaubte Schritte: {codes_csv}\n\n"
         "Material:\n{material}\n\n"
-        "Antworte als JSON-Liste {{\"code_id\": \"…\", \"text\": \"<auszug>\", "
-        "\"char_start\": int, \"char_end\": int, \"sequence\": int}}."
+        'Antworte als JSON-Liste {{"code_id": "…", "text": "<auszug>", '
+        '"char_start": int, "char_end": int, "sequence": int}}.'
     )
 
     @classmethod
-    def from_yaml(cls, data: Mapping[str, Any]) -> "ProcessStepFacet":
+    def from_yaml(cls, data: Mapping[str, Any]) -> ProcessStepFacet:
+        """Baut ein :class:`ProcessStepFacet` aus einer YAML-Map (siehe loader)."""
         return cls(
             id=data["id"],
             label=data.get("label", data["id"]),
             description=data.get("description", ""),
             input_kinds=_normalise_kinds(data.get("input_kinds", ["text"])),
             codebook_contribution=_normalise_codes(data.get("steps", data.get("codes", []))),
-            prompt_template=data.get("prompt_template", cls.__dataclass_fields__["prompt_template"].default),
+            prompt_template=data.get(
+                "prompt_template", cls.__dataclass_fields__["prompt_template"].default
+            ),
         )
 
     def build_prompt(self, ctx: FacetContext) -> str:
+        """Formatiert ``prompt_template`` mit Code-IDs und ``ctx.material``."""
         return self.prompt_template.format(
             label=self.label,
             codes_csv=", ".join(c.id for c in self.codebook_contribution),
@@ -237,6 +257,7 @@ class ProcessStepFacet:
         )
 
     def parse_response(self, raw: str | Mapping[str, Any], ctx: FacetContext) -> list[CodedSegment]:
+        """Parst die LLM-Antwort in :class:`CodedSegment` (siehe ``_parse_segments_json``)."""
         return _parse_segments_json(raw, ctx, self.codebook_contribution)
 
 
@@ -260,22 +281,26 @@ class FreeCodingFacet:
         "Fuehre offene Kodierung am Material durch (Methode '{label}').\n"
         "Bekannte Seed-Codes (optional, du darfst neue erfinden): {codes_csv}\n\n"
         "Material:\n{material}\n\n"
-        "Antworte als JSON-Liste {{\"code_id\": \"…\", \"code_label\": \"…\", "
-        "\"text\": \"…\", \"char_start\": int, \"char_end\": int}}."
+        'Antworte als JSON-Liste {{"code_id": "…", "code_label": "…", '
+        '"text": "…", "char_start": int, "char_end": int}}.'
     )
 
     @classmethod
-    def from_yaml(cls, data: Mapping[str, Any]) -> "FreeCodingFacet":
+    def from_yaml(cls, data: Mapping[str, Any]) -> FreeCodingFacet:
+        """Baut ein :class:`FreeCodingFacet` aus einer YAML-Map (siehe loader)."""
         return cls(
             id=data["id"],
             label=data.get("label", data["id"]),
             description=data.get("description", ""),
             input_kinds=_normalise_kinds(data.get("input_kinds", ["text"])),
             codebook_contribution=_normalise_codes(data.get("seed_codes", data.get("codes", []))),
-            prompt_template=data.get("prompt_template", cls.__dataclass_fields__["prompt_template"].default),
+            prompt_template=data.get(
+                "prompt_template", cls.__dataclass_fields__["prompt_template"].default
+            ),
         )
 
     def build_prompt(self, ctx: FacetContext) -> str:
+        """Formatiert ``prompt_template`` mit Code-IDs und ``ctx.material``."""
         return self.prompt_template.format(
             label=self.label,
             codes_csv=", ".join(c.id for c in self.codebook_contribution) or "(keine)",
@@ -283,6 +308,7 @@ class FreeCodingFacet:
         )
 
     def parse_response(self, raw: str | Mapping[str, Any], ctx: FacetContext) -> list[CodedSegment]:
+        """Parst die LLM-Antwort in :class:`CodedSegment` (ohne Codebook-Strict-Check)."""
         # FreeCoding erlaubt unbekannte Code-IDs; wir validieren nicht gegen
         # codebook_contribution.
         return _parse_segments_json(raw, ctx, self.codebook_contribution, strict=False)
@@ -299,11 +325,11 @@ def builtin_facet_types() -> dict[str, Callable[..., Facet]]:
     from ..coding.visual_facet import VisualEvidenceFacet, VisualTaxonomyFacet
 
     return {
-        "taxonomy":        TaxonomyFacet.from_yaml,
-        "evidence":        EvidenceFacet.from_yaml,
-        "actor_role":      ActorRoleFacet.from_yaml,
-        "process_step":    ProcessStepFacet.from_yaml,
-        "free_coding":     FreeCodingFacet.from_yaml,
+        "taxonomy": TaxonomyFacet.from_yaml,
+        "evidence": EvidenceFacet.from_yaml,
+        "actor_role": ActorRoleFacet.from_yaml,
+        "process_step": ProcessStepFacet.from_yaml,
+        "free_coding": FreeCodingFacet.from_yaml,
         "visual_taxonomy": VisualTaxonomyFacet.from_yaml,
         "visual_evidence": VisualEvidenceFacet.from_yaml,
     }

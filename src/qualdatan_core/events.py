@@ -32,11 +32,11 @@ Verwendung
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, Literal
+from datetime import UTC, datetime
+from typing import Any, Literal
 from uuid import uuid4
-
 
 # ---------------------------------------------------------------------------
 # Event types
@@ -50,17 +50,21 @@ class Event:
     """Basis-Event. Subklassen ergaenzen Payload-Felder."""
 
     event_id: str = field(default_factory=lambda: uuid4().hex)
-    emitted_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    emitted_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass(frozen=True, slots=True)
 class RunStarted(Event):
+    """Start eines Pipeline-Durchlaufs."""
+
     run_id: str = ""
     profile: str = ""  # z.B. "transcripts", "documents", "company"
 
 
 @dataclass(frozen=True, slots=True)
 class RunFinished(Event):
+    """Ende eines Pipeline-Durchlaufs (erfolgreich, abgebrochen oder failed)."""
+
     run_id: str = ""
     status: Literal["done", "failed", "aborted"] = "done"
     duration_seconds: float = 0.0
@@ -76,6 +80,8 @@ class StageStarted(Event):
 
 @dataclass(frozen=True, slots=True)
 class StageProgress(Event):
+    """Fortschritts-Tick einer Stage (``done`` von ``total`` verarbeitet)."""
+
     stage: str = ""
     done: int = 0
     total: int | None = None
@@ -84,12 +90,16 @@ class StageProgress(Event):
 
 @dataclass(frozen=True, slots=True)
 class StageFinished(Event):
+    """Abschluss einer Pipeline-Stage."""
+
     stage: str = ""
     total: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class LogMessage(Event):
+    """Frei formatierte Log-Zeile (z.B. fuer UI-Konsole oder SSE)."""
+
     message: str = ""
     severity: Severity = "info"
     context: dict[str, Any] = field(default_factory=dict)
@@ -123,6 +133,7 @@ class EventBus:
     """
 
     def __init__(self) -> None:
+        """Leerer Bus ohne Subscriber."""
         self._subscribers: list[Subscriber] = []
         self._reentry = False
 
@@ -169,6 +180,7 @@ class NoOpBus(EventBus):
     """
 
     def emit(self, event: Event) -> None:  # pragma: no cover - trivial
+        """No-op: verwirft ``event``."""
         return
 
 

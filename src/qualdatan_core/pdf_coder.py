@@ -23,30 +23,43 @@ from pathlib import Path
 warnings.filterwarnings("ignore", message=".*pymupdf_layout.*")
 
 from anthropic import Anthropic
-from .config import PROJECTS_DIR, OUTPUT_ROOT
-from .recipe import load_recipe
-from .run_context import RunContext, create_run, find_interrupted_runs, resume_run
-from .pdf.scanner import scan_projects, build_manifest, save_manifest, print_manifest_summary
-from .pdf.extractor import extract_pdf, extraction_to_text_summary
-from .coding.analyzer import (
-    analyze_pdf_codes, refine_positions, format_codesystem,
+
+from ._console import (
+    console,
+    print_error,
+    print_header,
+    print_step,
+    print_success,
+    print_summary,
+    print_warning,
 )
-from .qdpx.merger import (
-    read_qdpx, extract_codesystem, add_pdf_sources, add_visual_sources,
-    write_qdpx, create_new_project,
+from .coding.analyzer import (
+    analyze_pdf_codes,
+    format_codesystem,
+    refine_positions,
 )
 from .coding.classifier import (
-    classify_project_pdfs, split_by_type,
+    classify_project_pdfs,
     print_classification_summary,
+    split_by_type,
 )
 from .coding.visual import (
-    analyze_visual_pdfs, print_visual_summary,
+    analyze_visual_pdfs,
+    print_visual_summary,
 )
 from .pdf.annotator import annotate_text_pdf, annotate_visual_pdf
-from ._console import (
-    console, print_step, print_success, print_warning, print_error,
-    print_header, print_summary,
+from .pdf.extractor import extract_pdf
+from .pdf.scanner import build_manifest, print_manifest_summary, save_manifest, scan_projects
+from .qdpx.merger import (
+    add_pdf_sources,
+    add_visual_sources,
+    create_new_project,
+    extract_codesystem,
+    read_qdpx,
+    write_qdpx,
 )
+from .recipe import load_recipe
+from .run_context import RunContext
 
 
 def _short(rel_path: str) -> str:
@@ -118,8 +131,11 @@ def _register_pdfs(pdfs: list[dict], ctx: RunContext) -> dict[str, int]:
 # Stufe 1: Lokale Extraktion
 # ---------------------------------------------------------------------------
 
+
 def _extract_single_pdf(
-    pdf: dict, ctx: RunContext, pdf_id: int,
+    pdf: dict,
+    ctx: RunContext,
+    pdf_id: int,
 ) -> tuple[int, str, dict | None, bool]:
     """Extrahiert eine einzelne PDF. Thread-safe.
 
@@ -142,8 +158,9 @@ def _extract_single_pdf(
         return pdf_id, pdf["relative_path"], None, False
 
 
-def run_extraction(pdfs: list[dict], ctx: RunContext, pdf_ids: dict[str, int],
-                   max_workers: int = 8) -> dict[int, dict]:
+def run_extraction(
+    pdfs: list[dict], ctx: RunContext, pdf_ids: dict[str, int], max_workers: int = 8
+) -> dict[int, dict]:
     """Stufe 1: Extrahiert alle PDFs lokal mit pymupdf (parallelisiert).
 
     Returns:
@@ -174,9 +191,11 @@ def run_extraction(pdfs: list[dict], ctx: RunContext, pdf_ids: dict[str, int],
                 total_blocks = sum(len(p["blocks"]) for p in data["pages"])
                 if was_cached:
                     cached_count += 1
-                console.print(f"  [dim]\\[{completed}/{n_total}][/dim] {_short(rel_path)} "
-                      f"[dim]({data['metadata']['page_count']} Seiten, "
-                      f"{total_blocks} Bloecke)[/dim]")
+                console.print(
+                    f"  [dim]\\[{completed}/{n_total}][/dim] {_short(rel_path)} "
+                    f"[dim]({data['metadata']['page_count']} Seiten, "
+                    f"{total_blocks} Bloecke)[/dim]"
+                )
 
     if cached_count:
         console.print(f"  [dim]({cached_count} aus DB-Cache)[/dim]")
@@ -188,23 +207,31 @@ def run_extraction(pdfs: list[dict], ctx: RunContext, pdf_ids: dict[str, int],
 # Stufe 2+3: LLM-Analyse
 # ---------------------------------------------------------------------------
 
-def _analyze_single_pdf(client: Anthropic, pdf: dict, extraction: dict,
-                        recipe, codesystem: str, ctx: RunContext,
-                        pdf_id: int) -> dict | None:
+
+def _analyze_single_pdf(
+    client: Anthropic,
+    pdf: dict,
+    extraction: dict,
+    recipe,
+    codesystem: str,
+    ctx: RunContext,
+    pdf_id: int,
+) -> dict | None:
     """Analysiert eine einzelne PDF (Stufe 2+3). Thread-safe."""
     cache_key = _cache_key(pdf["project"], pdf["filename"])
 
     coding_result = analyze_pdf_codes(
-        client, extraction, recipe, pdf["project"],
+        client,
+        extraction,
+        recipe,
+        pdf["project"],
         codesystem=codesystem,
         cache_dir=ctx.cache_dir,
         cache_key=cache_key,
     )
 
     codings = coding_result.get("codings", [])
-    needs_refinement = any(
-        not c.get("ganzer_block", True) for c in codings
-    )
+    needs_refinement = any(not c.get("ganzer_block", True) for c in codings)
     if needs_refinement:
         codings = refine_positions(client, codings, extraction)
 
@@ -255,10 +282,15 @@ def _analyze_single_pdf(client: Anthropic, pdf: dict, extraction: dict,
     }
 
 
-def run_coding(pdfs: list[dict], extractions: dict[int, dict],
-               recipe, codesystem: str, ctx: RunContext,
-               pdf_ids: dict[str, int],
-               max_workers: int = 2) -> list[dict]:
+def run_coding(
+    pdfs: list[dict],
+    extractions: dict[int, dict],
+    recipe,
+    codesystem: str,
+    ctx: RunContext,
+    pdf_ids: dict[str, int],
+    max_workers: int = 2,
+) -> list[dict]:
     """Stufe 2+3: Code-Zuweisung (Sonnet) + Refinement (Haiku). Parallelisiert.
 
     max_workers=2 bewusst niedrig: Sonnet output ist gross (~16K tokens),
@@ -300,8 +332,14 @@ def run_coding(pdfs: list[dict], extractions: dict[int, dict],
         for pdf, extraction, pid in tasks:
             ctx.db.set_step_status(pid, "coding", "running")
             future = pool.submit(
-                _analyze_single_pdf, client, pdf, extraction,
-                recipe, codesystem, ctx, pid,
+                _analyze_single_pdf,
+                client,
+                pdf,
+                extraction,
+                recipe,
+                codesystem,
+                ctx,
+                pid,
             )
             futures[future] = pdf["relative_path"]
 
@@ -318,8 +356,10 @@ def run_coding(pdfs: list[dict], extractions: dict[int, dict],
                     results.append(result)
                     n_codes = sum(len(c.get("codes", [])) for c in result["codings"])
                     n_new = len(result.get("neue_codes", []))
-                    console.print(f"  [dim]\\[{completed}/{n_total}][/dim] {_short(rel_path)} "
-                          f"[dim]({n_codes} Kodierungen, {n_new} neue Codes)[/dim]")
+                    console.print(
+                        f"  [dim]\\[{completed}/{n_total}][/dim] {_short(rel_path)} "
+                        f"[dim]({n_codes} Kodierungen, {n_new} neue Codes)[/dim]"
+                    )
             except Exception as e:
                 # Fehler in DB persistieren, damit Resume es nochmal versucht
                 pid = rel_to_pid.get(rel_path)
@@ -335,10 +375,14 @@ def run_coding(pdfs: list[dict], extractions: dict[int, dict],
 # Stufe Visual: Vision-Pipeline fuer Plaene und Fotos
 # ---------------------------------------------------------------------------
 
-def run_visual(pdfs: list[dict], ctx: RunContext,
-               pdf_ids: dict[str, int],
-               skip_detail: bool = False,
-               max_visual_tokens: int = 500000) -> list[dict]:
+
+def run_visual(
+    pdfs: list[dict],
+    ctx: RunContext,
+    pdf_ids: dict[str, int],
+    skip_detail: bool = False,
+    max_visual_tokens: int = 500000,
+) -> list[dict]:
     """Vision-Pipeline: Triage + Detail-Analyse fuer Plan/Foto-PDFs.
 
     Returns:
@@ -356,7 +400,8 @@ def run_visual(pdfs: list[dict], ctx: RunContext,
     client = Anthropic(max_retries=6)
 
     visual_results = analyze_visual_pdfs(
-        pdfs, client=client,
+        pdfs,
+        client=client,
         max_visual_tokens=max_visual_tokens,
         skip_detail=skip_detail,
         cache_dir=ctx.cache_dir,
@@ -407,24 +452,21 @@ def run_visual(pdfs: list[dict], ctx: RunContext,
                     description=coding.get("description", ""),
                 )
 
-        qdpx_visual.append({
-            "file": vis.file,
-            "project": vis.project,
-            "path": pdf_path,
-            "page_dimensions": page_dims,
-            "description": f"Visuelle Analyse: {vis.file} ({vis.page_count} Seiten)",
-            "visual_codings": codings,
-        })
+        qdpx_visual.append(
+            {
+                "file": vis.file,
+                "project": vis.project,
+                "path": pdf_path,
+                "page_dimensions": page_dims,
+                "description": f"Visuelle Analyse: {vis.file} ({vis.page_count} Seiten)",
+                "visual_codings": codings,
+            }
+        )
 
     # JSON-Export (Backup / Debug)
     visual_path = ctx.run_dir / "visual_analysis_results.json"
-    visual_slim = [
-        {k: v for k, v in r.items() if k != "path"}
-        for r in qdpx_visual
-    ]
-    visual_path.write_text(
-        json.dumps(visual_slim, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    visual_slim = [{k: v for k, v in r.items() if k != "path"} for r in qdpx_visual]
+    visual_path.write_text(json.dumps(visual_slim, ensure_ascii=False, indent=2), encoding="utf-8")
     print_success(f"Visuelle Ergebnisse gespeichert: {visual_path}")
 
     return qdpx_visual
@@ -461,9 +503,7 @@ def _build_text_codings_from_db(ctx: RunContext, pdf_id: int) -> list[dict]:
 def _build_visual_codings_from_db(ctx: RunContext, pdf_id: int) -> list[dict]:
     """Aggregiert visuelle Codings aus der DB pro Block-ID fuer den Annotator."""
     rows = ctx.db.get_codings_for_pdf(pdf_id)
-    visual_rows = [
-        r for r in rows if str(r.get("source", "")).startswith("visual")
-    ]
+    visual_rows = [r for r in rows if str(r.get("source", "")).startswith("visual")]
 
     by_block: dict[str, dict] = {}
     for r in visual_rows:
@@ -561,15 +601,10 @@ def run_annotation(ctx: RunContext, recipe=None) -> dict:
         text_codings = _build_text_codings_from_db(ctx, pdf_id)
         visual_codings = _build_visual_codings_from_db(ctx, pdf_id)
 
-        # Klassifikationen (falls vorhanden) — fuer Mixed-Detection
-        has_visual_pages = _pdf_has_visual_pages(ctx, pdf_id)
-
         # Entscheidung: welche Annotator-Calls laufen?
         # - Text-Annotator laeuft wenn es Text-Codings gibt.
-        # - Visual-Annotator laeuft wenn es Visual-Codings oder eine
-        #   als plan/photo klassifizierte Seite gibt.
+        # - Visual-Annotator laeuft wenn es Visual-Codings gibt.
         do_text = bool(text_codings)
-        do_visual = bool(visual_codings) or has_visual_pages and not do_text
 
         if not text_codings and not visual_codings:
             # Leer-Annotation: source 1:1 nach dst kopieren, damit
@@ -579,7 +614,9 @@ def run_annotation(ctx: RunContext, recipe=None) -> dict:
                 dst.write_bytes(src.read_bytes())
                 ctx.db.set_step_status(pdf_id, "annotation", "done")
                 stats["annotated"] += 1
-                console.print(f"  [dim yellow]EMPTY[/dim yellow] {_short(rel_path)} (keine Codings)")
+                console.print(
+                    f"  [dim yellow]EMPTY[/dim yellow] {_short(rel_path)} (keine Codings)"
+                )
             except Exception as e:
                 ctx.db.set_step_status(pdf_id, "annotation", "error", str(e)[:500])
                 stats["errors"] += 1
@@ -597,7 +634,10 @@ def run_annotation(ctx: RunContext, recipe=None) -> dict:
                     msg = "Text-Codings vorhanden aber keine Extraction"
                     raise RuntimeError(msg)
                 t_stats = annotate_text_pdf(
-                    src, dst, text_codings, extraction,
+                    src,
+                    dst,
+                    text_codings,
+                    extraction,
                 )
                 stats["text_annotations"] += t_stats.get("annotations_added", 0)
 
@@ -610,14 +650,18 @@ def run_annotation(ctx: RunContext, recipe=None) -> dict:
                     dst.replace(tmp)
                     try:
                         v_stats = annotate_visual_pdf(
-                            tmp, dst, visual_codings,
+                            tmp,
+                            dst,
+                            visual_codings,
                         )
                     finally:
                         if tmp.exists():
                             tmp.unlink()
                 else:
                     v_stats = annotate_visual_pdf(
-                        src, dst, visual_codings,
+                        src,
+                        dst,
+                        visual_codings,
                     )
                 stats["visual_annotations"] += v_stats.get("annotations_added", 0)
 
@@ -626,19 +670,21 @@ def run_annotation(ctx: RunContext, recipe=None) -> dict:
 
             t_count = sum(len(c.get("codes", [])) for c in text_codings)
             v_count = sum(len(c.get("codes", [])) for c in visual_codings)
-            tag = "MIXED" if (do_text and visual_codings) else (
-                "TEXT" if do_text else "VIS"
+            tag = "MIXED" if (do_text and visual_codings) else ("TEXT" if do_text else "VIS")
+            console.print(
+                f"  [dim]{tag}[/dim] {_short(rel_path)} "
+                f"[dim](+{t_count} text, +{v_count} visual)[/dim]"
             )
-            console.print(f"  [dim]{tag}[/dim] {_short(rel_path)} "
-                  f"[dim](+{t_count} text, +{v_count} visual)[/dim]")
 
         except Exception as e:
             ctx.db.set_step_status(pdf_id, "annotation", "error", str(e)[:500])
             stats["errors"] += 1
             print_error(f"{_short(rel_path)}: {e}")
 
-    print_success(f"Annotation: {stats['annotated']}/{stats['total_pdfs']} PDFs "
-          f"({stats['skipped']} skipped, {stats['errors']} errors)")
+    print_success(
+        f"Annotation: {stats['annotated']}/{stats['total_pdfs']} PDFs "
+        f"({stats['skipped']} skipped, {stats['errors']} errors)"
+    )
     console.print(f"  [dim]Text-Highlights:    {stats['text_annotations']}[/dim]")
     console.print(f"  [dim]Visual-Rectangles:  {stats['visual_annotations']}[/dim]")
     console.print(f"  [dim]Output: {annotated_root}[/dim]")
@@ -650,10 +696,14 @@ def run_annotation(ctx: RunContext, recipe=None) -> dict:
 # Export
 # ---------------------------------------------------------------------------
 
-def run_export(pdf_results: list[dict], ctx: RunContext,
-               qdpx_path: Path = None,
-               visual_results: list[dict] = None,
-               recipe=None):
+
+def run_export(
+    pdf_results: list[dict],
+    ctx: RunContext,
+    qdpx_path: Path = None,
+    visual_results: list[dict] = None,
+    recipe=None,
+):
     """Erzeugt die .qdpx-Datei (neu oder erweitert).
 
     Args:
@@ -683,7 +733,9 @@ def run_export(pdf_results: list[dict], ctx: RunContext,
     code_guids = {}
     if pdf_results:
         code_guids = add_pdf_sources(
-            project, pdf_results, existing_codes,
+            project,
+            pdf_results,
+            existing_codes,
             recipe_categories=recipe_categories,
         )
         console.print(f"  [dim]-> {len(code_guids)} Codes (Text)[/dim]")
@@ -694,7 +746,9 @@ def run_export(pdf_results: list[dict], ctx: RunContext,
         visual_guids = add_visual_sources(project, visual_results, updated_codes)
         code_guids.update(visual_guids)
         n_visual = sum(len(r.get("visual_codings", [])) for r in visual_results)
-        console.print(f"  [dim]-> {len(visual_guids)} Codes (Visuell), {n_visual} Kodierungen[/dim]")
+        console.print(
+            f"  [dim]-> {len(visual_guids)} Codes (Visuell), {n_visual} Kodierungen[/dim]"
+        )
 
     console.print(f"  [dim]-> {len(code_guids)} Codes gesamt[/dim]")
 
@@ -731,21 +785,22 @@ def run_export(pdf_results: list[dict], ctx: RunContext,
 # Ergebnisse speichern/laden (JSON-Backup neben DB)
 # ---------------------------------------------------------------------------
 
+
 def save_results(pdf_results: list[dict], path: Path):
     """Speichert Analyse-Ergebnisse als JSON (Backup neben DB)."""
     slim = []
     for r in pdf_results:
-        slim.append({
-            "file": r["file"],
-            "project": r["project"],
-            "relative_path": r["relative_path"],
-            "document_type": r.get("document_type", ""),
-            "codings": r.get("codings", []),
-            "neue_codes": r.get("neue_codes", []),
-        })
-    path.write_text(
-        json.dumps(slim, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+        slim.append(
+            {
+                "file": r["file"],
+                "project": r["project"],
+                "relative_path": r["relative_path"],
+                "document_type": r.get("document_type", ""),
+                "codings": r.get("codings", []),
+                "neue_codes": r.get("neue_codes", []),
+            }
+        )
+    path.write_text(json.dumps(slim, ensure_ascii=False, indent=2), encoding="utf-8")
     print_success(f"Ergebnisse gespeichert: {path}")
 
 
@@ -758,9 +813,10 @@ def load_results(path: Path) -> list[dict]:
 # Pipeline
 # ---------------------------------------------------------------------------
 
-def run_classification(pdfs: list[dict], ctx: RunContext,
-                       pdf_ids: dict[str, int],
-                       classify_mode: str = "local") -> dict:
+
+def run_classification(
+    pdfs: list[dict], ctx: RunContext, pdf_ids: dict[str, int], classify_mode: str = "local"
+) -> dict:
     """Klassifiziert alle PDFs nach Dokumenttyp.
 
     Args:
@@ -774,7 +830,9 @@ def run_classification(pdfs: list[dict], ctx: RunContext,
     """
     print_step("Klassifikation", classify_mode, phase="scan")
     classifications = classify_project_pdfs(
-        pdfs, mode=classify_mode, cache_dir=ctx.cache_dir,
+        pdfs,
+        mode=classify_mode,
+        cache_dir=ctx.cache_dir,
     )
     print_classification_summary(classifications)
 
@@ -789,7 +847,8 @@ def run_classification(pdfs: list[dict], ctx: RunContext,
         for page_cls in cls.pages:
             ctx.db.save_page_metrics(pid, page_cls.page, page_cls.metrics)
             ctx.db.save_classification(
-                pid, page_cls.page,
+                pid,
+                page_cls.page,
                 page_type=page_cls.page_type,
                 confidence=page_cls.confidence,
                 plan_subtype=page_cls.plan_subtype,
@@ -802,15 +861,18 @@ def run_classification(pdfs: list[dict], ctx: RunContext,
     return classifications
 
 
-def run_pipeline(ctx: RunContext, recipe_id: str = "pdf_analyse",
-                 project_filter: str = None,
-                 qdpx_path: Path = None,
-                 step: str = None,
-                 mode: str = None,
-                 classify_mode: str = "local",
-                 skip_plans: bool = False,
-                 skip_patterns: list[str] | None = None,
-                 convert_office: bool = True):
+def run_pipeline(
+    ctx: RunContext,
+    recipe_id: str = "pdf_analyse",
+    project_filter: str = None,
+    qdpx_path: Path = None,
+    step: str = None,
+    mode: str = None,
+    classify_mode: str = "local",
+    skip_plans: bool = False,
+    skip_patterns: list[str] | None = None,
+    convert_office: bool = True,
+):
     """Hauptpipeline.
 
     Args:
@@ -852,14 +914,15 @@ def run_pipeline(ctx: RunContext, recipe_id: str = "pdf_analyse",
     # Filtern: Plaene und/oder beliebige Patterns rauswerfen
     if skip_plans or skip_patterns:
         before = len(pdfs)
-        pdfs, removed = filter_pdfs(pdfs, skip_plans=skip_plans,
-                                    skip_patterns=skip_patterns)
+        pdfs, removed = filter_pdfs(pdfs, skip_plans=skip_plans, skip_patterns=skip_patterns)
         if removed:
             console.print(f"  [dim]Filter: {len(removed)}/{before} PDFs entfernt[/dim]")
             for r in removed[:10]:
-                console.print(f"    [dim]- {_short(r['relative_path'])}  ({r.get('_filter_reason','')})[/dim]")
+                console.print(
+                    f"    [dim]- {_short(r['relative_path'])}  ({r.get('_filter_reason', '')})[/dim]"
+                )
             if len(removed) > 10:
-                console.print(f"    [dim]... und {len(removed)-10} weitere[/dim]")
+                console.print(f"    [dim]... und {len(removed) - 10} weitere[/dim]")
 
     if not pdfs:
         print_error("Nach Filtern keine PDFs uebrig.")
@@ -911,7 +974,9 @@ def run_pipeline(ctx: RunContext, recipe_id: str = "pdf_analyse",
         else:
             text_pdfs = groups.get("text", []) + groups.get("mixed", [])
             visual_pdfs = groups.get("plan", []) + groups.get("photo", [])
-            console.print(f"  [dim]Alle PDFs: {len(text_pdfs)} Text/Mixed, {len(visual_pdfs)} Plan/Foto[/dim]")
+            console.print(
+                f"  [dim]Alle PDFs: {len(text_pdfs)} Text/Mixed, {len(visual_pdfs)} Plan/Foto[/dim]"
+            )
 
     results_path = ctx.run_dir / "pdf_analysis_results.json"
     pdf_results = []
@@ -936,7 +1001,12 @@ def run_pipeline(ctx: RunContext, recipe_id: str = "pdf_analyse",
                         extractions[pid] = data
 
             pdf_results = run_coding(
-                text_pdfs, extractions, recipe, codesystem, ctx, pdf_ids,
+                text_pdfs,
+                extractions,
+                recipe,
+                codesystem,
+                ctx,
+                pdf_ids,
             )
             save_results(pdf_results, results_path)
 
@@ -971,12 +1041,12 @@ def run_pipeline(ctx: RunContext, recipe_id: str = "pdf_analyse",
             # Visuelle Ergebnisse nachladen
             visual_path = ctx.run_dir / "visual_analysis_results.json"
             if visual_path.exists() and not visual_qdpx_results:
-                visual_qdpx_results = json.loads(
-                    visual_path.read_text(encoding="utf-8")
-                )
+                visual_qdpx_results = json.loads(visual_path.read_text(encoding="utf-8"))
 
         run_export(
-            pdf_results, ctx, qdpx_path,
+            pdf_results,
+            ctx,
+            qdpx_path,
             visual_results=visual_qdpx_results if visual_qdpx_results else None,
             recipe=recipe,
         )
@@ -991,9 +1061,9 @@ def run_pipeline(ctx: RunContext, recipe_id: str = "pdf_analyse",
 
     ctx.mark_completed()
     print_header("Fertig!", "PDF-Dokumenten-Coder")
-    print_summary([
-        ("Ergebnisse", str(ctx.run_dir)),
-        ("Datenbank", str(ctx.db.db_path)),
-    ])
-
-
+    print_summary(
+        [
+            ("Ergebnisse", str(ctx.run_dir)),
+            ("Datenbank", str(ctx.db.db_path)),
+        ]
+    )

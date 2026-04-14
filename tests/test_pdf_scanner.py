@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 
 from qualdatan_core.pdf.scanner import (
+    DEFAULT_PLAN_PATTERNS,
     filter_pdfs,
     scan_projects,
-    DEFAULT_PLAN_PATTERNS,
 )
 
 
@@ -15,34 +15,55 @@ from qualdatan_core.pdf.scanner import (
 def sample_pdfs():
     """Liste typischer BOE-PDFs."""
     return [
-        {"path": "/x/HKS/BOE/Aufgabenstellung/Teilleistungen.pdf",
-         "project": "HKS", "filename": "Teilleistungen.pdf",
-         "relative_path": "HKS/BOE/Aufgabenstellung/Teilleistungen.pdf",
-         "size_kb": 14},
-        {"path": "/x/HKS/BOE/Pläne/LP 4/Arc-4-1_00 Grundriss EG.pdf",
-         "project": "HKS", "filename": "Arc-4-1_00 Grundriss EG.pdf",
-         "relative_path": "HKS/BOE/Pläne/LP 4/Arc-4-1_00 Grundriss EG.pdf",
-         "size_kb": 517},
-        {"path": "/x/HKS/BOE/Pläne/LP 4/Arc-4-2_01 Schnittplan.pdf",
-         "project": "HKS", "filename": "Arc-4-2_01 Schnittplan.pdf",
-         "relative_path": "HKS/BOE/Pläne/LP 4/Arc-4-2_01 Schnittplan.pdf",
-         "size_kb": 576},
-        {"path": "/x/HKS/BOE/Pläne/LP 4/Arc-4-3_01 Ansichten Haus 1.pdf",
-         "project": "HKS", "filename": "Arc-4-3_01 Ansichten Haus 1.pdf",
-         "relative_path": "HKS/BOE/Pläne/LP 4/Arc-4-3_01 Ansichten Haus 1.pdf",
-         "size_kb": 1377},
-        {"path": "/x/HKS/BOE/Pläne/LP 4/Ffl-4-0 Lageplan.pdf",
-         "project": "HKS", "filename": "Ffl-4-0 Lageplan.pdf",
-         "relative_path": "HKS/BOE/Pläne/LP 4/Ffl-4-0 Lageplan.pdf",
-         "size_kb": 4480},
-        {"path": "/x/HKS/BOE/Vertrag.pdf",
-         "project": "HKS", "filename": "Vertrag.pdf",
-         "relative_path": "HKS/BOE/Vertrag.pdf",
-         "size_kb": 845},
-        {"path": "/x/HKS/BOE/Termine/Terminplan.pdf",
-         "project": "HKS", "filename": "Terminplan.pdf",
-         "relative_path": "HKS/BOE/Termine/Terminplan.pdf",
-         "size_kb": 38},
+        {
+            "path": "/x/HKS/BOE/Aufgabenstellung/Teilleistungen.pdf",
+            "project": "HKS",
+            "filename": "Teilleistungen.pdf",
+            "relative_path": "HKS/BOE/Aufgabenstellung/Teilleistungen.pdf",
+            "size_kb": 14,
+        },
+        {
+            "path": "/x/HKS/BOE/Pläne/LP 4/Arc-4-1_00 Grundriss EG.pdf",
+            "project": "HKS",
+            "filename": "Arc-4-1_00 Grundriss EG.pdf",
+            "relative_path": "HKS/BOE/Pläne/LP 4/Arc-4-1_00 Grundriss EG.pdf",
+            "size_kb": 517,
+        },
+        {
+            "path": "/x/HKS/BOE/Pläne/LP 4/Arc-4-2_01 Schnittplan.pdf",
+            "project": "HKS",
+            "filename": "Arc-4-2_01 Schnittplan.pdf",
+            "relative_path": "HKS/BOE/Pläne/LP 4/Arc-4-2_01 Schnittplan.pdf",
+            "size_kb": 576,
+        },
+        {
+            "path": "/x/HKS/BOE/Pläne/LP 4/Arc-4-3_01 Ansichten Haus 1.pdf",
+            "project": "HKS",
+            "filename": "Arc-4-3_01 Ansichten Haus 1.pdf",
+            "relative_path": "HKS/BOE/Pläne/LP 4/Arc-4-3_01 Ansichten Haus 1.pdf",
+            "size_kb": 1377,
+        },
+        {
+            "path": "/x/HKS/BOE/Pläne/LP 4/Ffl-4-0 Lageplan.pdf",
+            "project": "HKS",
+            "filename": "Ffl-4-0 Lageplan.pdf",
+            "relative_path": "HKS/BOE/Pläne/LP 4/Ffl-4-0 Lageplan.pdf",
+            "size_kb": 4480,
+        },
+        {
+            "path": "/x/HKS/BOE/Vertrag.pdf",
+            "project": "HKS",
+            "filename": "Vertrag.pdf",
+            "relative_path": "HKS/BOE/Vertrag.pdf",
+            "size_kb": 845,
+        },
+        {
+            "path": "/x/HKS/BOE/Termine/Terminplan.pdf",
+            "project": "HKS",
+            "filename": "Terminplan.pdf",
+            "relative_path": "HKS/BOE/Termine/Terminplan.pdf",
+            "size_kb": 38,
+        },
     ]
 
 
@@ -118,8 +139,8 @@ class TestFilterPdfs:
         false_friends = [
             "HKS/Doc/Akquiblatt.pdf",
             "HKS/Doc/Vertrag_planungsleistung.pdf",  # enthaelt "planung" aber kein "grundriss"
-            "HKS/Termine/Bauzeitenplan.pdf",          # enthaelt "plan"
-            "HKS/Doc/Schnittstellenliste.pdf",        # enthaelt "schnittstelle" aber nicht "schnitt"
+            "HKS/Termine/Bauzeitenplan.pdf",  # enthaelt "plan"
+            "HKS/Doc/Schnittstellenliste.pdf",  # enthaelt "schnittstelle" aber nicht "schnitt"
         ]
         for path in false_friends:
             matched = any(p.search(path) for p in DEFAULT_PLAN_PATTERNS)

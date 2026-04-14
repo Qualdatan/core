@@ -10,20 +10,23 @@ from pathlib import Path
 
 from ..config import PROJECTS_DIR
 
-
 # Regex-Patterns die per Default erkennen, ob eine PDF ein Plan ist.
 # Greifen auf den vollstaendigen relative_path (also inkl. Ordnernamen).
 DEFAULT_PLAN_PATTERNS = [
     re.compile(r"(?i)(^|/)(pl[aä]ene|plans|pl[aä]ne)(/|$)"),  # Ordner "Plaene"/"Pläne"
-    re.compile(r"(?i)(grundriss|schnittplan|schnitt(?!stelle)|ansicht(?!skarte)|"
-               r"lageplan|detailplan|fassadenplan|aufriss)"),
+    re.compile(
+        r"(?i)(grundriss|schnittplan|schnitt(?!stelle)|ansicht(?!skarte)|"
+        r"lageplan|detailplan|fassadenplan|aufriss)"
+    ),
 ]
 
 
-def filter_pdfs(pdfs: list[dict],
-                skip_plans: bool = False,
-                skip_patterns: list[str] | None = None,
-                only_patterns: list[str] | None = None) -> tuple[list[dict], list[dict]]:
+def filter_pdfs(
+    pdfs: list[dict],
+    skip_plans: bool = False,
+    skip_patterns: list[str] | None = None,
+    only_patterns: list[str] | None = None,
+) -> tuple[list[dict], list[dict]]:
     """Filtert die PDF-Liste nach Plan-Status oder beliebigen Regex.
 
     Args:
@@ -68,10 +71,12 @@ def filter_pdfs(pdfs: list[dict],
     return kept, removed
 
 
-def scan_projects(projects_dir: Path = None,
-                  project_filter: str = None,
-                  convert_office: bool = False,
-                  convert_cache_dir: Path = None) -> list[dict]:
+def scan_projects(
+    projects_dir: Path = None,
+    project_filter: str = None,
+    convert_office: bool = False,
+    convert_cache_dir: Path = None,
+) -> list[dict]:
     """Scannt Projekt-Ordner rekursiv nach PDFs.
 
     Args:
@@ -108,13 +113,15 @@ def scan_projects(projects_dir: Path = None,
         if project_filter and project != project_filter:
             continue
 
-        pdfs.append({
-            "path": str(pdf_path),
-            "project": project,
-            "relative_path": str(rel),
-            "filename": pdf_path.name,
-            "size_kb": pdf_path.stat().st_size // 1024,
-        })
+        pdfs.append(
+            {
+                "path": str(pdf_path),
+                "project": project,
+                "relative_path": str(rel),
+                "filename": pdf_path.name,
+                "size_kb": pdf_path.stat().st_size // 1024,
+            }
+        )
 
     # Office-Dateien konvertieren und mit aufnehmen
     if convert_office:
@@ -125,12 +132,13 @@ def scan_projects(projects_dir: Path = None,
     return pdfs
 
 
-def _scan_office_files(base: Path, project_filter: str | None,
-                       cache_dir: Path) -> list[dict]:
+def _scan_office_files(base: Path, project_filter: str | None, cache_dir: Path) -> list[dict]:
     """Sucht docx/xlsx, konvertiert sie und gibt PDF-Eintraege zurueck."""
     from .office_converter import (
-        find_office_files, convert_to_pdf,
-        OfficeConverterUnavailable, detect_backend,
+        OfficeConverterUnavailable,
+        convert_to_pdf,
+        detect_backend,
+        find_office_files,
     )
 
     office_files = find_office_files(base, project_filter)
@@ -139,8 +147,10 @@ def _scan_office_files(base: Path, project_filter: str | None,
 
     backend = detect_backend()
     if backend is None:
-        print(f"  WARN: {len(office_files)} Office-Dateien gefunden, aber kein "
-              f"Konverter verfuegbar. Installiere LibreOffice oder MS Office.")
+        print(
+            f"  WARN: {len(office_files)} Office-Dateien gefunden, aber kein "
+            f"Konverter verfuegbar. Installiere LibreOffice oder MS Office."
+        )
         return []
 
     print(f"  Konvertiere {len(office_files)} Office-Dateien via {backend}...")
@@ -161,15 +171,17 @@ def _scan_office_files(base: Path, project_filter: str | None,
             continue
 
         # Eintrag sieht aus wie eine normale PDF, mit Hinweis auf Original
-        converted.append({
-            "path": str(dst),
-            "project": project,
-            "relative_path": str(rel.with_suffix(".pdf")),
-            "filename": dst.name,
-            "size_kb": dst.stat().st_size // 1024,
-            "source_path": str(src),
-            "source_format": src.suffix.lower().lstrip("."),
-        })
+        converted.append(
+            {
+                "path": str(dst),
+                "project": project,
+                "relative_path": str(rel.with_suffix(".pdf")),
+                "filename": dst.name,
+                "size_kb": dst.stat().st_size // 1024,
+                "source_path": str(src),
+                "source_format": src.suffix.lower().lstrip("."),
+            }
+        )
 
     print(f"  Konvertiert: {len(converted)}/{len(office_files)} Office-Dateien")
     return converted
@@ -185,11 +197,13 @@ def build_manifest(pdfs: list[dict]) -> dict:
     total_size = 0
     for pdf in pdfs:
         proj = pdf["project"]
-        projects.setdefault(proj, []).append({
-            "relative_path": pdf["relative_path"],
-            "filename": pdf["filename"],
-            "size_kb": pdf["size_kb"],
-        })
+        projects.setdefault(proj, []).append(
+            {
+                "relative_path": pdf["relative_path"],
+                "filename": pdf["filename"],
+                "size_kb": pdf["size_kb"],
+            }
+        )
         total_size += pdf["size_kb"]
 
     return {
@@ -201,13 +215,11 @@ def build_manifest(pdfs: list[dict]) -> dict:
 
 def save_manifest(manifest: dict, path: Path):
     """Speichert das Manifest als JSON."""
-    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
-                    encoding="utf-8")
+    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def print_manifest_summary(manifest: dict):
     """Gibt eine Übersicht des Manifests aus."""
-    print(f"\n  Gefunden: {manifest['total_pdfs']} PDFs "
-          f"({manifest['total_size_kb']} KB)")
+    print(f"\n  Gefunden: {manifest['total_pdfs']} PDFs ({manifest['total_size_kb']} KB)")
     for proj, files in manifest["projects"].items():
         print(f"    {proj}: {len(files)} Dateien")

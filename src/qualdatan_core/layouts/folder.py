@@ -21,9 +21,10 @@ ihre Layouts ueblicherweise aus YAML (siehe :func:`FolderLayout.from_dict`).
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +82,7 @@ class FolderLayout:
     office_exts: tuple[str, ...] = (".docx", ".doc", ".xlsx", ".xls")
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> "FolderLayout":
+    def from_dict(cls, data: Mapping[str, Any]) -> FolderLayout:
         """Instanziiert ein Layout aus einem (z.B. aus YAML geparsten) Dict.
 
         Unbekannte Felder werden ignoriert (Forward-Compat).
@@ -89,8 +90,11 @@ class FolderLayout:
 
         kwargs: dict[str, Any] = {}
         for key in (
-            "folder_prefix", "folder_pattern",
-            "interviews_subdir", "notes_subdir", "pdf_ext",
+            "folder_prefix",
+            "folder_pattern",
+            "interviews_subdir",
+            "notes_subdir",
+            "pdf_ext",
         ):
             if key in data:
                 kwargs[key] = data[key]
@@ -99,7 +103,7 @@ class FolderLayout:
                 kwargs[key] = tuple(data[key])
         return cls(**kwargs)
 
-    def with_overrides(self, **overrides: Any) -> "FolderLayout":
+    def with_overrides(self, **overrides: Any) -> FolderLayout:
         """Liefert eine Kopie mit ueberschriebenen Feldern."""
 
         return replace(self, **overrides)
@@ -266,21 +270,21 @@ def scan_subject(
 # umgestellt sind, exponieren wir die alten Namen weiter. Property-Aliase auf
 # Subject machen ``.projects`` / ``.sonstiges_path`` / ``.sonstiges_files``
 # transparent verfuegbar.
-def _projects_property(self: "Subject") -> list[SubjectFolder]:
+def _projects_property(self: Subject) -> list[SubjectFolder]:
     return self.folders
 
 
-def _sonstiges_path_property(self: "Subject") -> Path | None:
+def _sonstiges_path_property(self: Subject) -> Path | None:
     return self.notes_path
 
 
-def _sonstiges_files_property(self: "Subject") -> list[Path]:
+def _sonstiges_files_property(self: Subject) -> list[Path]:
     return self.notes_files
 
 
-Subject.projects = property(_projects_property)             # type: ignore[attr-defined]
-Subject.sonstiges_path = property(_sonstiges_path_property) # type: ignore[attr-defined]
-Subject.sonstiges_files = property(_sonstiges_files_property) # type: ignore[attr-defined]
+Subject.projects = property(_projects_property)  # type: ignore[attr-defined]
+Subject.sonstiges_path = property(_sonstiges_path_property)  # type: ignore[attr-defined]
+Subject.sonstiges_files = property(_sonstiges_files_property)  # type: ignore[attr-defined]
 
 Company = Subject
 CompanyProject = SubjectFolder

@@ -50,6 +50,8 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Getting Started: getting-started.md
   - Architecture: architecture.md
   - API Reference: api.md
+  - Roadmap: roadmap.md
   - Changelog: changelog.md

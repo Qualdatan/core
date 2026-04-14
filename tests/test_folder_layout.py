@@ -252,11 +252,13 @@ class TestFolderLayout:
         assert s.notes_path is not None and s.notes_path.name == "misc"
 
     def test_from_dict(self):
-        layout = FolderLayout.from_dict({
-            "folder_prefix": "case",
-            "interview_exts": [".mp3", ".wav"],
-            "unknown_field": "ignored",
-        })
+        layout = FolderLayout.from_dict(
+            {
+                "folder_prefix": "case",
+                "interview_exts": [".mp3", ".wav"],
+                "unknown_field": "ignored",
+            }
+        )
         assert layout.folder_prefix == "case"
         assert layout.interview_exts == (".mp3", ".wav")
         # defaults for unspecified fields

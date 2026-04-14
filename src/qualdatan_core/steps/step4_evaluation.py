@@ -2,8 +2,9 @@
 
 from collections import Counter, defaultdict
 from pathlib import Path
+
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 from ..models import AnalysisResult
 
@@ -13,8 +14,10 @@ def _apply_header_style(ws, row, max_col):
     header_font = Font(bold=True, color="FFFFFF", size=11)
     header_fill = PatternFill(start_color="2F5496", end_color="2F5496", fill_type="solid")
     thin_border = Border(
-        left=Side(style="thin"), right=Side(style="thin"),
-        top=Side(style="thin"), bottom=Side(style="thin"),
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
     )
     for col in range(1, max_col + 1):
         cell = ws.cell(row=row, column=col)
@@ -26,8 +29,10 @@ def _apply_header_style(ws, row, max_col):
 
 def _apply_data_border(ws, row, max_col):
     thin_border = Border(
-        left=Side(style="thin"), right=Side(style="thin"),
-        top=Side(style="thin"), bottom=Side(style="thin"),
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
     )
     for col in range(1, max_col + 1):
         ws.cell(row=row, column=col).border = thin_border
@@ -42,14 +47,14 @@ def generate_evaluation(result: AnalysisResult, output_path=None):
 
     # Dokument-IDs erstellen (I-01, I-02, ...)
     doc_names = sorted(result.documents.keys())
-    doc_ids = {name: f"I-{i+1:02d}" for i, name in enumerate(doc_names)}
+    doc_ids = {name: f"I-{i + 1:02d}" for i, name in enumerate(doc_names)}
     n_interviews = len(doc_names)
 
     # Segmente pro Kategorie und pro Dokument zählen
-    cat_counts = Counter()       # cat -> gesamt
+    cat_counts = Counter()  # cat -> gesamt
     cat_doc_counts = defaultdict(Counter)  # cat -> {doc -> count}
-    code_counts = Counter()      # code_id -> gesamt
-    code_doc_presence = defaultdict(set)   # code_id -> {doc1, doc2, ...}
+    code_counts = Counter()  # code_id -> gesamt
+    code_doc_presence = defaultdict(set)  # code_id -> {doc1, doc2, ...}
 
     for seg in result.segments:
         cat = seg.hauptkategorie
@@ -65,8 +70,12 @@ def generate_evaluation(result: AnalysisResult, output_path=None):
     ws1.title = "Häufigkeitstabelle"
 
     headers1 = [
-        "Hauptkategorie", "Bezeichnung", "Anzahl Codes gesamt",
-        "Ø Nennungen pro Interview", "Max. mögl. Nennungen", "Kodierquote %",
+        "Hauptkategorie",
+        "Bezeichnung",
+        "Anzahl Codes gesamt",
+        "Ø Nennungen pro Interview",
+        "Max. mögl. Nennungen",
+        "Kodierquote %",
     ]
     for col, h in enumerate(headers1, 1):
         ws1.cell(row=1, column=col, value=h)
@@ -87,7 +96,9 @@ def generate_evaluation(result: AnalysisResult, output_path=None):
         count = cat_counts.get(cat_key, 0)
         avg = round(count / n_interviews, 1) if n_interviews > 0 else 0
         # Max. mögliche = Codes in der Kategorie * Interviews
-        n_codes_in_cat = sum(1 for cid, info in result.codes.items() if info["hauptkategorie"] == cat_key)
+        n_codes_in_cat = sum(
+            1 for cid, info in result.codes.items() if info["hauptkategorie"] == cat_key
+        )
         max_possible = n_codes_in_cat * n_interviews if n_codes_in_cat > 0 else n_interviews
         quote = round((count / max_possible) * 100, 1) if max_possible > 0 else 0
 
@@ -175,4 +186,4 @@ def generate_evaluation(result: AnalysisResult, output_path=None):
 
     wb.save(output_path)
     print(f"  Auswertung gespeichert: {output_path}")
-    print(f"  3 Sheets: Häufigkeitstabelle, Top10_Einzelcodes, Kernergebnisse")
+    print("  3 Sheets: Häufigkeitstabelle, Top10_Einzelcodes, Kernergebnisse")

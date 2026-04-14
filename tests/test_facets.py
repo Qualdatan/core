@@ -78,12 +78,14 @@ class TestProtocolConformance:
             _ifc_facet(),
             _log_facet(),
             ActorRoleFacet(
-                id="roles", label="Rollen",
+                id="roles",
+                label="Rollen",
                 input_kinds=(Material.TEXT,),
                 codebook_contribution=(CodeContribution("ARCH", "Architekt"),),
             ),
             ProcessStepFacet(
-                id="steps", label="Schritte",
+                id="steps",
+                label="Schritte",
                 input_kinds=(Material.TEXT,),
                 codebook_contribution=(CodeContribution("PLAN", "Planung"),),
             ),
@@ -157,10 +159,12 @@ class TestParseResponse:
     def test_taxonomy_parses_strict(self):
         f = _ifc_facet()
         ctx = FacetContext(material="...", material_kind=Material.TEXT, source_label="page-1")
-        raw = json.dumps([
-            {"code_id": "IFC-WALL", "text": "Wand 1", "char_start": 0, "char_end": 6},
-            {"code_id": "IFC-SLAB", "text": "Decke", "char_start": 10, "char_end": 15},
-        ])
+        raw = json.dumps(
+            [
+                {"code_id": "IFC-WALL", "text": "Wand 1", "char_start": 0, "char_end": 6},
+                {"code_id": "IFC-SLAB", "text": "Decke", "char_start": 10, "char_end": 15},
+            ]
+        )
         out = f.parse_response(raw, ctx)
         assert [s.code_id for s in out] == ["IFC-WALL", "IFC-SLAB"]
         assert out[0].document == "page-1"
@@ -176,10 +180,17 @@ class TestParseResponse:
     def test_free_coding_accepts_unknown_code(self):
         f = FreeCodingFacet(id="open", label="Open", input_kinds=(Material.TEXT,))
         ctx = FacetContext(material="...", material_kind=Material.TEXT)
-        raw = json.dumps([{
-            "code_id": "EMERGENT-1", "code_label": "Emerging Concept",
-            "text": "x", "char_start": 0, "char_end": 1,
-        }])
+        raw = json.dumps(
+            [
+                {
+                    "code_id": "EMERGENT-1",
+                    "code_label": "Emerging Concept",
+                    "text": "x",
+                    "char_start": 0,
+                    "char_end": 1,
+                }
+            ]
+        )
         out = f.parse_response(raw, ctx)
         assert out[0].code_id == "EMERGENT-1"
         assert out[0].code_name == "Emerging Concept"
@@ -187,7 +198,7 @@ class TestParseResponse:
     def test_handles_json_in_code_fence(self):
         f = _ifc_facet()
         ctx = FacetContext(material="...", material_kind=Material.TEXT)
-        raw = "```json\n[{\"code_id\": \"IFC-WALL\", \"text\": \"x\", \"char_start\": 0, \"char_end\": 1}]\n```"
+        raw = '```json\n[{"code_id": "IFC-WALL", "text": "x", "char_start": 0, "char_end": 1}]\n```'
         out = f.parse_response(raw, ctx)
         assert out[0].code_id == "IFC-WALL"
 

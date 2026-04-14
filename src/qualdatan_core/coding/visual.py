@@ -14,41 +14,44 @@ Token-Budget wird in der Recipe konfiguriert (max_visual_tokens).
 
 import base64
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import fitz  # pymupdf
-
 
 # ---------------------------------------------------------------------------
 # Datenstrukturen
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class TriageResult:
     """Ergebnis der Thumbnail-Triage (Pass 1) fuer eine Seite."""
+
     page: int
-    page_type: str = ""           # floor_plan|section|elevation|site_plan|detail|schedule|photo|text
+    page_type: str = ""  # floor_plan|section|elevation|site_plan|detail|schedule|photo|text
     building_elements: list[str] = field(default_factory=list)
-    estimated_log: str = ""       # LOG-01 bis LOG-05
-    lph_evidence: str = ""        # z.B. "3-5"
-    priority: str = "skip"        # high|medium|low|skip
+    estimated_log: str = ""  # LOG-01 bis LOG-05
+    lph_evidence: str = ""  # z.B. "3-5"
+    priority: str = "skip"  # high|medium|low|skip
     description: str = ""
     confidence: float = 0.0
 
     def to_dict(self) -> dict:
+        """Shallow-dict fuer JSON-Serialisierung."""
         return asdict(self)
 
 
 @dataclass
 class ElementDetail:
     """Detail-Analyse eines Bauelements (Pass 2)."""
-    element_type: str = ""         # z.B. "Tragende Wand"
-    ifc_class: str = ""            # z.B. "IfcWall"
-    log_achieved: str = ""         # LOG-01 bis LOG-05
-    log_evidence: str = ""         # Begruendung
+
+    element_type: str = ""  # z.B. "Tragende Wand"
+    ifc_class: str = ""  # z.B. "IfcWall"
+    log_achieved: str = ""  # LOG-01 bis LOG-05
+    log_evidence: str = ""  # Begruendung
     visible_parameters: list[str] = field(default_factory=list)
-    region: str = ""               # center|top-left|...
+    region: str = ""  # center|top-left|...
     # Normalisierte Bounding-Box [x0, y0, x1, y1] in 0..1-Seitenkoordinaten,
     # Ursprung oben-links. None solange Pass 3 nicht lief oder das Element
     # nicht lokalisiert werden konnte.
@@ -58,6 +61,7 @@ class ElementDetail:
 @dataclass
 class DetailResult:
     """Ergebnis der Detail-Analyse (Pass 2) fuer eine Seite."""
+
     page: int
     building_elements: list[ElementDetail] = field(default_factory=list)
     annotations: list[str] = field(default_factory=list)
@@ -65,6 +69,7 @@ class DetailResult:
     description: str = ""
 
     def to_dict(self) -> dict:
+        """Shallow-dict fuer JSON-Serialisierung."""
         d = asdict(self)
         return d
 
@@ -72,6 +77,7 @@ class DetailResult:
 @dataclass
 class VisualAnalysisResult:
     """Gesamtergebnis der visuellen Analyse eines PDF-Dokuments."""
+
     file: str
     project: str
     page_count: int
@@ -80,6 +86,7 @@ class VisualAnalysisResult:
     token_usage: int = 0
 
     def to_dict(self) -> dict:
+        """Serialisierbare Form inklusive verschachtelter Triage/Details."""
         return {
             "file": self.file,
             "project": self.project,
@@ -148,13 +155,15 @@ class VisualAnalysisResult:
                 # Nur Triage-Daten: grobere Kodierungen
                 codes = _triage_to_codes(triage)
                 if codes:
-                    codings.append({
-                        "block_id": f"p{triage.page}_v{coding_idx}",
-                        "page": triage.page,
-                        "codes": codes,
-                        "description": triage.description,
-                        "source": "visual_triage",
-                    })
+                    codings.append(
+                        {
+                            "block_id": f"p{triage.page}_v{coding_idx}",
+                            "page": triage.page,
+                            "codes": codes,
+                            "description": triage.description,
+                            "source": "visual_triage",
+                        }
+                    )
                     coding_idx += 1
 
         return codings
@@ -166,24 +175,56 @@ class VisualAnalysisResult:
 
 # Bauelement-Typ -> O-Code Mapping
 _ELEMENT_CODE_MAP = {
-    "wand": "O-01", "waende": "O-01", "stuetze": "O-01", "stuetzen": "O-01",
-    "decke": "O-01", "decken": "O-01", "fundament": "O-01", "fundamente": "O-01",
-    "bodenplatte": "O-01", "tragend": "O-01",
-    "trennwand": "O-02", "trennwaende": "O-02", "bruestung": "O-02",
-    "nichttragend": "O-02", "leichtbauwand": "O-02",
-    "tuer": "O-03", "tueren": "O-03", "fenster": "O-03", "tor": "O-03",
-    "tore": "O-03", "oeffnung": "O-03", "oeffnungen": "O-03",
-    "treppe": "O-04", "treppen": "O-04", "rampe": "O-04", "rampen": "O-04",
+    "wand": "O-01",
+    "waende": "O-01",
+    "stuetze": "O-01",
+    "stuetzen": "O-01",
+    "decke": "O-01",
+    "decken": "O-01",
+    "fundament": "O-01",
+    "fundamente": "O-01",
+    "bodenplatte": "O-01",
+    "tragend": "O-01",
+    "trennwand": "O-02",
+    "trennwaende": "O-02",
+    "bruestung": "O-02",
+    "nichttragend": "O-02",
+    "leichtbauwand": "O-02",
+    "tuer": "O-03",
+    "tueren": "O-03",
+    "fenster": "O-03",
+    "tor": "O-03",
+    "tore": "O-03",
+    "oeffnung": "O-03",
+    "oeffnungen": "O-03",
+    "treppe": "O-04",
+    "treppen": "O-04",
+    "rampe": "O-04",
+    "rampen": "O-04",
     "aufzug": "O-04",
-    "dach": "O-05", "dachkonstruktion": "O-05", "sparren": "O-05",
-    "pfette": "O-05", "dachstuhl": "O-05",
-    "fassade": "O-06", "aussenhuelle": "O-06", "wdvs": "O-06",
-    "daemmung": "O-06", "verkleidung": "O-06",
-    "heizung": "O-07", "lueftung": "O-07", "sanitaer": "O-07",
-    "elektro": "O-07", "tga": "O-07", "haustechnik": "O-07",
-    "rohr": "O-07", "leitung": "O-07",
-    "gelaende": "O-08", "aussenanlage": "O-08", "aussenanlagen": "O-08",
-    "pflasterung": "O-08", "bepflanzung": "O-08",
+    "dach": "O-05",
+    "dachkonstruktion": "O-05",
+    "sparren": "O-05",
+    "pfette": "O-05",
+    "dachstuhl": "O-05",
+    "fassade": "O-06",
+    "aussenhuelle": "O-06",
+    "wdvs": "O-06",
+    "daemmung": "O-06",
+    "verkleidung": "O-06",
+    "heizung": "O-07",
+    "lueftung": "O-07",
+    "sanitaer": "O-07",
+    "elektro": "O-07",
+    "tga": "O-07",
+    "haustechnik": "O-07",
+    "rohr": "O-07",
+    "leitung": "O-07",
+    "gelaende": "O-08",
+    "aussenanlage": "O-08",
+    "aussenanlagen": "O-08",
+    "pflasterung": "O-08",
+    "bepflanzung": "O-08",
 }
 
 # Seitentyp -> P-Code Mapping
@@ -252,6 +293,7 @@ def _triage_to_codes(triage: TriageResult) -> list[str]:
 # ---------------------------------------------------------------------------
 # Thumbnail-Rendering
 # ---------------------------------------------------------------------------
+
 
 def render_page_thumbnail(page: fitz.Page, dpi: int = 72) -> str:
     """Rendert eine PDF-Seite als base64-encoded PNG.
@@ -331,11 +373,15 @@ Dach, Fassade, TGA (Heizung/Lueftung/Sanitaer), Aussenanlagen, etc.
 Sei praezise und konsistent. Wenn du dir unsicher bist, setze confidence < 0.7."""
 
 
-def run_triage(doc: fitz.Document, page_indices: list[int] = None,
-               client=None, model: str = "claude-haiku-4-5-20251001",
-               batch_size: int = 15,
-               cache_dir: Path = None,
-               cache_key: str = "") -> list[TriageResult]:
+def run_triage(
+    doc: fitz.Document,
+    page_indices: list[int] = None,
+    client=None,
+    model: str = "claude-haiku-4-5-20251001",
+    batch_size: int = 15,
+    cache_dir: Path = None,
+    cache_key: str = "",
+) -> list[TriageResult]:
     """Pass 1: Thumbnail-Triage fuer alle Planseiten.
 
     Args:
@@ -351,6 +397,7 @@ def run_triage(doc: fitz.Document, page_indices: list[int] = None,
         Liste von TriageResult
     """
     from anthropic import Anthropic
+
     from ..steps.step1_analyze import extract_json
 
     if client is None:
@@ -375,7 +422,7 @@ def run_triage(doc: fitz.Document, page_indices: list[int] = None,
     total_tokens = 0
 
     for batch_start in range(0, len(page_indices), batch_size):
-        batch = page_indices[batch_start:batch_start + batch_size]
+        batch = page_indices[batch_start : batch_start + batch_size]
         page_numbers = [i + 1 for i in batch]
 
         # Thumbnails rendern
@@ -383,14 +430,16 @@ def run_triage(doc: fitz.Document, page_indices: list[int] = None,
         for idx in batch:
             b64 = render_page_thumbnail(doc[idx], dpi=72)
             total_tokens += estimate_image_tokens(b64)
-            content.append({
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": "image/png",
-                    "data": b64,
-                },
-            })
+            content.append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/png",
+                        "data": b64,
+                    },
+                }
+            )
 
         page_list = ", ".join(str(p) for p in page_numbers)
         prompt = TRIAGE_PROMPT.replace("{page_list}", page_list)
@@ -422,16 +471,18 @@ def run_triage(doc: fitz.Document, page_indices: list[int] = None,
             page_num = item.get("page", 0)
             if page_num < 1:
                 continue
-            results.append(TriageResult(
-                page=page_num,
-                page_type=item.get("page_type", ""),
-                building_elements=item.get("building_elements", []),
-                estimated_log=item.get("estimated_log", ""),
-                lph_evidence=item.get("lph_evidence", ""),
-                priority=item.get("priority", "low"),
-                description=item.get("description", ""),
-                confidence=item.get("confidence", 0.7),
-            ))
+            results.append(
+                TriageResult(
+                    page=page_num,
+                    page_type=item.get("page_type", ""),
+                    building_elements=item.get("building_elements", []),
+                    estimated_log=item.get("estimated_log", ""),
+                    lph_evidence=item.get("lph_evidence", ""),
+                    priority=item.get("priority", "low"),
+                    description=item.get("description", ""),
+                    confidence=item.get("confidence", 0.7),
+                )
+            )
 
     # Cachen
     if cache_dir and cache_key:
@@ -491,11 +542,15 @@ Wanddicke, Raumhoehe, Flaeche, Material, U-Wert, Tuermass, Fenstermass, etc.
 Sei gruendlich aber praezise. Nur Elemente nennen die tatsaechlich sichtbar sind."""
 
 
-def run_detail_analysis(doc: fitz.Document, triage_results: list[TriageResult],
-                        client=None, model: str = "claude-sonnet-4-20250514",
-                        max_tokens_budget: int = 500000,
-                        cache_dir: Path = None,
-                        cache_key: str = "") -> list[DetailResult]:
+def run_detail_analysis(
+    doc: fitz.Document,
+    triage_results: list[TriageResult],
+    client=None,
+    model: str = "claude-sonnet-4-20250514",
+    max_tokens_budget: int = 500000,
+    cache_dir: Path = None,
+    cache_key: str = "",
+) -> list[DetailResult]:
     """Pass 2: Detail-Analyse fuer high/medium-priority Seiten.
 
     Args:
@@ -511,6 +566,7 @@ def run_detail_analysis(doc: fitz.Document, triage_results: list[TriageResult],
         Liste von DetailResult
     """
     from anthropic import Anthropic
+
     from ..steps.step1_analyze import extract_json
 
     if client is None:
@@ -530,10 +586,7 @@ def run_detail_analysis(doc: fitz.Document, triage_results: list[TriageResult],
 
     # Nur high/medium Seiten, high zuerst
     priority_order = {"high": 0, "medium": 1}
-    candidates = [
-        t for t in triage_results
-        if t.priority in ("high", "medium")
-    ]
+    candidates = [t for t in triage_results if t.priority in ("high", "medium")]
     candidates.sort(key=lambda t: priority_order.get(t.priority, 2))
 
     results = []
@@ -568,8 +621,10 @@ def run_detail_analysis(doc: fitz.Document, triage_results: list[TriageResult],
             {"type": "text", "text": prompt},
         ]
 
-        print(f"    Detail-Analyse: Seite {triage.page} "
-              f"(priority={triage.priority}, ~{img_tokens} img-tokens)")
+        print(
+            f"    Detail-Analyse: Seite {triage.page} "
+            f"(priority={triage.priority}, ~{img_tokens} img-tokens)"
+        )
 
         response = client.messages.create(
             model=model,
@@ -585,23 +640,27 @@ def run_detail_analysis(doc: fitz.Document, triage_results: list[TriageResult],
 
         elements = []
         for elem_data in data.get("building_elements", []):
-            elements.append(ElementDetail(
-                element_type=elem_data.get("element_type", ""),
-                ifc_class=elem_data.get("ifc_class", ""),
-                log_achieved=elem_data.get("log_achieved", ""),
-                log_evidence=elem_data.get("log_evidence", ""),
-                visible_parameters=elem_data.get("visible_parameters", []),
-                region=elem_data.get("region", ""),
-                bbox=None,  # wird erst in Pass 3 gefuellt
-            ))
+            elements.append(
+                ElementDetail(
+                    element_type=elem_data.get("element_type", ""),
+                    ifc_class=elem_data.get("ifc_class", ""),
+                    log_achieved=elem_data.get("log_achieved", ""),
+                    log_evidence=elem_data.get("log_evidence", ""),
+                    visible_parameters=elem_data.get("visible_parameters", []),
+                    region=elem_data.get("region", ""),
+                    bbox=None,  # wird erst in Pass 3 gefuellt
+                )
+            )
 
-        results.append(DetailResult(
-            page=triage.page,
-            building_elements=elements,
-            annotations=data.get("annotations", []),
-            cross_references=data.get("cross_references", []),
-            description=data.get("description", ""),
-        ))
+        results.append(
+            DetailResult(
+                page=triage.page,
+                building_elements=elements,
+                annotations=data.get("annotations", []),
+                cross_references=data.get("cross_references", []),
+                description=data.get("description", ""),
+            )
+        )
 
     # Cachen
     if cache_dir and cache_key:
@@ -720,6 +779,7 @@ def run_localisation(
         (aktualisierte detail_results mit bbox-Feldern, total_tokens)
     """
     from anthropic import Anthropic
+
     from ..steps.step1_analyze import extract_json
 
     if client is None:
@@ -743,11 +803,9 @@ def run_localisation(
     for detail in detail_results:
         if tokens_used >= max_tokens_budget:
             remaining = sum(
-                1 for d in detail_results
-                if d.page >= detail.page and d.building_elements
+                1 for d in detail_results if d.page >= detail.page and d.building_elements
             )
-            print(f"    Token-Budget (Pass 3) erreicht. "
-                  f"{remaining} Seiten ohne Lokalisierung.")
+            print(f"    Token-Budget (Pass 3) erreicht. {remaining} Seiten ohne Lokalisierung.")
             break
 
         if not detail.building_elements:
@@ -778,9 +836,11 @@ def run_localisation(
             {"type": "text", "text": prompt},
         ]
 
-        print(f"    Localisation: Seite {detail.page} "
-              f"({len(detail.building_elements)} Elemente, "
-              f"~{img_tokens} img-tokens)")
+        print(
+            f"    Localisation: Seite {detail.page} "
+            f"({len(detail.building_elements)} Elemente, "
+            f"~{img_tokens} img-tokens)"
+        )
 
         response = client.messages.create(
             model=model,
@@ -804,7 +864,7 @@ def run_localisation(
 
         items = data.get("elements", [])
         if not isinstance(items, list):
-            print(f"      'elements' ist keine Liste, ignoriere.")
+            print("      'elements' ist keine Liste, ignoriere.")
             continue
 
         for item in items:
@@ -844,14 +904,18 @@ def run_localisation(
 # Hauptfunktion: Analyse eines PDFs
 # ---------------------------------------------------------------------------
 
-def analyze_visual_pdf(pdf_path: str | Path, project: str = "",
-                       client=None,
-                       triage_model: str = "claude-haiku-4-5-20251001",
-                       detail_model: str = "claude-sonnet-4-20250514",
-                       max_visual_tokens: int = 500000,
-                       skip_detail: bool = False,
-                       skip_localisation: bool = False,
-                       cache_dir: Path = None) -> VisualAnalysisResult:
+
+def analyze_visual_pdf(
+    pdf_path: str | Path,
+    project: str = "",
+    client=None,
+    triage_model: str = "claude-haiku-4-5-20251001",
+    detail_model: str = "claude-sonnet-4-20250514",
+    max_visual_tokens: int = 500000,
+    skip_detail: bool = False,
+    skip_localisation: bool = False,
+    cache_dir: Path = None,
+) -> VisualAnalysisResult:
     """Fuehrt die vollstaendige visuelle Analyse eines PDFs durch.
 
     Args:
@@ -876,16 +940,21 @@ def analyze_visual_pdf(pdf_path: str | Path, project: str = "",
     # Pass 1: Triage
     print(f"\n  Pass 1 (Triage): {pdf_path.name}")
     triage_results = run_triage(
-        doc, client=client, model=triage_model,
-        cache_dir=cache_dir, cache_key=cache_key,
+        doc,
+        client=client,
+        model=triage_model,
+        cache_dir=cache_dir,
+        cache_key=cache_key,
     )
 
     # Statistik
     priority_counts = {}
     for t in triage_results:
         priority_counts[t.priority] = priority_counts.get(t.priority, 0) + 1
-    print(f"    Triage: {len(triage_results)} Seiten — "
-          + ", ".join(f"{v}x {k}" for k, v in sorted(priority_counts.items())))
+    print(
+        f"    Triage: {len(triage_results)} Seiten — "
+        + ", ".join(f"{v}x {k}" for k, v in sorted(priority_counts.items()))
+    )
 
     # Pass 2: Detail (optional)
     detail_results = []
@@ -895,13 +964,16 @@ def analyze_visual_pdf(pdf_path: str | Path, project: str = "",
         if high_medium:
             print(f"  Pass 2 (Detail): {len(high_medium)} Seiten")
             detail_results, detail_tokens = run_detail_analysis(
-                doc, triage_results, client=client, model=detail_model,
+                doc,
+                triage_results,
+                client=client,
+                model=detail_model,
                 max_tokens_budget=max_visual_tokens,
-                cache_dir=cache_dir, cache_key=cache_key,
+                cache_dir=cache_dir,
+                cache_key=cache_key,
             )
             total_tokens += detail_tokens
-            print(f"    Detail: {len(detail_results)} Seiten analysiert, "
-                  f"{detail_tokens:,} Token")
+            print(f"    Detail: {len(detail_results)} Seiten analysiert, {detail_tokens:,} Token")
 
             # Pass 3: Localisation (Bounding-Boxen)
             if not skip_localisation and detail_results:
@@ -909,21 +981,24 @@ def analyze_visual_pdf(pdf_path: str | Path, project: str = "",
                 if remaining_budget > 0:
                     print(f"  Pass 3 (Localisation): {len(detail_results)} Seiten")
                     detail_results, loc_tokens = run_localisation(
-                        doc, detail_results, client=client, model=detail_model,
+                        doc,
+                        detail_results,
+                        client=client,
+                        model=detail_model,
                         max_tokens_budget=remaining_budget,
-                        cache_dir=cache_dir, cache_key=cache_key,
+                        cache_dir=cache_dir,
+                        cache_key=cache_key,
                     )
                     total_tokens += loc_tokens
                     localised = sum(
-                        1 for d in detail_results
-                        for e in d.building_elements
-                        if e.bbox is not None
+                        1 for d in detail_results for e in d.building_elements if e.bbox is not None
                     )
-                    print(f"    Pass 3 (Localisation): {localised} Elemente "
-                          f"lokalisiert, {loc_tokens:,} Token")
+                    print(
+                        f"    Pass 3 (Localisation): {localised} Elemente "
+                        f"lokalisiert, {loc_tokens:,} Token"
+                    )
                 else:
-                    print(f"    Pass 3 (Localisation): uebersprungen "
-                          f"(Token-Budget erschoepft)")
+                    print("    Pass 3 (Localisation): uebersprungen (Token-Budget erschoepft)")
 
     doc.close()
 
@@ -941,13 +1016,17 @@ def analyze_visual_pdf(pdf_path: str | Path, project: str = "",
 # Batch-Analyse (fuer ganze Projekte)
 # ---------------------------------------------------------------------------
 
-def analyze_visual_pdfs(pdfs: list[dict], client=None,
-                        triage_model: str = "claude-haiku-4-5-20251001",
-                        detail_model: str = "claude-sonnet-4-20250514",
-                        max_visual_tokens: int = 500000,
-                        skip_detail: bool = False,
-                        skip_localisation: bool = False,
-                        cache_dir: Path = None) -> list[VisualAnalysisResult]:
+
+def analyze_visual_pdfs(
+    pdfs: list[dict],
+    client=None,
+    triage_model: str = "claude-haiku-4-5-20251001",
+    detail_model: str = "claude-sonnet-4-20250514",
+    max_visual_tokens: int = 500000,
+    skip_detail: bool = False,
+    skip_localisation: bool = False,
+    cache_dir: Path = None,
+) -> list[VisualAnalysisResult]:
     """Analysiert mehrere Plan/Foto-PDFs visuell.
 
     Args:
@@ -973,7 +1052,8 @@ def analyze_visual_pdfs(pdfs: list[dict], client=None,
 
     for pdf in pdfs:
         result = analyze_visual_pdf(
-            pdf["path"], project=pdf.get("project", ""),
+            pdf["path"],
+            project=pdf.get("project", ""),
             client=client,
             triage_model=triage_model,
             detail_model=detail_model,
@@ -998,9 +1078,7 @@ def print_visual_summary(results: list[VisualAnalysisResult]):
     total_pages = sum(r.page_count for r in results)
     total_detail = sum(len(r.details) for r in results)
     total_tokens = sum(r.token_usage for r in results)
-    total_elements = sum(
-        len(d.building_elements) for r in results for d in r.details
-    )
+    total_elements = sum(len(d.building_elements) for r in results for d in r.details)
 
     print(f"\n  Visuelle Analyse: {len(results)} PDFs, {total_pages} Seiten")
     print(f"    Detail-Analysen: {total_detail} Seiten")
@@ -1011,6 +1089,7 @@ def print_visual_summary(results: list[VisualAnalysisResult]):
 # ---------------------------------------------------------------------------
 # Hilfsfunktionen
 # ---------------------------------------------------------------------------
+
 
 def _safe_key(path: str) -> str:
     return path.replace("/", "__").replace("\\", "__").replace(" ", "_")
@@ -1035,15 +1114,17 @@ def _detail_from_dict(d: dict) -> DetailResult:
         bbox = e.get("bbox")
         # Nur valide bboxes uebernehmen - so ueberleben Cache-Korruptionen nicht
         # als "falsche" Koordinaten. Ungueltige werden still auf None gesetzt.
-        elements.append(ElementDetail(
-            element_type=e.get("element_type", ""),
-            ifc_class=e.get("ifc_class", ""),
-            log_achieved=e.get("log_achieved", ""),
-            log_evidence=e.get("log_evidence", ""),
-            visible_parameters=e.get("visible_parameters", []),
-            region=e.get("region", ""),
-            bbox=list(bbox) if _is_valid_bbox(bbox) else None,
-        ))
+        elements.append(
+            ElementDetail(
+                element_type=e.get("element_type", ""),
+                ifc_class=e.get("ifc_class", ""),
+                log_achieved=e.get("log_achieved", ""),
+                log_evidence=e.get("log_evidence", ""),
+                visible_parameters=e.get("visible_parameters", []),
+                region=e.get("region", ""),
+                bbox=list(bbox) if _is_valid_bbox(bbox) else None,
+            )
+        )
     return DetailResult(
         page=d["page"],
         building_elements=elements,

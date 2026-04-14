@@ -9,12 +9,15 @@ Kann:
 
 import uuid
 import zipfile
-from pathlib import Path
-from xml.etree.ElementTree import (
-    Element, SubElement, tostring, fromstring,
-)
-from xml.dom import minidom
 from datetime import datetime
+from pathlib import Path
+from xml.dom import minidom
+from xml.etree.ElementTree import (
+    Element,
+    SubElement,
+    fromstring,
+    tostring,
+)
 
 
 def _uuid() -> str:
@@ -30,6 +33,7 @@ def _pretty_xml(elem: Element) -> bytes:
 # ---------------------------------------------------------------------------
 # QDPX lesen
 # ---------------------------------------------------------------------------
+
 
 def read_qdpx(qdpx_path: Path) -> tuple[Element, dict[str, bytes]]:
     """Liest eine .qdpx-Datei und gibt XML-Root + eingebettete Dateien zurück.
@@ -77,7 +81,6 @@ def extract_codesystem(project: Element) -> tuple[dict, dict]:
 
     for cat_elem in codes_elem.findall(f"{ns}Code"):
         cat_full_name = cat_elem.get("name", "")
-        cat_guid = cat_elem.get("guid", "")
 
         # Parse "A: Projektakquise" → key="A", name="Projektakquise"
         if ": " in cat_full_name:
@@ -118,20 +121,36 @@ def extract_codesystem(project: Element) -> tuple[dict, dict]:
 
 # Farben für Kategorien
 CATEGORY_COLORS = {
-    "A": "#FF6B6B", "B": "#4ECDC4", "C": "#45B7D1",
-    "D": "#96CEB4", "E": "#FFEAA7", "F": "#DDA0DD",
-    "G": "#98D8C8", "H": "#F7DC6F", "I": "#BB8FCE",
-    "J": "#85C1E9", "K": "#F0B27A", "L": "#E8DAEF",
-    "M": "#A3E4D7", "N": "#F5CBA7", "O": "#AED6F1",
-    "P": "#D5DBDB", "Q": "#F9E79F",
+    "A": "#FF6B6B",
+    "B": "#4ECDC4",
+    "C": "#45B7D1",
+    "D": "#96CEB4",
+    "E": "#FFEAA7",
+    "F": "#DDA0DD",
+    "G": "#98D8C8",
+    "H": "#F7DC6F",
+    "I": "#BB8FCE",
+    "J": "#85C1E9",
+    "K": "#F0B27A",
+    "L": "#E8DAEF",
+    "M": "#A3E4D7",
+    "N": "#F5CBA7",
+    "O": "#AED6F1",
+    "P": "#D5DBDB",
+    "Q": "#F9E79F",
 }
 
 
-def _find_or_create_code(codes_elem, cat_key: str, cat_name: str,
-                         code_id: str, code_name: str,
-                         definition: str = "",
-                         existing_codes: dict = None,
-                         ns: str = "") -> str:
+def _find_or_create_code(
+    codes_elem,
+    cat_key: str,
+    cat_name: str,
+    code_id: str,
+    code_name: str,
+    definition: str = "",
+    existing_codes: dict = None,
+    ns: str = "",
+) -> str:
     """Findet oder erstellt einen Code im CodeBook. Gibt die GUID zurück."""
     # Prüfe ob Code schon existiert
     if existing_codes and code_id in existing_codes:
@@ -171,9 +190,12 @@ def _find_or_create_code(codes_elem, cat_key: str, cat_name: str,
     return code_guid
 
 
-def add_pdf_sources(project: Element, pdf_results: list[dict],
-                    existing_codes: dict = None,
-                    recipe_categories: dict = None) -> dict[str, str]:
+def add_pdf_sources(
+    project: Element,
+    pdf_results: list[dict],
+    existing_codes: dict = None,
+    recipe_categories: dict = None,
+) -> dict[str, str]:
     """Fügt PDF-Quellen mit Kodierungen zum Projekt hinzu.
 
     Args:
@@ -230,10 +252,14 @@ def add_pdf_sources(project: Element, pdf_results: list[dict],
             new_categories.setdefault(cat_key, cat_name)
 
             guid = _find_or_create_code(
-                codes_elem, cat_key, new_categories[cat_key],
-                code_id, new_code["code_name"],
+                codes_elem,
+                cat_key,
+                new_categories[cat_key],
+                code_id,
+                new_code["code_name"],
                 new_code.get("kodierdefinition", ""),
-                existing_codes, ns,
+                existing_codes,
+                ns,
             )
             code_guids[code_id] = guid
 
@@ -250,10 +276,14 @@ def add_pdf_sources(project: Element, pdf_results: list[dict],
                 cat_key = code_id.split("-")[0] if "-" in code_id else "Z"
                 cat_name = recipe_categories.get(cat_key, f"Kategorie {cat_key}")
                 guid = _find_or_create_code(
-                    codes_elem, cat_key, cat_name,
-                    code_id, code_id,  # Kein expliziter Name -> code_id als Name
+                    codes_elem,
+                    cat_key,
+                    cat_name,
+                    code_id,
+                    code_id,  # Kein expliziter Name -> code_id als Name
                     "",  # Keine Definition
-                    existing_codes, ns,
+                    existing_codes,
+                    ns,
                 )
                 code_guids[code_id] = guid
 
@@ -331,8 +361,9 @@ def add_pdf_sources(project: Element, pdf_results: list[dict],
     return code_guids
 
 
-def add_visual_sources(project: Element, visual_results: list[dict],
-                       existing_codes: dict = None) -> dict[str, str]:
+def add_visual_sources(
+    project: Element, visual_results: list[dict], existing_codes: dict = None
+) -> dict[str, str]:
     """Fuegt visuelle Kodierungen (Plaene/Fotos) als PDFSource hinzu.
 
     Visuelle Kodierungen unterscheiden sich von Text-Kodierungen:
@@ -414,9 +445,14 @@ def add_visual_sources(project: Element, visual_results: list[dict],
         cat_key = code_id.split("-")[0]
         cat_name = _VISUAL_CATEGORIES.get(cat_key, cat_key)
         guid = _find_or_create_code(
-            codes_elem, cat_key, cat_name,
-            code_id, code_name, definition,
-            existing_codes, ns,
+            codes_elem,
+            cat_key,
+            cat_name,
+            code_id,
+            code_name,
+            definition,
+            existing_codes,
+            ns,
         )
         code_guids[code_id] = guid
 
@@ -496,9 +532,13 @@ def add_visual_sources(project: Element, visual_results: list[dict],
 # QDPX schreiben
 # ---------------------------------------------------------------------------
 
-def write_qdpx(project: Element, output_path: Path,
-               existing_sources: dict[str, bytes] = None,
-               pdf_files: dict[str, Path] = None):
+
+def write_qdpx(
+    project: Element,
+    output_path: Path,
+    existing_sources: dict[str, bytes] = None,
+    pdf_files: dict[str, Path] = None,
+):
     """Schreibt die erweiterte .qdpx-Datei.
 
     Args:

@@ -6,6 +6,7 @@ Curation-Bootstrap) ihre Materials in die App-DB spiegeln, wenn der
 RunContext an eine App-DB angebunden ist — und ohne Attach bit-identisch
 mit dem Legacy-Verhalten bleiben (kein Crash, keine Writes).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -103,8 +104,7 @@ class TestMirrorPdfs:
 
     def test_unattached_is_noop(self, run_dir):
         ctx = RunContext(run_dir)
-        pdfs = [{"path": "/x.pdf", "relative_path": "x.pdf", "project": "P",
-                 "filename": "x.pdf"}]
+        pdfs = [{"path": "/x.pdf", "relative_path": "x.pdf", "project": "P", "filename": "x.pdf"}]
         assert _mirror_pdfs(pdfs, ctx) == 0
 
 

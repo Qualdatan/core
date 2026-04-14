@@ -36,9 +36,7 @@ def project(db):
 # ---------------------------------------------------------------------------
 class TestResolveColor:
     def test_run_config_wins(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", color_override="#AAAAAA"
-        )
+        upsert_codebook_entry(db, project.id, "A-01", color_override="#AAAAAA")
         run_config = {"codes": {"A-01": {"color": "#111111"}}}
         result = resolve_color(
             "A-01",
@@ -50,9 +48,7 @@ class TestResolveColor:
         assert result == "#111111"
 
     def test_db_override_wins_over_bundle(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", color_override="#AAAAAA"
-        )
+        upsert_codebook_entry(db, project.id, "A-01", color_override="#AAAAAA")
         result = resolve_color(
             "A-01",
             project_id=project.id,
@@ -82,9 +78,7 @@ class TestResolveColor:
 # ---------------------------------------------------------------------------
 class TestResolveLabel:
     def test_run_config_wins(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", label_override="DB Label"
-        )
+        upsert_codebook_entry(db, project.id, "A-01", label_override="DB Label")
         run_config = {"codes": {"A-01": {"label": "Run Label"}}}
         result = resolve_label(
             "A-01",
@@ -96,9 +90,7 @@ class TestResolveLabel:
         assert result == "Run Label"
 
     def test_db_override_wins_over_bundle(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", label_override="DB Label"
-        )
+        upsert_codebook_entry(db, project.id, "A-01", label_override="DB Label")
         result = resolve_label(
             "A-01",
             project_id=project.id,
@@ -125,9 +117,7 @@ class TestResolveLabel:
 # ---------------------------------------------------------------------------
 class TestResolveDefinition:
     def test_run_config_wins(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", definition_override="DB Def"
-        )
+        upsert_codebook_entry(db, project.id, "A-01", definition_override="DB Def")
         run_config = {"codes": {"A-01": {"definition": "Run Def"}}}
         result = resolve_definition(
             "A-01",
@@ -139,9 +129,7 @@ class TestResolveDefinition:
         assert result == "Run Def"
 
     def test_db_override_wins_over_bundle(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", definition_override="DB Def"
-        )
+        upsert_codebook_entry(db, project.id, "A-01", definition_override="DB Def")
         result = resolve_definition(
             "A-01",
             project_id=project.id,
@@ -168,9 +156,7 @@ class TestResolveDefinition:
 # ---------------------------------------------------------------------------
 class TestResolveExamples:
     def test_run_config_wins(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", examples_override=["db1", "db2"]
-        )
+        upsert_codebook_entry(db, project.id, "A-01", examples_override=["db1", "db2"])
         run_config = {"codes": {"A-01": {"examples": ["run1"]}}}
         result = resolve_examples(
             "A-01",
@@ -182,9 +168,7 @@ class TestResolveExamples:
         assert result == ["run1"]
 
     def test_db_override_wins_over_bundle(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", examples_override=["db1", "db2"]
-        )
+        upsert_codebook_entry(db, project.id, "A-01", examples_override=["db1", "db2"])
         result = resolve_examples(
             "A-01",
             project_id=project.id,
@@ -212,9 +196,7 @@ class TestResolveExamples:
 class TestSkipLogic:
     def test_project_id_none_skips_db_lookup(self, db, project):
         # DB has override — but project_id=None must skip it.
-        upsert_codebook_entry(
-            db, project.id, "A-01", label_override="DB Label"
-        )
+        upsert_codebook_entry(db, project.id, "A-01", label_override="DB Label")
         result = resolve_label(
             "A-01",
             project_id=None,
@@ -224,9 +206,7 @@ class TestSkipLogic:
         assert result == "Bundle Label"
 
     def test_app_db_none_skips_db_lookup(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", label_override="DB Label"
-        )
+        upsert_codebook_entry(db, project.id, "A-01", label_override="DB Label")
         result = resolve_label(
             "A-01",
             project_id=project.id,
@@ -236,9 +216,7 @@ class TestSkipLogic:
         assert result == "Bundle Label"
 
     def test_run_config_none_skips_run_lookup(self, db, project):
-        upsert_codebook_entry(
-            db, project.id, "A-01", label_override="DB Label"
-        )
+        upsert_codebook_entry(db, project.id, "A-01", label_override="DB Label")
         result = resolve_label(
             "A-01",
             project_id=project.id,

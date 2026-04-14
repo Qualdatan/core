@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 from ..models import AnalysisResult
 
@@ -32,8 +32,12 @@ def generate_codebook(result: AnalysisResult, output_path=None):
 
     # Header
     headers = [
-        "Code-ID", "Code-Name", "Hauptkategorie",
-        "Kodierdefinition", "Ankerbeispiel", "Abgrenzungsregel",
+        "Code-ID",
+        "Code-Name",
+        "Hauptkategorie",
+        "Kodierdefinition",
+        "Ankerbeispiel",
+        "Abgrenzungsregel",
     ]
     for col, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=h)

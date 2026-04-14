@@ -2,6 +2,7 @@
 
 import json
 import threading
+
 import pytest
 
 from qualdatan_core.db import PipelineDB
@@ -16,6 +17,7 @@ def db(tmp_path):
 # ---------------------------------------------------------------------------
 # Schema + Grundlagen
 # ---------------------------------------------------------------------------
+
 
 class TestDBBasics:
     def test_create_db(self, tmp_path):
@@ -36,6 +38,7 @@ class TestDBBasics:
 # ---------------------------------------------------------------------------
 # Run State
 # ---------------------------------------------------------------------------
+
 
 class TestRunState:
     def test_set_and_get_state(self, db):
@@ -67,10 +70,12 @@ class TestRunState:
 # PDF Documents
 # ---------------------------------------------------------------------------
 
+
 class TestPDFDocuments:
     def test_upsert_pdf(self, db):
-        pid = db.upsert_pdf("Projekt_A", "plan.pdf", "Projekt_A/plan.pdf",
-                            "/path/to/plan.pdf", file_size_kb=100)
+        pid = db.upsert_pdf(
+            "Projekt_A", "plan.pdf", "Projekt_A/plan.pdf", "/path/to/plan.pdf", file_size_kb=100
+        )
         assert pid > 0
 
     def test_upsert_returns_same_id(self, db):
@@ -107,6 +112,7 @@ class TestPDFDocuments:
 # ---------------------------------------------------------------------------
 # Pipeline Status
 # ---------------------------------------------------------------------------
+
 
 class TestPipelineStatus:
     def test_set_and_check_status(self, db):
@@ -151,14 +157,13 @@ class TestPipelineStatus:
 # Extractions
 # ---------------------------------------------------------------------------
 
+
 class TestExtractions:
     def test_save_and_load(self, db):
         pid = db.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
         data = {
             "file": "a.pdf",
-            "pages": [
-                {"page": 1, "blocks": [{"id": "p1_b0", "type": "text", "text": "Hello"}]}
-            ],
+            "pages": [{"page": 1, "blocks": [{"id": "p1_b0", "type": "text", "text": "Hello"}]}],
             "metadata": {"page_count": 1},
         }
         db.save_extraction(pid, data)
@@ -181,14 +186,20 @@ class TestExtractions:
 # Page Metrics + Classifications
 # ---------------------------------------------------------------------------
 
+
 class TestMetricsAndClassifications:
     def test_save_page_metrics(self, db):
         pid = db.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
         metrics = {
-            "text_coverage": 0.5, "image_coverage": 0.1,
-            "text_char_count": 500, "drawing_count": 10,
-            "aspect_ratio": 1.41, "is_landscape": True,
-            "page_format": "A3", "page_width": 1190, "page_height": 842,
+            "text_coverage": 0.5,
+            "image_coverage": 0.1,
+            "text_char_count": 500,
+            "drawing_count": 10,
+            "aspect_ratio": 1.41,
+            "is_landscape": True,
+            "page_format": "A3",
+            "page_width": 1190,
+            "page_height": 842,
         }
         db.save_page_metrics(pid, 1, metrics)
 
@@ -202,9 +213,15 @@ class TestMetricsAndClassifications:
 
     def test_save_classification(self, db):
         pid = db.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
-        db.save_classification(pid, 1, "plan", 0.85, "floor_plan",
-                               has_title_block=True,
-                               title_block={"massstab": "1:100"})
+        db.save_classification(
+            pid,
+            1,
+            "plan",
+            0.85,
+            "floor_plan",
+            has_title_block=True,
+            title_block={"massstab": "1:100"},
+        )
         result = db.get_classifications(pid)
         assert len(result) == 1
         assert result[0]["page_type"] == "plan"
@@ -217,11 +234,11 @@ class TestMetricsAndClassifications:
 # Codings
 # ---------------------------------------------------------------------------
 
+
 class TestCodings:
     def test_save_coding(self, db):
         pid = db.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
-        cid = db.save_coding(pid, 1, "p1_b0", ["A-01", "B-02"],
-                             source="text", begruendung="Test")
+        cid = db.save_coding(pid, 1, "p1_b0", ["A-01", "B-02"], source="text", begruendung="Test")
         assert cid > 0
 
     def test_get_codings_for_pdf(self, db):
@@ -246,9 +263,12 @@ class TestCodings:
 
     def test_save_neue_codes(self, db):
         pid = db.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
-        db.save_neue_codes([
-            {"code_id": "L-01", "code_name": "Test", "hauptkategorie": "L"},
-        ], pdf_id=pid)
+        db.save_neue_codes(
+            [
+                {"code_id": "L-01", "code_name": "Test", "hauptkategorie": "L"},
+            ],
+            pdf_id=pid,
+        )
 
         conn = db._get_conn()
         row = conn.execute("SELECT * FROM neue_codes WHERE code_id = 'L-01'").fetchone()
@@ -269,17 +289,22 @@ class TestCodings:
 # Visual Triage + Detail
 # ---------------------------------------------------------------------------
 
+
 class TestVisual:
     def test_save_visual_triage(self, db):
         pid = db.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
-        db.save_visual_triage(pid, 1, {
-            "page_type": "floor_plan",
-            "priority": "high",
-            "estimated_log": "LOG-03",
-            "building_elements": ["Waende", "Tueren"],
-            "description": "EG Grundriss",
-            "confidence": 0.9,
-        })
+        db.save_visual_triage(
+            pid,
+            1,
+            {
+                "page_type": "floor_plan",
+                "priority": "high",
+                "estimated_log": "LOG-03",
+                "building_elements": ["Waende", "Tueren"],
+                "description": "EG Grundriss",
+                "confidence": 0.9,
+            },
+        )
 
         results = db.get_visual_triage(pid)
         assert len(results) == 1
@@ -289,14 +314,18 @@ class TestVisual:
 
     def test_save_visual_detail(self, db):
         pid = db.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
-        db.save_visual_detail(pid, 1, {
-            "description": "Grundriss",
-            "building_elements": [
-                {"element_type": "Wand", "ifc_class": "IfcWall", "log_achieved": "LOG-03"}
-            ],
-            "annotations": ["Bemassung"],
-            "cross_references": ["Schnitt A-A"],
-        })
+        db.save_visual_detail(
+            pid,
+            1,
+            {
+                "description": "Grundriss",
+                "building_elements": [
+                    {"element_type": "Wand", "ifc_class": "IfcWall", "log_achieved": "LOG-03"}
+                ],
+                "annotations": ["Bemassung"],
+                "cross_references": ["Schnitt A-A"],
+            },
+        )
 
         results = db.get_visual_detail(pid)
         assert len(results) == 1
@@ -314,15 +343,20 @@ class TestVisual:
 # Aggregation (Toolkit-Export)
 # ---------------------------------------------------------------------------
 
+
 class TestAggregation:
     def test_get_all_building_elements(self, db):
         pid = db.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
-        db.save_visual_detail(pid, 1, {
-            "building_elements": [
-                {"element_type": "Wand", "ifc_class": "IfcWall"},
-                {"element_type": "Tuer", "ifc_class": "IfcDoor"},
-            ],
-        })
+        db.save_visual_detail(
+            pid,
+            1,
+            {
+                "building_elements": [
+                    {"element_type": "Wand", "ifc_class": "IfcWall"},
+                    {"element_type": "Tuer", "ifc_class": "IfcDoor"},
+                ],
+            },
+        )
 
         elements = db.get_all_building_elements()
         assert len(elements) == 2
@@ -341,12 +375,22 @@ class TestAggregation:
 
     def test_get_log_evidence_summary(self, db):
         pid = db.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
-        db.save_visual_triage(pid, 1, {
-            "estimated_log": "LOG-03", "page_type": "floor_plan",
-        })
-        db.save_visual_triage(pid, 2, {
-            "estimated_log": "LOG-02", "page_type": "section",
-        })
+        db.save_visual_triage(
+            pid,
+            1,
+            {
+                "estimated_log": "LOG-03",
+                "page_type": "floor_plan",
+            },
+        )
+        db.save_visual_triage(
+            pid,
+            2,
+            {
+                "estimated_log": "LOG-02",
+                "page_type": "section",
+            },
+        )
 
         summary = db.get_log_evidence_summary()
         assert len(summary) == 2
@@ -365,9 +409,7 @@ class TestCompanyTables:
         cid = db.upsert_company("HKS", "/data/companies/HKS")
         assert cid > 0
         conn = db._get_conn()
-        row = conn.execute(
-            "SELECT name, source_dir FROM companies WHERE id = ?", (cid,)
-        ).fetchone()
+        row = conn.execute("SELECT name, source_dir FROM companies WHERE id = ?", (cid,)).fetchone()
         assert row["name"] == "HKS"
         assert row["source_dir"] == "/data/companies/HKS"
 
@@ -377,9 +419,7 @@ class TestCompanyTables:
         assert cid1 == cid2
         # Nur ein Eintrag insgesamt
         conn = db._get_conn()
-        count = conn.execute(
-            "SELECT COUNT(*) as c FROM companies"
-        ).fetchone()["c"]
+        count = conn.execute("SELECT COUNT(*) as c FROM companies").fetchone()["c"]
         assert count == 1
 
     def test_upsert_project_unique_per_company_folder(self, db):
@@ -414,7 +454,8 @@ class TestCompanyTables:
     def test_alter_columns_idempotent(self, tmp_path):
         """Zweifache Initialisierung darf nicht crashen — ALTER ADD COLUMN
         wuerde sonst 'duplicate column name' werfen."""
-        from src.db import PipelineDB
+        from qualdatan_core.db import PipelineDB
+
         db_path = tmp_path / "twice.db"
         db1 = PipelineDB(db_path)
         db1.upsert_pdf("P", "a.pdf", "P/a.pdf", "/p/a.pdf")
@@ -454,6 +495,7 @@ class TestCompanyTables:
 # ---------------------------------------------------------------------------
 # Thread Safety
 # ---------------------------------------------------------------------------
+
 
 class TestThreadSafety:
     def test_concurrent_writes(self, db):

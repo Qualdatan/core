@@ -23,9 +23,9 @@ Typen ein.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 import yaml
 
@@ -48,17 +48,13 @@ def load_facet_from_dict(data: Mapping[str, Any]) -> Facet:
     type_name = data["type"]
     types = discovered_facet_types()
     if type_name not in types:
-        raise FacetLoadError(
-            f"Unbekannter Facet-Typ '{type_name}'. "
-            f"Verfuegbar: {sorted(types)}"
-        )
+        raise FacetLoadError(f"Unbekannter Facet-Typ '{type_name}'. Verfuegbar: {sorted(types)}")
     factory = types[type_name]
     try:
         return factory(data)
     except Exception as exc:
         raise FacetLoadError(
-            f"Konnte Facet '{data.get('id')}' (type='{type_name}') nicht "
-            f"instanziieren: {exc}"
+            f"Konnte Facet '{data.get('id')}' (type='{type_name}') nicht instanziieren: {exc}"
         ) from exc
 
 

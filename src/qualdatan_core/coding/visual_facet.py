@@ -17,8 +17,9 @@ Registrierung bei ``builtin_facet_types`` als ``visual_taxonomy`` und
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 from ..facets.base import CodeContribution, FacetContext, Material
 from ..facets.types import (
@@ -28,14 +29,13 @@ from ..facets.types import (
 )
 from ..models import CodedSegment
 
-
 _VISUAL_TAXONOMY_PROMPT = (
     "Analysiere das beiliegende Bild und identifiziere sichtbare Elemente "
     "aus der Taxonomie '{label}'.\n"
     "Erlaubte Codes: {codes_csv}\n\n"
     "Antworte als JSON-Liste von Objekten "
-    "{{\"code_id\": \"…\", \"bbox\": [x, y, w, h], \"confidence\": 0..1, "
-    "\"rationale\": \"…\"}}. "
+    '{{"code_id": "…", "bbox": [x, y, w, h], "confidence": 0..1, '
+    '"rationale": "…"}}. '
     "Die Bounding-Box ist optional, Koordinaten in Seitenprozent (0..1)."
 )
 
@@ -44,7 +44,7 @@ _VISUAL_EVIDENCE_PROMPT = (
     "Bewerte das beiliegende Bild auf der Skala '{label}' (niedrig -> hoch).\n"
     "Stufen: {codes_list}\n\n"
     "Antworte als JSON-Objekt "
-    "{{\"code_id\": \"…\", \"justification\": \"…\", \"confidence\": 0..1}}."
+    '{{"code_id": "…", "justification": "…", "confidence": 0..1}}.'
 )
 
 
@@ -60,7 +60,7 @@ class VisualTaxonomyFacet:
     prompt_template: str = _VISUAL_TAXONOMY_PROMPT
 
     @classmethod
-    def from_yaml(cls, data: Mapping[str, Any]) -> "VisualTaxonomyFacet":
+    def from_yaml(cls, data: Mapping[str, Any]) -> VisualTaxonomyFacet:
         return cls(
             id=data["id"],
             label=data.get("label", data["id"]),
@@ -87,12 +87,12 @@ class VisualEvidenceFacet:
     id: str
     label: str
     input_kinds: tuple[Material, ...]
-    codebook_contribution: tuple[CodeContribution, ...]   # Reihenfolge = Skala
+    codebook_contribution: tuple[CodeContribution, ...]  # Reihenfolge = Skala
     description: str = ""
     prompt_template: str = _VISUAL_EVIDENCE_PROMPT
 
     @classmethod
-    def from_yaml(cls, data: Mapping[str, Any]) -> "VisualEvidenceFacet":
+    def from_yaml(cls, data: Mapping[str, Any]) -> VisualEvidenceFacet:
         return cls(
             id=data["id"],
             label=data.get("label", data["id"]),
